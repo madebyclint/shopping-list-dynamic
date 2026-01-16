@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Web Grocery List Parser</title>
+    <link rel="stylesheet" href="main.css" />
+  </head>
+  <body>
+    <button class="js-edit edit-button">Edit</button>
+    <form class="js-form collapsed" method="get">
+      <h1>Edit Grocery List</h1>
+      <textarea
+        id="rawText"
+        name="rawText"
+        class="js-textarea"
+        rows="20"
+        cols="50"
+        placeholder="Item:Qty::Price:::Location::::Meal"
+      ></textarea>
+      <button type="submit">Convert</button>
+    </form>
+    <div class="list-container">
+      <div>
+        <h1>Grocery List</h1>
+        <p class="budget">
+          <span class="js-totalestimated"></span>
+          <span class="js-totalspent"></span>
+        </p>
+      </div>
+      <div class="js-output"></div>
+    </div>
+    <script src="main.js" type="module"></script>
+  </body>
+</html>

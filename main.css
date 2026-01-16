@@ -1,0 +1,89 @@
+:root {
+  --text-subdued: #666;
+  --border-subdued: #ccc;
+  --background-alt: #f0f0f0;
+}
+
+body {
+  display: flex;
+  font-family: sans-serif;
+  gap: 20px;
+}
+
+h2 {
+  margin-bottom: 0;
+  margin-top: 2rem;
+}
+
+button {
+  padding: 0.5rem 1rem;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 800px;
+  width: calc(100% - 40px);
+  padding: 20px;
+  left: 0;
+  position: absolute;
+  height: 100vh;
+  background-color: white;
+  z-index: 100;
+}
+
+form.collapsed {
+  left: -100%;
+}
+
+.edit-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 101;
+}
+
+.list-container {
+  padding: 20px;
+  width: 100%;
+}
+
+ul {
+  padding: 0;
+  width: 100%;
+}
+
+li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  list-style-type: none;
+  line-height: 1.5;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-subdued);
+  width: 100%;
+}
+
+li:nth-child(even) {
+  background-color: var(--background-alt);
+}
+
+li:first-child {
+  border-top: 1px solid var(--border-subdued);
+}
+
+li input[type="checkbox"] {
+  width: 2rem;
+  height: 2rem;
+}
+
+li input:checked + label {
+  text-decoration: line-through;
+}
+
+li label span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-subdued);
+}
