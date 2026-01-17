@@ -40,10 +40,44 @@ form {
   height: 100vh;
   background-color: white;
   z-index: 100;
+  overflow-y: auto;
 }
 
 form.collapsed {
   left: -100%;
+}
+
+form div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+form label {
+  font-weight: bold;
+}
+
+form input[type="text"] {
+  padding: 0.5rem;
+  border: 1px solid var(--border-subdued);
+  border-radius: 4px;
+}
+
+form textarea {
+  padding: 0.5rem;
+  border: 1px solid var(--border-subdued);
+  border-radius: 4px;
+  font-family: monospace;
+  resize: vertical;
+}
+
+.form-buttons {
+  flex-direction: row !important;
+  gap: 10px !important;
+}
+
+.sample-button {
+  background-color: var(--background-alt);
 }
 
 .edit-button {
@@ -56,6 +90,21 @@ form.collapsed {
 .list-container {
   padding: 20px;
   width: 100%;
+}
+
+.list-selector {
+  margin-bottom: 20px;
+}
+
+.list-selector h3 {
+  margin-bottom: 10px;
+}
+
+.list-selector select {
+  padding: 0.5rem;
+  border: 1px solid var(--border-subdued);
+  border-radius: 4px;
+  background-color: white;
 }
 
 ul {
