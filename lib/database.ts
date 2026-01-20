@@ -1,4 +1,8 @@
-import { sql } from '@vercel/postgres';
+import { Pool } from 'pg';
+
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL,
+});
 
 export interface GroceryItem {
   id?: number;
@@ -22,17 +26,17 @@ export interface GroceryList {
 export async function initializeDatabase() {
   try {
     // Create grocery_lists table
-    await sql`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS grocery_lists (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         raw_text TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `;
+    `);
 
     // Create grocery_items table
-    await sql`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS grocery_items (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
@@ -44,7 +48,7 @@ export async function initializeDatabase() {
         list_id INTEGER REFERENCES grocery_lists(id) ON DELETE CASCADE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `;
+    `);
 
     console.log('Database initialized successfully');
   } catch (error) {
@@ -56,20 +60,19 @@ export async function initializeDatabase() {
 export async function createGroceryList(name: string, rawText: string, items: Omit<GroceryItem, 'id' | 'list_id' | 'created_at'>[]): Promise<number> {
   try {
     // Create the list
-    const listResult = await sql`
-      INSERT INTO grocery_lists (name, raw_text)
-      VALUES (${name}, ${rawText})
-      RETURNING id
-    `;
+    const listResult = await pool.query(
+      'INSERT INTO grocery_lists (name, raw_text) VALUES ($1, $2) RETURNING id',
+      [name, rawText]
+    );
     
     const listId = listResult.rows[0].id;
 
     // Create the items
     for (const item of items) {
-      await sql`
-        INSERT INTO grocery_items (name, qty, price, category, meal, list_id)
-        VALUES (${item.name}, ${item.qty}, ${item.price}, ${item.category}, ${item.meal}, ${listId})
-      `;
+      await pool.query(
+        'INSERT INTO grocery_items (name, qty, price, category, meal, list_id) VALUES ($1, $2, $3, $4, $5, $6)',
+        [item.name, item.qty, item.price, item.category, item.meal, listId]
+      );
     }
 
     return listId;
@@ -81,18 +84,19 @@ export async function createGroceryList(name: string, rawText: string, items: Om
 
 export async function getGroceryList(listId: number): Promise<{ list: GroceryList; items: GroceryItem[] } | null> {
   try {
-    const listResult = await sql`
-      SELECT * FROM grocery_lists WHERE id = ${listId}
-    `;
+    const listResult = await pool.query(
+      'SELECT * FROM grocery_lists WHERE id = $1',
+      [listId]
+    );
     
     if (listResult.rows.length === 0) {
       return null;
     }
 
-    const itemsResult = await sql`
-      SELECT * FROM grocery_items WHERE list_id = ${listId}
-      ORDER BY category, name
-    `;
+    const itemsResult = await pool.query(
+      'SELECT * FROM grocery_items WHERE list_id = $1 ORDER BY category, name',
+      [listId]
+    );
 
     return {
       list: listResult.rows[0] as GroceryList,
@@ -106,11 +110,10 @@ export async function getGroceryList(listId: number): Promise<{ list: GroceryLis
 
 export async function updateItemPurchaseStatus(itemId: number, isPurchased: boolean): Promise<void> {
   try {
-    await sql`
-      UPDATE grocery_items 
-      SET is_purchased = ${isPurchased}
-      WHERE id = ${itemId}
-    `;
+    await pool.query(
+      'UPDATE grocery_items SET is_purchased = $1 WHERE id = $2',
+      [isPurchased, itemId]
+    );
   } catch (error) {
     console.error('Error updating item purchase status:', error);
     throw error;
@@ -119,10 +122,9 @@ export async function updateItemPurchaseStatus(itemId: number, isPurchased: bool
 
 export async function getAllGroceryLists(): Promise<GroceryList[]> {
   try {
-    const result = await sql`
-      SELECT id, name, created_at FROM grocery_lists
-      ORDER BY created_at DESC
-    `;
+    const result = await pool.query(
+      'SELECT id, name, created_at FROM grocery_lists ORDER BY created_at DESC'
+    );
     
     return result.rows as GroceryList[];
   } catch (error) {

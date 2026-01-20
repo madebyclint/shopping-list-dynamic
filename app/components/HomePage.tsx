@@ -1,88 +1,41 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
-import EditForm from './EditForm';
-import GroceryListView from './GroceryListView';
-import ListSelector from './ListSelector';
+import { useState } from 'react';
+import Sidebar from './Sidebar';
+import WeeklyMenus from './WeeklyMenus';
+import ShoppingLists from './ShoppingLists';
+import Ingredients from './Ingredients';
+import Utilities from './Utilities';
+
+type TabType = 'weeklyMenus' | 'shoppingLists' | 'ingredients' | 'utilities';
 
 export default function HomePage() {
-  const searchParams = useSearchParams();
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentListId, setCurrentListId] = useState<number | null>(null);
-  const [rawText, setRawText] = useState('');
+  const [currentTab, setCurrentTab] = useState<TabType>('shoppingLists');
 
-  useEffect(() => {
-    const rawTextParam = searchParams.get('rawText');
-    const listIdParam = searchParams.get('listId');
-
-    if (rawTextParam) {
-      setRawText(rawTextParam);
-      setIsEditing(false);
-    } else if (listIdParam) {
-      const id = parseInt(listIdParam);
-      if (!isNaN(id)) {
-        setCurrentListId(id);
-        setIsEditing(false);
-      }
-    } else {
-      setIsEditing(true);
+  const renderContent = () => {
+    switch (currentTab) {
+      case 'weeklyMenus':
+        return <WeeklyMenus />;
+      case 'shoppingLists':
+        return <ShoppingLists />;
+      case 'ingredients':
+        return <Ingredients />;
+      case 'utilities':
+        return <Utilities />;
+      default:
+        return <ShoppingLists />;
     }
-  }, [searchParams]);
-
-  const handleFormSubmit = async (name: string, text: string) => {
-    try {
-      const response = await fetch('/api/lists', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, rawText: text }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        setCurrentListId(result.id);
-        setIsEditing(false);
-        setRawText('');
-      } else {
-        console.error('Failed to create grocery list');
-      }
-    } catch (error) {
-      console.error('Error creating grocery list:', error);
-    }
-  };
-
-  const handleEditToggle = () => {
-    setIsEditing(!isEditing);
   };
 
   return (
-    <>
-      <button
-        className="edit-button"
-        onClick={handleEditToggle}
-      >
-        {isEditing ? 'Close' : 'Edit'}
-      </button>
-
-      <EditForm
-        isVisible={isEditing}
-        onSubmit={handleFormSubmit}
-        initialText={rawText}
+    <div className="app-layout">
+      <Sidebar
+        currentTab={currentTab}
+        onTabChange={setCurrentTab}
       />
-
-      <div className="list-container">
-        <ListSelector
-          currentListId={currentListId}
-          onListSelect={setCurrentListId}
-        />
-
-        <GroceryListView
-          listId={currentListId}
-          rawText={rawText}
-        />
-      </div>
-    </>
+      <main className="main-content">
+        {renderContent()}
+      </main>
+    </div>
   );
 }
