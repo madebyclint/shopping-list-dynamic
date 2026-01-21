@@ -2,6 +2,10 @@ import { Pool } from 'pg';
 
 const pool = new Pool({
   connectionString: process.env.POSTGRES_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 5000,
+  idleTimeoutMillis: 30000,
+  max: 10,
 });
 
 export interface GroceryItem {
@@ -44,28 +48,19 @@ export interface Meal {
 }
 
 export async function initializeDatabase() {
-  // Skip database initialization in development if it takes too long
-  if (process.env.NODE_ENV === 'development' && !process.env.FORCE_DATABASE) {
-    console.log('Skipping database initialization in development mode');
-    return;
-  }
-  
   try {
-    // Add a timeout to prevent hanging
-    const dbTimeout = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Database connection timeout')), 5000);
-    });
-
-    const dbOperation = async () => {
-      // Create grocery_lists table
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS grocery_lists (
-          id SERIAL PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          raw_text TEXT NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
+    // Test the connection with a simple query first
+    await pool.query('SELECT 1');
+    
+    // Create tables if connection succeeds
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS grocery_lists (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        raw_text TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
     // Create grocery_items table
     await pool.query(`
@@ -109,15 +104,9 @@ export async function initializeDatabase() {
     `);
 
     console.log('Database initialized successfully');
-    };
 
-    await Promise.race([dbOperation(), dbTimeout]);
   } catch (error) {
     console.error('Error initializing database:', error);
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Continuing without database in development mode');
-      return;
-    }
     throw error;
   }
 }
@@ -285,6 +274,40 @@ export async function updateMeal(mealId: number, updates: Partial<Meal>): Promis
     );
   } catch (error) {
     console.error('Error updating meal:', error);
+    throw error;
+  }
+}
+
+export async function deleteWeeklyMealPlan(planId: number): Promise<void> {
+  try {
+    // Delete all meals associated with the plan first (cascade should handle this, but being explicit)
+    await pool.query('DELETE FROM meals WHERE plan_id = $1', [planId]);
+    
+    // Delete the plan itself
+    await pool.query('DELETE FROM weekly_meal_plans WHERE id = $1', [planId]);
+  } catch (error) {
+    console.error('Error deleting weekly meal plan:', error);
+    throw error;
+  }
+}
+
+export async function updateWeeklyMealPlan(planId: number, updates: Partial<WeeklyMealPlan>): Promise<void> {
+  try {
+    const setClause = Object.keys(updates)
+      .filter(key => key !== 'id' && key !== 'created_at')
+      .map((key, index) => `${key} = $${index + 2}`)
+      .join(', ');
+    
+    const values = Object.keys(updates)
+      .filter(key => key !== 'id' && key !== 'created_at')
+      .map(key => updates[key as keyof WeeklyMealPlan]);
+
+    await pool.query(
+      `UPDATE weekly_meal_plans SET ${setClause} WHERE id = $1`,
+      [planId, ...values]
+    );
+  } catch (error) {
+    console.error('Error updating weekly meal plan:', error);
     throw error;
   }
 }

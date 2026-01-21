@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { WeeklyMealPlan, Meal, DAYS_OF_WEEK } from './meal-planning/types';
 import { fetchPlans, fetchPlanDetails, getRainbowCoverage } from './meal-planning/utils';
 import PlanCreationForm from './meal-planning/PlanCreationForm';
+import PlanManagement from './meal-planning/PlanManagement';
 import DayCard from './meal-planning/DayCard';
 import WeeklyOverview from './meal-planning/WeeklyOverview';
 
@@ -39,6 +40,13 @@ export default function WeeklyMenus() {
     loadPlans();
   };
 
+  const handlePlanUpdate = () => {
+    loadPlans();
+    if (currentPlan) {
+      loadPlanDetails(currentPlan.id!);
+    }
+  };
+
   const handlePlanSelect = (planId: string) => {
     const selected = plans.find(p => p.id === parseInt(planId));
     setCurrentPlan(selected || null);
@@ -67,9 +75,15 @@ export default function WeeklyMenus() {
         onPlanCreated={handlePlanCreated}
       />
 
+      <PlanManagement
+        currentPlan={currentPlan}
+        setCurrentPlan={setCurrentPlan}
+        onPlanUpdate={handlePlanUpdate}
+      />
+
       {plans.length > 0 && (
         <div className="list-selector">
-          <h3>Select a Plan:</h3>
+          <h3>Quick Plan Selector:</h3>
           <select
             value={currentPlan?.id || ''}
             onChange={(e) => handlePlanSelect(e.target.value)}

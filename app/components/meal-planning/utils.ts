@@ -169,3 +169,37 @@ export const updateMeal = async (mealId: number, updates: Partial<Meal>) => {
     return false;
   }
 };
+
+export const deleteMealPlan = async (planId: number) => {
+  try {
+    const response = await fetch('/api/meal-plans', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id: planId }),
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error('Failed to delete meal plan:', error);
+    return false;
+  }
+};
+
+export const updateMealPlan = async (planId: number, updates: Partial<WeeklyMealPlan>) => {
+  try {
+    const response = await fetch(`/api/meal-plans/${planId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error('Failed to update meal plan:', error);
+    return false;
+  }
+};
