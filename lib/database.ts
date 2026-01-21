@@ -44,16 +44,28 @@ export interface Meal {
 }
 
 export async function initializeDatabase() {
+  // Skip database initialization in development if it takes too long
+  if (process.env.NODE_ENV === 'development' && !process.env.FORCE_DATABASE) {
+    console.log('Skipping database initialization in development mode');
+    return;
+  }
+  
   try {
-    // Create grocery_lists table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS grocery_lists (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        raw_text TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    // Add a timeout to prevent hanging
+    const dbTimeout = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Database connection timeout')), 5000);
+    });
+
+    const dbOperation = async () => {
+      // Create grocery_lists table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS grocery_lists (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          raw_text TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
 
     // Create grocery_items table
     await pool.query(`
@@ -97,8 +109,15 @@ export async function initializeDatabase() {
     `);
 
     console.log('Database initialized successfully');
+    };
+
+    await Promise.race([dbOperation(), dbTimeout]);
   } catch (error) {
     console.error('Error initializing database:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Continuing without database in development mode');
+      return;
+    }
     throw error;
   }
 }

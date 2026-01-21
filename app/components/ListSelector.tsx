@@ -11,6 +11,7 @@ interface ListSelectorProps {
 export default function ListSelector({ currentListId, onListSelect }: ListSelectorProps) {
   const [lists, setLists] = useState<GroceryList[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLists();
@@ -18,15 +19,19 @@ export default function ListSelector({ currentListId, onListSelect }: ListSelect
 
   const fetchLists = async () => {
     setLoading(true);
+    setError(null);
     try {
       const response = await fetch('/api/lists');
       if (response.ok) {
         const data = await response.json();
-        setLists(data);
+        setLists(Array.isArray(data) ? data : []);
       } else {
-        console.error('Failed to fetch lists');
+        const errorData = await response.json().catch(() => ({}));
+        setError(`Failed to fetch lists: ${errorData.error || response.statusText}`);
+        console.error('Failed to fetch lists:', errorData);
       }
     } catch (error) {
+      setError('Unable to connect to server. Please check your connection.');
       console.error('Error fetching lists:', error);
     } finally {
       setLoading(false);
@@ -35,6 +40,19 @@ export default function ListSelector({ currentListId, onListSelect }: ListSelect
 
   if (loading) {
     return <div>Loading lists...</div>;
+  }
+
+  if (error) {
+    return (
+      <div>
+        <div style={{ color: 'red', fontSize: '14px', marginBottom: '10px' }}>
+          {error}
+        </div>
+        <button onClick={fetchLists} style={{ padding: '4px 8px', fontSize: '12px' }}>
+          Retry
+        </button>
+      </div>
+    );
   }
 
   if (lists.length === 0) {
