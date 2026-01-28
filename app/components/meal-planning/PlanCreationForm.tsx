@@ -25,6 +25,8 @@ export default function PlanCreationForm({
 }: PlanCreationFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [useAI, setUseAI] = useState(true); // Default to AI generation
+  const [aiPreferences, setAIPreferences] = useState('');
 
   const handleCreatePlan = async () => {
     setIsSubmitting(true);
@@ -36,32 +38,67 @@ export default function PlanCreationForm({
       const planName = newPlanName.trim() || getDefaultPlanName();
       const weekStart = selectedWeekStart || getWeekStartDate(selectedWeekStart);
 
-      console.log('Creating plan with:', { planName, weekStart });
+      console.log('Creating plan with:', { planName, weekStart, useAI });
 
-      const result = await createMealPlan(planName, weekStart);
+      if (useAI) {
+        // Use AI to generate the complete meal plan
+        console.log('Generating AI meal plan...');
+        const aiResult = await fetch('/api/menus', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            weekStartDate: weekStart,
+            preferences: aiPreferences.trim() || undefined,
+            name: planName
+          }),
+        });
 
-      console.log('Plan creation result:', result);
+        const aiData = await aiResult.json();
 
-      if (result) {
-        const newPlan: WeeklyMealPlan = {
-          id: result.id,
-          name: planName,
-          week_start_date: weekStart,
-        };
+        if (aiData.success) {
+          const newPlan: WeeklyMealPlan = {
+            id: aiData.planId,
+            name: planName,
+            week_start_date: weekStart,
+          };
 
-        setCurrentPlan(newPlan);
-
-        console.log('Initializing default meals...');
-        await initializeDefaultMeals(result.id);
-        console.log('Default meals initialized');
-
-        setIsCreating(false);
-        setNewPlanName('');
-        setSelectedWeekStart('');
-        onPlanCreated();
+          setCurrentPlan(newPlan);
+          console.log('AI meal plan created successfully:', aiData.message);
+        } else {
+          throw new Error(aiData.error || 'AI generation failed');
+        }
       } else {
-        setError('Failed to create meal plan. Please check your database connection.');
+        // Use traditional manual plan creation
+        const result = await createMealPlan(planName, weekStart);
+
+        console.log('Plan creation result:', result);
+
+        if (result) {
+          const newPlan: WeeklyMealPlan = {
+            id: result.id,
+            name: planName,
+            week_start_date: weekStart,
+          };
+
+          setCurrentPlan(newPlan);
+
+          console.log('Initializing default meals...');
+          await initializeDefaultMeals(result.id);
+          console.log('Default meals initialized');
+        } else {
+          setError('Failed to create meal plan. Please check your database connection.');
+          setIsSubmitting(false);
+          return;
+        }
       }
+
+      setIsCreating(false);
+      setNewPlanName('');
+      setSelectedWeekStart('');
+      setAIPreferences('');
+      onPlanCreated();
     } catch (err) {
       console.error('Error in handleCreatePlan:', err);
       setError(`Failed to create meal plan: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -74,6 +111,7 @@ export default function PlanCreationForm({
     setIsCreating(false);
     setNewPlanName('');
     setSelectedWeekStart('');
+    setAIPreferences('');
     setError(null);
   };
 
@@ -104,13 +142,44 @@ export default function PlanCreationForm({
           disabled={isSubmitting}
         />
       </div>
+
+      <div className="form-row ai-options">
+        <label className="ai-toggle">
+          <input
+            type="checkbox"
+            checked={useAI}
+            onChange={(e) => setUseAI(e.target.checked)}
+            disabled={isSubmitting}
+          />
+          <span>🤖 Generate meals with AI</span>
+        </label>
+      </div>
+
+      {useAI && (
+        <div className="form-row ai-preferences">
+          <textarea
+            placeholder="AI preferences (optional): e.g., 'No seafood, more vegetarian meals, kid-friendly options'"
+            value={aiPreferences}
+            onChange={(e) => setAIPreferences(e.target.value)}
+            className="preferences-input"
+            rows={2}
+            disabled={isSubmitting}
+          />
+          <small style={{ color: '#666', fontSize: '12px' }}>
+            AI will generate 6 dinners + 1 Sunday breakfast optimized for a Brooklyn family of 4
+          </small>
+        </div>
+      )}
       <div className="form-buttons">
         <button
           onClick={handleCreatePlan}
           className="create-button"
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Creating...' : 'Create Plan'}
+          {isSubmitting
+            ? (useAI ? 'Generating with AI...' : 'Creating...')
+            : (useAI ? 'Create AI-Generated Plan' : 'Create Manual Plan')
+          }
         </button>
         <button
           onClick={handleCancel}
