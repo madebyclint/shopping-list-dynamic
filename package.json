@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "analyze-files": "find . -path './node_modules' -prune -o -path './.next' -prune -o -type f \\( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' \\) -print -exec wc -l {} \\; | awk 'NR%2==1{file=$0} NR%2==0{lines=$1; if(lines>200) printf \"%d %s\\n\", lines, file}' | sort -nr > large-files.tmp && echo '# Files Over 200 Lines' > LARGE_FILES.md && echo '' >> LARGE_FILES.md && echo 'Files that need unit tests before refactoring:' >> LARGE_FILES.md && echo '' >> LARGE_FILES.md && awk '{printf \"- **%s** (%d lines)\\n\", $2, $1}' large-files.tmp >> LARGE_FILES.md && rm large-files.tmp && echo 'Analysis complete! Check LARGE_FILES.md'"
   },
   "dependencies": {
@@ -17,12 +20,40 @@
     "react-dom": "^18"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/pg": "^8.10.9",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "14.0.4",
+    "jest": "^30.2.0",
+    "pg-mem": "^3.0.8",
+    "ts-jest": "^29.4.6",
     "typescript": "^5"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/__tests__/**/*.test.ts",
+      "**/__tests__/**/*.test.tsx"
+    ],
+    "collectCoverageFrom": [
+      "lib/**/*.{ts}",
+      "app/api/**/*.{ts}",
+      "!**/*.d.ts",
+      "!**/node_modules/**",
+      "!**/.next/**"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.js"
+    ]
   }
 }
