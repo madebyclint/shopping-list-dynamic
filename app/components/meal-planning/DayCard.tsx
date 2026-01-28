@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Meal } from './types';
 import { updateMeal as updateMealAPI } from './utils';
 
@@ -10,6 +11,17 @@ interface DayCardProps {
 }
 
 export default function DayCard({ day, dayIndex, meal, onMealUpdate, allMeals }: DayCardProps) {
+  const [localTitle, setLocalTitle] = useState(meal?.title || '');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Update local state when meal prop changes
+  useEffect(() => {
+    if (meal?.title !== undefined) {
+      setLocalTitle(meal.title);
+      setHasUnsavedChanges(false);
+    }
+  }, [meal?.title]);
+
   const handleMealUpdate = async (mealId: number, updates: Partial<Meal>) => {
     const success = await updateMealAPI(mealId, updates);
 
@@ -18,6 +30,31 @@ export default function DayCard({ day, dayIndex, meal, onMealUpdate, allMeals }:
         m.id === mealId ? { ...m, ...updates } : m
       );
       onMealUpdate(updatedMeals);
+    }
+  };
+
+  const handleTitleChange = (value: string) => {
+    setLocalTitle(value);
+    setHasUnsavedChanges(value !== meal?.title);
+  };
+
+  const handleSaveTitle = async () => {
+    if (meal?.id && hasUnsavedChanges) {
+      const success = await updateMealAPI(meal.id, { title: localTitle });
+      if (success) {
+        const updatedMeals = allMeals.map(m =>
+          m.id === meal.id ? { ...m, title: localTitle } : m
+        );
+        onMealUpdate(updatedMeals);
+        setHasUnsavedChanges(false);
+      }
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveTitle();
     }
   };
 
@@ -39,13 +76,25 @@ export default function DayCard({ day, dayIndex, meal, onMealUpdate, allMeals }:
 
           {meal.meal_type === 'cooking' && (
             <>
-              <input
-                type="text"
-                placeholder="Meal title"
-                value={meal.title || ''}
-                onChange={(e) => handleMealUpdate(meal.id!, { title: e.target.value })}
-                className="meal-title-input"
-              />
+              <div className="meal-title-container">
+                <input
+                  type="text"
+                  placeholder="Meal title"
+                  value={localTitle}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className={`meal-title-input ${hasUnsavedChanges ? 'unsaved' : ''}`}
+                />
+                {hasUnsavedChanges && (
+                  <button
+                    onClick={handleSaveTitle}
+                    className="save-title-button"
+                    title="Save title (or press Enter)"
+                  >
+                    💾 Save
+                  </button>
+                )}
+              </div>
 
               <div className="meal-flags">
                 <label className="flag-label">

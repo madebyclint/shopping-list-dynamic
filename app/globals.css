@@ -466,12 +466,40 @@ li label span {
   background-color: white;
 }
 
+.meal-title-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .meal-title-input {
-  width: 100%;
+  flex: 1;
   padding: 6px 8px;
   border: 1px solid var(--border-subdued);
   border-radius: 4px;
   font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.meal-title-input.unsaved {
+  border-color: #ff6b47;
+  background-color: #fff5f5;
+}
+
+.save-title-button {
+  padding: 4px 8px;
+  font-size: 12px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.save-title-button:hover {
+  background-color: #45a049;
 }
 
 .meal-flags {
