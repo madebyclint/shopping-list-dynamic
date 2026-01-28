@@ -1,11 +1,11 @@
 import { pool, GroceryItem, GroceryList } from './index';
 
-export async function createGroceryList(name: string, rawText: string, items: Omit<GroceryItem, 'id' | 'list_id' | 'created_at'>[]): Promise<number> {
+export async function createGroceryList(name: string, rawText: string, items: Omit<GroceryItem, 'id' | 'list_id' | 'created_at'>[], mealPlanId?: number): Promise<number> {
   try {
-    // Create the list
+    // Create the list with optional meal_plan_id
     const listResult = await pool.query(
-      'INSERT INTO grocery_lists (name, raw_text) VALUES ($1, $2) RETURNING id',
-      [name, rawText]
+      'INSERT INTO grocery_lists (name, raw_text, meal_plan_id) VALUES ($1, $2, $3) RETURNING id',
+      [name, rawText, mealPlanId || null]
     );
     
     const listId = listResult.rows[0].id;
@@ -148,6 +148,120 @@ export async function searchIngredients(searchTerm: string, limit: number = 20):
     }));
   } catch (error) {
     console.error('Error searching ingredients:', error);
+    throw error;
+  }
+}
+
+// Find existing shopping list for a meal plan
+export async function findExistingListForMealPlan(mealPlanId: number): Promise<{ list: GroceryList; items: GroceryItem[] } | null> {
+  try {
+    const listResult = await pool.query(
+      'SELECT * FROM grocery_lists WHERE meal_plan_id = $1 ORDER BY created_at DESC LIMIT 1',
+      [mealPlanId]
+    );
+    
+    if (listResult.rows.length === 0) {
+      return null;
+    }
+
+    const listId = listResult.rows[0].id;
+    const itemsResult = await pool.query(
+      'SELECT * FROM grocery_items WHERE list_id = $1 ORDER BY category, name',
+      [listId]
+    );
+
+    return {
+      list: listResult.rows[0] as GroceryList,
+      items: itemsResult.rows as GroceryItem[]
+    };
+  } catch (error) {
+    console.error('Error finding existing list for meal plan:', error);
+    return null;
+  }
+}
+
+// Update existing shopping list while preserving user customizations
+export async function updateExistingList(
+  listId: number, 
+  newItems: Omit<GroceryItem, 'id' | 'list_id' | 'created_at'>[], 
+  existingItems: GroceryItem[]
+): Promise<{ preserved: number; added: number; updated: number }> {
+  try {
+    let preserved = 0;
+    let added = 0;
+    let updated = 0;
+
+    // Create a map of existing items by normalized name
+    const existingItemsMap = new Map();
+    existingItems.forEach(item => {
+      const key = item.name.toLowerCase().trim();
+      existingItemsMap.set(key, item);
+    });
+
+    // Track which existing items we've seen
+    const processedExistingItems = new Set();
+
+    for (const newItem of newItems) {
+      const key = newItem.name.toLowerCase().trim();
+      const existingItem = existingItemsMap.get(key);
+
+      if (existingItem) {
+        // Item exists - preserve user customizations but update meal info
+        processedExistingItems.add(key);
+        
+        // Only update if the meal information has changed
+        if (existingItem.meal !== newItem.meal) {
+          await pool.query(
+            'UPDATE grocery_items SET meal = $1 WHERE id = $2',
+            [newItem.meal, existingItem.id]
+          );
+          updated++;
+        } else {
+          preserved++;
+        }
+      } else {
+        // New item - add it
+        await pool.query(
+          'INSERT INTO grocery_items (name, qty, price, category, meal, list_id) VALUES ($1, $2, $3, $4, $5, $6)',
+          [newItem.name, newItem.qty, newItem.price, newItem.category, newItem.meal, listId]
+        );
+        added++;
+      }
+    }
+
+    // Count preserved items (existing items that weren't in the new meal plan)
+    const totalPreserved = existingItems.length - processedExistingItems.size + preserved;
+
+    return { preserved: totalPreserved, added, updated };
+  } catch (error) {
+    console.error('Error updating existing list:', error);
+    throw error;
+  }
+}
+// Delete all items from a grocery list
+export async function deleteGroceryListItems(listId: number): Promise<void> {
+  try {
+    await pool.query('DELETE FROM grocery_items WHERE list_id = $1', [listId]);
+  } catch (error) {
+    console.error('Error deleting grocery list items:', error);
+    throw error;
+  }
+}
+
+// Add items to an existing grocery list
+export async function addItemsToGroceryList(
+  listId: number,
+  items: Omit<GroceryItem, 'id' | 'list_id' | 'created_at'>[]
+): Promise<void> {
+  try {
+    for (const item of items) {
+      await pool.query(
+        'INSERT INTO grocery_items (list_id, name, qty, price, category, meal, is_purchased) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [listId, item.name, item.qty, item.price, item.category, item.meal, false]
+      );
+    }
+  } catch (error) {
+    console.error('Error adding items to grocery list:', error);
     throw error;
   }
 }

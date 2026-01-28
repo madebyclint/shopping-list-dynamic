@@ -57,7 +57,7 @@ export default function WeeklyMenus() {
     }
   };
 
-  const handleGenerateShoppingList = async () => {
+  const handleGenerateShoppingList = async (forceNew = false, forceRefresh = false) => {
     if (!currentPlan) return;
 
     setIsGeneratingList(true);
@@ -67,14 +67,27 @@ export default function WeeklyMenus() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ planId: currentPlan.id }),
+        body: JSON.stringify({
+          planId: currentPlan.id,
+          forceNew,
+          forceRefresh
+        }),
       });
 
       if (response.ok) {
         const result = await response.json();
         setGeneratedListId(result.id);
-        // Store the list ID for the "Go to Shopping List" button
-        // The actual navigation will happen when user clicks the button
+
+        // Show different feedback for updates vs new lists
+        if (result.isUpdate) {
+          const { preserved, added, updated } = result.preservationStats;
+          alert(`Shopping list updated! 🔄\n\n✅ ${preserved} items preserved (your customizations kept)\n➕ ${added} new items added\n🔄 ${updated} items updated\n\n${result.duplicatesFound > 0 ? `🔍 ${result.duplicatesFound} duplicates checked\n` : ''}🤖 Smart units applied (eggs→doz, etc.)\n🎯 Intelligent consolidation\n\nClick "Go to Shopping List" to review.`);
+        } else if (result.duplicatesFound > 0) {
+          const duplicateItems = Object.keys(result.similarItems).join(', ');
+          alert(`Smart shopping list generated! 🎉\n\n✅ ${result.itemCount} items processed\n🔍 ${result.duplicatesFound} potential duplicates found: ${duplicateItems}\n🤖 Smart units applied (eggs→doz, etc.)\n🎯 Intelligent consolidation\n💰 AI price estimation\n\nClick "Go to Shopping List" to review.`);
+        } else {
+          alert(`Smart shopping list generated! 🎉\n\n✅ ${result.itemCount} items processed\n🤖 Smart units applied (eggs→doz, etc.)\n🎯 Intelligent consolidation\n💰 AI price estimation\n\nNo duplicates found. Click "Go to Shopping List" to review.`);
+        }
       } else {
         console.error('Failed to generate shopping list');
         alert('Failed to generate shopping list. Please try again.');
@@ -84,6 +97,18 @@ export default function WeeklyMenus() {
       alert('Error generating shopping list. Please try again.');
     } finally {
       setIsGeneratingList(false);
+    }
+  };
+
+  const handleNewShoppingList = () => {
+    if (confirm('Create a completely new shopping list? This will not preserve any existing customizations.')) {
+      handleGenerateShoppingList(true, false);
+    }
+  };
+
+  const handleRefreshCategories = () => {
+    if (confirm('Refresh categories for all items using fresh AI processing? This will override any custom categorizations you made.')) {
+      handleGenerateShoppingList(false, true);
     }
   };
 
@@ -145,6 +170,28 @@ export default function WeeklyMenus() {
         </div>
       )}
 
+      {/* Fun Loading Animation */}
+      {isGeneratingList && (
+        <div className="loading-overlay">
+          <div className="loading-content">
+            <div className="bouncing-groceries">
+              <span className="grocery-emoji">🥕</span>
+              <span className="grocery-emoji">🍎</span>
+              <span className="grocery-emoji">🥖</span>
+              <span className="grocery-emoji">🧀</span>
+              <span className="grocery-emoji">🥚</span>
+            </div>
+            <div className="loading-text">
+              <h3>🤖 AI Chef is cooking up your list...</h3>
+              <div className="progress-bar">
+                <div className="progress-fill"></div>
+              </div>
+              <p>Analyzing ingredients • Optimizing quantities • Smart categorizing</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {currentPlan && (
         <div>
           <div className="plan-summary">
@@ -157,12 +204,34 @@ export default function WeeklyMenus() {
             </div>
             <div className="plan-actions">
               <button
-                onClick={handleGenerateShoppingList}
-                disabled={isGeneratingList || generatedListId !== null || meals.filter(m => m.meal_type === 'cooking').length === 0}
+                onClick={() => handleGenerateShoppingList(false)}
+                disabled={isGeneratingList || meals.filter(m => m.meal_type === 'cooking').length === 0}
                 className="generate-shopping-list-button"
               >
-                {isGeneratingList ? '🛒 Generating...' : '🛒 Generate Shopping List'}
+                {isGeneratingList ? '🛒 Generating Smart List...' : '🛒 Generate/Update Smart List'}
               </button>
+
+              {!isGeneratingList && (
+                <button
+                  onClick={handleNewShoppingList}
+                  disabled={meals.filter(m => m.meal_type === 'cooking').length === 0}
+                  className="generate-shopping-list-button"
+                  style={{ background: '#FF9800' }}
+                >
+                  🗂️ Create New List
+                </button>
+              )}
+
+              {!isGeneratingList && generatedListId && (
+                <button
+                  onClick={handleRefreshCategories}
+                  className="generate-shopping-list-button"
+                  style={{ background: '#9C27B0' }}
+                >
+                  ⚡ Refresh Categories
+                </button>
+              )}
+
               {generatedListId && (
                 <button
                   onClick={handleGoToShoppingList}

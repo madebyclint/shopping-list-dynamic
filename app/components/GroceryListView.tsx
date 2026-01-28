@@ -130,6 +130,113 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
       .catch(console.error);
   };
 
+  const handleDedupeItems = async () => {
+    if (!listId) return;
+
+    console.log('=== DEDUPE DEBUG ===');
+
+    // Simple duplicate detection - clean up malformed JSON artifacts
+    const duplicateGroups = new Map<string, GroceryItem[]>();
+
+    items.forEach(item => {
+      // Clean up malformed JSON artifacts in names
+      let baseName = item.name.toLowerCase().trim();
+
+      // Remove malformed JSON characters like "}  and {"
+      baseName = baseName
+        .replace(/^[{"]+/g, '')     // Remove {" at start
+        .replace(/["}]+$/g, '')     // Remove "} at end
+        .replace(/\s*\([^)]*\)/g, '') // Remove anything in parentheses
+        .trim();
+
+      console.log(`Original: "${item.name}" -> Base: "${baseName}"`);
+
+      if (!duplicateGroups.has(baseName)) {
+        duplicateGroups.set(baseName, []);
+      }
+      duplicateGroups.get(baseName)!.push(item);
+    });
+
+    console.log('Duplicate groups found:', duplicateGroups);
+
+    const itemsToDelete: number[] = [];
+    let duplicateCount = 0;
+
+    // Find groups with duplicates
+    duplicateGroups.forEach((group, baseName) => {
+      if (group.length > 1) {
+        console.log(`DUPLICATE GROUP for "${baseName}":`, group);
+
+        // Check if any item has "ea" in the qty and others have proper units
+        const eaItems = group.filter(item => {
+          const qtyStr = item.qty.toLowerCase().trim();
+          // Check for "ea" as unit or just a plain number (which defaults to ea)
+          const hasEa = qtyStr.includes('ea') || /^\d+$/.test(qtyStr);
+          console.log(`Item "${item.name}" qty "${item.qty}" has EA: ${hasEa}`);
+          return hasEa;
+        });
+
+        const nonEaItems = group.filter(item => {
+          const qtyStr = item.qty.toLowerCase().trim();
+          return !(qtyStr.includes('ea') || /^\d+$/.test(qtyStr));
+        });
+
+        console.log(`EA items (${eaItems.length}):`, eaItems);
+        console.log(`Non-EA items (${nonEaItems.length}):`, nonEaItems);
+
+        if (eaItems.length > 0 && nonEaItems.length > 0) {
+          console.log('Will remove EA items in favor of non-EA items');
+          eaItems.forEach(item => {
+            if (item.id) {
+              itemsToDelete.push(item.id);
+              duplicateCount++;
+              console.log(`Marking for deletion: ${item.name} (ID: ${item.id})`);
+            }
+          });
+        } else {
+          console.log('All items have same unit type, removing extras');
+          // Remove all but the first item
+          for (let i = 1; i < group.length; i++) {
+            if (group[i].id) {
+              itemsToDelete.push(group[i].id);
+              duplicateCount++;
+              console.log(`Marking for deletion (duplicate): ${group[i].name} (ID: ${group[i].id})`);
+            }
+          }
+        }
+      }
+    });
+
+    console.log('Final items to delete:', itemsToDelete);
+    console.log('=== END DEBUG ===');
+
+    if (itemsToDelete.length === 0) {
+      alert('No duplicates found to remove!');
+      return;
+    }
+
+    if (confirm(`Remove ${duplicateCount} duplicate items?`)) {
+      try {
+        // Delete items from database
+        for (const itemId of itemsToDelete) {
+          await fetch('/api/items', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itemId }),
+          });
+        }
+
+        // Update local state
+        setItems(prevItems => prevItems.filter(item => !item.id || !itemsToDelete.includes(item.id)));
+
+        alert(`Successfully removed ${duplicateCount} duplicate items!`);
+      } catch (error) {
+        console.error('Error removing duplicates:', error);
+        alert('Error removing duplicates. Please try again.');
+      }
+    }
+  };
+
   const handleAddItem = (ingredient: any) => {
     if (listId === null) return;
 
@@ -235,6 +342,12 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
           <span> - ${totalSpent.toFixed(2)} spent = ${(totalEstimate - totalSpent).toFixed(2)} remaining</span>
         )}
       </p>
+      {list.name.includes('Shopping for') && (
+        <p className="smart-processing-note">
+          🤖 AI enhanced: Smart units (eggs→doz), intelligent consolidation, variant detection, price estimation
+          {listId && <span className="preserve-note"> • Your customizations are preserved</span>}
+        </p>
+      )}
 
       {/* Add Item Section */}
       {listId !== null && (
@@ -252,6 +365,12 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
                 className="bulk-categorize-btn"
               >
                 🏷️ Bulk Categorize
+              </button>
+              <button
+                onClick={handleDedupeItems}
+                className="dedupe-btn"
+              >
+                🔄 Remove Duplicates
               </button>
             </div>
           ) : (
@@ -335,57 +454,63 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
       )}
 
       <article>
-        {Object.entries(itemsByCategory).map(([category, { items: categoryItems }]) => {
-          const categoryCost = calculateCategoryCost(categoryItems);
+        {Object.entries(itemsByCategory)
+          .sort(([a], [b]) => a.localeCompare(b)) // Sort categories alphabetically
+          .map(([category, { items: categoryItems }]) => {
+            const categoryCost = calculateCategoryCost(categoryItems);
+            // Sort items alphabetically within each category
+            const sortedCategoryItems = [...categoryItems].sort((a, b) =>
+              cleanIngredientDisplayName(a.name).localeCompare(cleanIngredientDisplayName(b.name))
+            );
 
-          return (
-            <section key={category}>
-              <h2>{category} (${categoryCost.toFixed(2)})</h2>
-              <ul>
-                {categoryItems.map((item) => {
-                  const itemId = `groceryItem-${category}-${item.name}`;
-                  const cleanName = cleanIngredientDisplayName(item.name);
-                  const formattedQty = formatQuantityWithUnit(item.qty);
+            return (
+              <section key={category}>
+                <h2>{category} (${categoryCost.toFixed(2)})</h2>
+                <ul>
+                  {sortedCategoryItems.map((item) => {
+                    const itemId = `groceryItem-${category}-${item.name}`;
+                    const cleanName = cleanIngredientDisplayName(item.name);
+                    const formattedQty = formatQuantityWithUnit(item.qty);
 
-                  return (
-                    <li key={item.id || itemId} className={showBulkRecategorize ? 'bulk-select-mode' : ''}>
-                      {showBulkRecategorize && item.id && (
+                    return (
+                      <li key={item.id || itemId} className={showBulkRecategorize ? 'bulk-select-mode' : ''}>
+                        {showBulkRecategorize && item.id && (
+                          <input
+                            type="checkbox"
+                            className="bulk-select-checkbox"
+                            checked={selectedItems.has(item.id)}
+                            onChange={() => handleSelectItem(item.id!)}
+                          />
+                        )}
                         <input
                           type="checkbox"
-                          className="bulk-select-checkbox"
-                          checked={selectedItems.has(item.id)}
-                          onChange={() => handleSelectItem(item.id!)}
+                          id={itemId}
+                          checked={item.is_purchased || false}
+                          onChange={(e) => item.id && handleItemToggle(item.id, e.target.checked)}
+                          disabled={!item.id || showBulkRecategorize} // Disable for preview items or during bulk select
                         />
-                      )}
-                      <input
-                        type="checkbox"
-                        id={itemId}
-                        checked={item.is_purchased || false}
-                        onChange={(e) => item.id && handleItemToggle(item.id, e.target.checked)}
-                        disabled={!item.id || showBulkRecategorize} // Disable for preview items or during bulk select
-                      />
-                      <label htmlFor={itemId}>
-                        {cleanName} ({formattedQty} @ {item.price})
-                        <span className="js-meal">for {item.meal}</span>
-                      </label>
-                      {item.id && listId !== null && !showBulkRecategorize && (
-                        <div className="item-actions">
-                          <button
-                            onClick={() => setEditingItem(item)}
-                            className="edit-item-btn"
-                            title="Edit item"
-                          >
-                            ✏️
-                          </button>
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          );
-        })}
+                        <label htmlFor={itemId}>
+                          {cleanName} ({formattedQty} @ {item.price})
+                          <span className="js-meal">for {item.meal}</span>
+                        </label>
+                        {item.id && listId !== null && !showBulkRecategorize && (
+                          <div className="item-actions">
+                            <button
+                              onClick={() => setEditingItem(item)}
+                              className="edit-item-btn"
+                              title="Edit item"
+                            >
+                              ✏️
+                            </button>
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            );
+          })}
       </article>
     </div>
   );

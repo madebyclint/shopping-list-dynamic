@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeDatabase, getWeeklyMealPlan, createGroceryList, updateAIUsageStats } from '@/lib/database';
-import { parseGroceryListText } from '@/lib/utils';
+import { initializeDatabase, getWeeklyMealPlan, createGroceryList, updateAIUsageStats, searchIngredients, findExistingListForMealPlan, updateExistingList, deleteGroceryListItems, addItemsToGroceryList } from '@/lib/database';
+import { parseGroceryListText, consolidateDuplicateIngredients, processIngredientsWithAI, findSimilarIngredients } from '@/lib/utils';
 import OpenAI from 'openai';
 
 // Initialize OpenAI client
@@ -11,6 +11,8 @@ const openai = new OpenAI({
 interface ShoppingListRequest {
   planId: number;
   listName?: string;
+  forceNew?: boolean;
+  forceRefresh?: boolean;
 }
 
 export async function POST(request: NextRequest) {
@@ -18,7 +20,7 @@ export async function POST(request: NextRequest) {
     await initializeDatabase();
     
     const body = await request.json();
-    const { planId, listName } = body as ShoppingListRequest;
+    const { planId, listName, forceNew = false, forceRefresh = false } = body as ShoppingListRequest;
 
     if (!planId) {
       return NextResponse.json(
@@ -37,6 +39,9 @@ export async function POST(request: NextRequest) {
     }
 
     const { plan, meals } = planData;
+
+    // Check for existing shopping list for this meal plan
+    const existingList = !forceNew ? await findExistingListForMealPlan(planId) : null;
 
     // Generate the shopping list name if not provided
     const defaultListName = `Shopping for ${plan.name} (Week of ${new Date(plan.week_start_date).toLocaleDateString()})`;
@@ -66,17 +71,64 @@ export async function POST(request: NextRequest) {
     // Parse the ingredients into structured items
     const parsedItems = parseGroceryListText(rawIngredients);
 
-    // Add price estimates using AI
-    const itemsWithPrices = await addPriceEstimates(parsedItems);
+    // Step 1: Enhanced consolidation with intelligent duplicate detection
+    const consolidatedItems = consolidateDuplicateIngredients(parsedItems);
 
-    // Create the grocery list in the database
-    const listId = await createGroceryList(finalListName, rawIngredients, itemsWithPrices);
+    // Step 2: Check for similar ingredients in existing database
+    const similarItems = await findSimilarIngredients(consolidatedItems, searchIngredients);
+    
+    // Step 3: Comprehensive AI processing (units, consolidation, pricing, categorization)
+    let processedItems = consolidatedItems;
+    
+    try {
+      processedItems = await processIngredientsWithAI(consolidatedItems, openai);
+      
+      // Update AI usage stats for comprehensive processing
+      const tokensUsed = (processIngredientsWithAI as any).lastTokenUsage || 0;
+      if (tokensUsed > 0) {
+        await updateAIUsageStats(1, tokensUsed);
+      }
+      
+    } catch (error) {
+      console.error('Error in comprehensive AI processing:', error);
+      // Fall back to basic price estimation if full AI processing fails
+      processedItems = await addPriceEstimates(consolidatedItems);
+    }
+
+    let listId: number;
+    let preservationStats = { preserved: 0, added: 0, updated: 0 };
+    let isUpdate = false;
+
+    if (existingList && !forceRefresh) {
+      // Update existing list while preserving customizations
+      listId = existingList.list.id!;
+      preservationStats = await updateExistingList(listId, processedItems, existingList.items);
+      isUpdate = true;
+    } else if (existingList && forceRefresh) {
+      // Force refresh: Delete existing items and recreate with fresh AI categorization
+      listId = existingList.list.id!;
+      await deleteGroceryListItems(listId);
+      await addItemsToGroceryList(listId, processedItems);
+      isUpdate = true;
+      preservationStats = { preserved: 0, added: processedItems.length, updated: 0 };
+    } else {
+      // Create new grocery list in the database
+      listId = await createGroceryList(finalListName, rawIngredients, processedItems, planId);
+    }
     
     return NextResponse.json({ 
       id: listId, 
       name: finalListName,
-      itemCount: itemsWithPrices.length,
-      message: 'Shopping list generated successfully' 
+      itemCount: processedItems.length,
+      duplicatesFound: Object.keys(similarItems).length,
+      similarItems: similarItems,
+      isUpdate,
+      preservationStats,
+      message: isUpdate 
+        ? forceRefresh
+          ? `Shopping list refreshed! All ${preservationStats.added} items recategorized with fresh AI processing`
+          : `Shopping list updated! ${preservationStats.preserved} items preserved, ${preservationStats.added} added, ${preservationStats.updated} updated`
+        : 'Shopping list generated with AI-powered consolidation, smart units, and price estimation' 
     });
 
   } catch (error) {

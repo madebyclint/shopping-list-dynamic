@@ -26,6 +26,7 @@ export interface GroceryList {
   id?: number;
   name: string;
   raw_text: string;
+  meal_plan_id?: number;
   created_at?: Date;
 }
 
@@ -100,8 +101,15 @@ export async function initializeDatabase() {
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         raw_text TEXT NOT NULL,
+        meal_plan_id INTEGER REFERENCES weekly_meal_plans(id) ON DELETE SET NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Add meal_plan_id column if it doesn't exist (for existing databases)
+    await pool.query(`
+      ALTER TABLE grocery_lists 
+      ADD COLUMN IF NOT EXISTS meal_plan_id INTEGER REFERENCES weekly_meal_plans(id) ON DELETE SET NULL
     `);
 
     // Create grocery_items table
@@ -227,3 +235,27 @@ export async function initializeAIMenuTables(): Promise<void> {
     throw error;
   }
 }
+
+// Re-export functions from grocery-lists module
+export { 
+  createGroceryList, 
+  updateExistingList, 
+  findExistingListForMealPlan, 
+  deleteGroceryListItems,
+  addItemsToGroceryList
+} from './grocery-lists';
+
+// Re-export functions from meal-planning module
+export { 
+  createWeeklyMealPlan, 
+  getWeeklyMealPlan, 
+  updateMealPlan, 
+  deleteMealPlan 
+} from './meal-planning';
+
+// Re-export functions from meal-banking module
+export { 
+  getMealAlternatives, 
+  saveMealAlternative, 
+  chooseMealAlternative 
+} from './meal-banking';
