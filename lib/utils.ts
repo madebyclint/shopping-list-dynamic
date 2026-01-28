@@ -209,3 +209,84 @@ function consolidateItems(items: ParsedItem[]): ParsedItem[] {
   
   return Array.from(consolidatedMap.values());
 }
+
+// Enhanced unit parsing for better formatting
+export function parseQuantityAndUnit(qty: string): { amount: number; unit: string } {
+  if (!qty || qty.trim() === '') return { amount: 1, unit: 'ea' };
+  
+  const cleanQty = qty.trim();
+  
+  // Common unit abbreviations and their full forms
+  const unitMap: { [key: string]: string } = {
+    'lb': 'lb',
+    'lbs': 'lb', 
+    'pound': 'lb',
+    'pounds': 'lb',
+    'oz': 'oz',
+    'ounce': 'oz',
+    'ounces': 'oz',
+    'cup': 'cup',
+    'cups': 'cup',
+    'c': 'cup',
+    'tbsp': 'tbsp',
+    'tablespoon': 'tbsp',
+    'tablespoons': 'tbsp',
+    'tsp': 'tsp',
+    'teaspoon': 'tsp',
+    'teaspoons': 'tsp',
+    'gallon': 'gal',
+    'gallons': 'gal',
+    'gal': 'gal',
+    'quart': 'qt',
+    'quarts': 'qt',
+    'qt': 'qt',
+    'pint': 'pt',
+    'pints': 'pt',
+    'pt': 'pt',
+    'pkg': 'pkg',
+    'package': 'pkg',
+    'packages': 'pkg',
+    'can': 'can',
+    'cans': 'can',
+    'jar': 'jar',
+    'jars': 'jar',
+    'bottle': 'bottle',
+    'bottles': 'bottle',
+    'each': 'ea',
+    'ea': 'ea',
+    'piece': 'ea',
+    'pieces': 'ea'
+  };
+  
+  // Try to match quantity and unit pattern
+  const match = cleanQty.match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
+  if (match) {
+    const amount = parseFloat(match[1]);
+    const unitText = match[2].toLowerCase().trim();
+    const unit = unitMap[unitText] || unitText || 'ea';
+    return { amount, unit };
+  }
+  
+  // If no number is found, assume 1 unit
+  const unitText = cleanQty.toLowerCase();
+  const unit = unitMap[unitText] || 'ea';
+  return { amount: 1, unit };
+}
+
+// Utility function to parse and format quantity with units
+export function formatQuantityWithUnit(qty: string): string {
+  const { amount, unit } = parseQuantityAndUnit(qty);
+  return `${amount} ${unit}`;
+}
+
+// Clean ingredient names to remove JSON artifacts
+export function cleanIngredientDisplayName(name: string): string {
+  if (!name) return name;
+  
+  // Remove JSON artifacts like {" at the beginning or trailing quotes/brackets
+  return name
+    .replace(/^[{"]+/, '') // Remove leading { and quotes
+    .replace(/[}"]+$/, '') // Remove trailing } and quotes
+    .replace(/^["'`]+|["'`]+$/g, '') // Remove quotes from start and end
+    .trim();
+}

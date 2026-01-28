@@ -164,3 +164,136 @@ li label span {
 .add-new-item:hover {
   background: #45a049;
 }
+
+/* Bulk recategorization styles */
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.bulk-categorize-btn {
+  background: #FF9800;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.bulk-categorize-btn:hover {
+  background: #F57C00;
+}
+
+.bulk-recategorize-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.bulk-select-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1rem 0;
+  padding: 0.5rem;
+  background: var(--background-alt);
+  border-radius: 4px;
+}
+
+.select-all-btn {
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.category-selector {
+  margin: 1rem 0;
+}
+
+.category-selector label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.category-selector select {
+  padding: 0.5rem;
+  border: 1px solid var(--border-subdued);
+  border-radius: 4px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.apply-btn {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.apply-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Bulk select mode for list items */
+.bulk-select-mode {
+  background-color: #f5f5f5;
+}
+
+.bulk-select-checkbox {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.5rem;
+}
+
+/* Edit button styling - just pencil */
+.edit-item-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  font-size: 1rem;
+  border-radius: 2px;
+  transition: background-color 0.2s;
+}
+
+.edit-item-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.item-actions {
+  margin-left: auto;
+}
+
+/* Improved item display */
+li label {
+  flex-grow: 1;
+  cursor: pointer;
+}

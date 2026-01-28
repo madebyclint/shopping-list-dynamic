@@ -53,12 +53,12 @@ export default function ItemEditor({ item, onSave, onCancel, onDelete }: ItemEdi
 
       <div className="editor-row">
         <label>
-          Quantity:
+          Quantity (with unit):
           <input
             type="text"
             value={qty}
             onChange={(e) => setQty(e.target.value)}
-            placeholder="1"
+            placeholder="1 lb, 2 cups, 3 ea, etc."
           />
         </label>
         <label>

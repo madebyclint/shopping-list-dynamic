@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { GroceryItem, GroceryList } from '@/lib/database';
-import { groupItemsByCategory, calculateCategoryCost, calculateTotalCost, parseGroceryListText } from '@/lib/utils';
+import { groupItemsByCategory, calculateCategoryCost, calculateTotalCost, parseGroceryListText, formatQuantityWithUnit, cleanIngredientDisplayName } from '@/lib/utils';
 import ItemEditor from './ItemEditor';
 import IngredientSearch from './IngredientSearch';
 
@@ -17,6 +17,19 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
   const [loading, setLoading] = useState(false);
   const [editingItem, setEditingItem] = useState<GroceryItem | null>(null);
   const [showAddItem, setShowAddItem] = useState(false);
+  const [showBulkRecategorize, setShowBulkRecategorize] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+  const [bulkCategory, setBulkCategory] = useState('');
+
+  const CATEGORIES = [
+    'Produce',
+    'Protein',
+    'Dairy',
+    'Pantry',
+    'Bakery',
+    'Frozen',
+    'Other'
+  ];
 
   useEffect(() => {
     if (listId) {
@@ -150,6 +163,52 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
       .catch(console.error);
   };
 
+  const handleBulkRecategorize = async () => {
+    if (selectedItems.size === 0 || !bulkCategory || listId === null) return;
+
+    try {
+      const updatePromises = Array.from(selectedItems).map(itemId =>
+        fetch('/api/items', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ itemId, category: bulkCategory }),
+        })
+      );
+
+      await Promise.all(updatePromises);
+
+      setItems(prevItems =>
+        prevItems.map(item =>
+          selectedItems.has(item.id!) ? { ...item, category: bulkCategory } : item
+        )
+      );
+
+      setSelectedItems(new Set());
+      setShowBulkRecategorize(false);
+      setBulkCategory('');
+    } catch (error) {
+      console.error('Error bulk updating categories:', error);
+    }
+  };
+
+  const handleSelectItem = (itemId: number) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedItems.size === items.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(items.map(item => item.id!).filter(id => id)));
+    }
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -181,12 +240,20 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
       {listId !== null && (
         <div className="add-item-section">
           {!showAddItem ? (
-            <button
-              onClick={() => setShowAddItem(true)}
-              className="add-item-btn"
-            >
-              ➕ Add Item
-            </button>
+            <div className="action-buttons">
+              <button
+                onClick={() => setShowAddItem(true)}
+                className="add-item-btn"
+              >
+                ➕ Add Item
+              </button>
+              <button
+                onClick={() => setShowBulkRecategorize(true)}
+                className="bulk-categorize-btn"
+              >
+                🏷️ Bulk Categorize
+              </button>
+            </div>
           ) : (
             <div>
               <h3>Add New Item</h3>
@@ -202,6 +269,58 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Bulk Recategorize Modal */}
+      {showBulkRecategorize && (
+        <div className="bulk-recategorize-modal">
+          <div className="modal-content">
+            <h3>Bulk Recategorize Items</h3>
+            <p>Select items to recategorize, then choose a new category:</p>
+
+            <div className="bulk-select-actions">
+              <button onClick={handleSelectAll} className="select-all-btn">
+                {selectedItems.size === items.length ? 'Deselect All' : 'Select All'}
+              </button>
+              <span>{selectedItems.size} item(s) selected</span>
+            </div>
+
+            <div className="category-selector">
+              <label>
+                New Category:
+                <select
+                  value={bulkCategory}
+                  onChange={(e) => setBulkCategory(e.target.value)}
+                >
+                  <option value="">Choose category...</option>
+                  {CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                onClick={handleBulkRecategorize}
+                className="apply-btn"
+                disabled={selectedItems.size === 0 || !bulkCategory}
+              >
+                Apply Changes
+              </button>
+              <button
+                onClick={() => {
+                  setShowBulkRecategorize(false);
+                  setSelectedItems(new Set());
+                  setBulkCategory('');
+                }}
+                className="cancel-btn"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -225,27 +344,38 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
               <ul>
                 {categoryItems.map((item) => {
                   const itemId = `groceryItem-${category}-${item.name}`;
+                  const cleanName = cleanIngredientDisplayName(item.name);
+                  const formattedQty = formatQuantityWithUnit(item.qty);
 
                   return (
-                    <li key={item.id || itemId}>
+                    <li key={item.id || itemId} className={showBulkRecategorize ? 'bulk-select-mode' : ''}>
+                      {showBulkRecategorize && item.id && (
+                        <input
+                          type="checkbox"
+                          className="bulk-select-checkbox"
+                          checked={selectedItems.has(item.id)}
+                          onChange={() => handleSelectItem(item.id!)}
+                        />
+                      )}
                       <input
                         type="checkbox"
                         id={itemId}
                         checked={item.is_purchased || false}
                         onChange={(e) => item.id && handleItemToggle(item.id, e.target.checked)}
-                        disabled={!item.id} // Disable for preview items
+                        disabled={!item.id || showBulkRecategorize} // Disable for preview items or during bulk select
                       />
                       <label htmlFor={itemId}>
-                        {item.name} ({item.qty} @ {item.price})
+                        {cleanName} ({formattedQty} @ {item.price})
                         <span className="js-meal">for {item.meal}</span>
                       </label>
-                      {item.id && listId !== null && (
+                      {item.id && listId !== null && !showBulkRecategorize && (
                         <div className="item-actions">
                           <button
                             onClick={() => setEditingItem(item)}
                             className="edit-item-btn"
+                            title="Edit item"
                           >
-                            ✏️ Edit
+                            ✏️
                           </button>
                         </div>
                       )}
