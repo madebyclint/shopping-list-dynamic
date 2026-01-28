@@ -96,3 +96,56 @@ li label span {
   font-size: 0.8rem;
   color: var(--text-subdued);
 }
+
+/* Plan summary and actions styling */
+.plan-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.generate-shopping-list-button {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.generate-shopping-list-button:hover:not(:disabled) {
+  background: #45a049;
+}
+
+.generate-shopping-list-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.go-to-shopping-list-button {
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.go-to-shopping-list-button:hover {
+  background: #1976D2;
+}
+
+.plan-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--text-subdued);
+}

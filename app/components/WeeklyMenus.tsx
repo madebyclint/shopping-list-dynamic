@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { WeeklyMealPlan, Meal, DAYS_OF_WEEK } from './meal-planning/types';
 import { fetchPlans, fetchPlanDetails, getRainbowCoverage, fetchAIUsageStats } from './meal-planning/utils';
 import PlanCreationForm from './meal-planning/PlanCreationForm';
@@ -16,6 +17,9 @@ export default function WeeklyMenus() {
   const [newPlanName, setNewPlanName] = useState('');
   const [selectedWeekStart, setSelectedWeekStart] = useState('');
   const [aiStats, setAiStats] = useState({ totalCalls: 0, totalTokens: 0, estimatedCost: '0.0000' });
+  const [isGeneratingList, setIsGeneratingList] = useState(false);
+  const [generatedListId, setGeneratedListId] = useState<number | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     loadPlans();
@@ -24,6 +28,7 @@ export default function WeeklyMenus() {
   useEffect(() => {
     if (currentPlan) {
       loadPlanDetails(currentPlan.id!);
+      setGeneratedListId(null); // Reset when switching plans
     }
   }, [currentPlan]);
 
@@ -49,6 +54,43 @@ export default function WeeklyMenus() {
     loadPlans();
     if (currentPlan) {
       loadPlanDetails(currentPlan.id!);
+    }
+  };
+
+  const handleGenerateShoppingList = async () => {
+    if (!currentPlan) return;
+
+    setIsGeneratingList(true);
+    try {
+      const response = await fetch('/api/lists/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ planId: currentPlan.id }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setGeneratedListId(result.id);
+        // Store the list ID for the "Go to Shopping List" button
+        // The actual navigation will happen when user clicks the button
+      } else {
+        console.error('Failed to generate shopping list');
+        alert('Failed to generate shopping list. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating shopping list:', error);
+      alert('Error generating shopping list. Please try again.');
+    } finally {
+      setIsGeneratingList(false);
+    }
+  };
+
+  const handleGoToShoppingList = () => {
+    if (generatedListId) {
+      // Navigate to shopping lists tab with the generated list ID
+      window.location.href = `/?listId=${generatedListId}`;
     }
   };
 
@@ -112,6 +154,23 @@ export default function WeeklyMenus() {
               <span>🥕 Rainbow coverage: {getRainbowCoverage(meals)}%</span>
               <span>🤖 AI generations: {aiStats.totalCalls}</span>
               <span>💰 Total cost: ${aiStats.estimatedCost}</span>
+            </div>
+            <div className="plan-actions">
+              <button
+                onClick={handleGenerateShoppingList}
+                disabled={isGeneratingList || generatedListId !== null || meals.filter(m => m.meal_type === 'cooking').length === 0}
+                className="generate-shopping-list-button"
+              >
+                {isGeneratingList ? '🛒 Generating...' : '🛒 Generate Shopping List'}
+              </button>
+              {generatedListId && (
+                <button
+                  onClick={handleGoToShoppingList}
+                  className="go-to-shopping-list-button"
+                >
+                  📋 Go to Shopping List
+                </button>
+              )}
             </div>
           </div>
 
