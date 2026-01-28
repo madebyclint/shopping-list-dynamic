@@ -422,8 +422,8 @@ li label span {
 }
 
 .week-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 20px;
   margin-bottom: 30px;
 }
@@ -451,9 +451,16 @@ li label span {
   padding-bottom: 8px;
 }
 
-.meal-content {
+.cooking-meal-section {
   display: flex;
   flex-direction: column;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.meal-content {
+  display: flex;
+  flex-direction: row;
   gap: 10px;
 }
 

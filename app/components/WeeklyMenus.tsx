@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { WeeklyMealPlan, Meal, DAYS_OF_WEEK } from './meal-planning/types';
-import { fetchPlans, fetchPlanDetails, getRainbowCoverage } from './meal-planning/utils';
+import { fetchPlans, fetchPlanDetails, getRainbowCoverage, fetchAIUsageStats } from './meal-planning/utils';
 import PlanCreationForm from './meal-planning/PlanCreationForm';
 import PlanManagement from './meal-planning/PlanManagement';
 import DayCard from './meal-planning/DayCard';
@@ -15,6 +15,7 @@ export default function WeeklyMenus() {
   const [isCreating, setIsCreating] = useState(false);
   const [newPlanName, setNewPlanName] = useState('');
   const [selectedWeekStart, setSelectedWeekStart] = useState('');
+  const [aiStats, setAiStats] = useState({ totalCalls: 0, totalTokens: 0, estimatedCost: '0.0000' });
 
   useEffect(() => {
     loadPlans();
@@ -34,6 +35,10 @@ export default function WeeklyMenus() {
   const loadPlanDetails = async (planId: number) => {
     const mealData = await fetchPlanDetails(planId);
     setMeals(mealData);
+
+    // Also load AI usage stats
+    const stats = await fetchAIUsageStats();
+    setAiStats(stats);
   };
 
   const handlePlanCreated = () => {
@@ -105,6 +110,8 @@ export default function WeeklyMenus() {
             <div className="plan-stats">
               <span>🍳 Cooking meals: {meals.filter(m => m.meal_type === 'cooking').length}</span>
               <span>🥕 Rainbow coverage: {getRainbowCoverage(meals)}%</span>
+              <span>🤖 AI generations: {aiStats.totalCalls}</span>
+              <span>💰 Total cost: ${aiStats.estimatedCost}</span>
             </div>
           </div>
 

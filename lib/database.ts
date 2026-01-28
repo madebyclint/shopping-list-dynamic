@@ -40,6 +40,8 @@ export interface Meal {
   day_of_week: number; // 0-6 (Sunday-Saturday)
   meal_type: 'cooking' | 'leftovers' | 'eating_out';
   title?: string;
+  brief_description?: string;
+  main_ingredients?: string;
   comfort_flag?: boolean;
   shortcut_flag?: boolean;
   cultural_riff_flag?: boolean;
@@ -95,6 +97,8 @@ export async function initializeDatabase() {
         day_of_week INTEGER NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6),
         meal_type VARCHAR(20) NOT NULL CHECK (meal_type IN ('cooking', 'leftovers', 'eating_out')),
         title VARCHAR(255),
+        brief_description TEXT,
+        main_ingredients TEXT,
         comfort_flag BOOLEAN DEFAULT FALSE,
         shortcut_flag BOOLEAN DEFAULT FALSE,
         cultural_riff_flag BOOLEAN DEFAULT FALSE,
@@ -206,9 +210,9 @@ export async function createWeeklyMealPlan(name: string, weekStartDate: string):
 export async function createMeal(meal: Omit<Meal, 'id' | 'created_at'>): Promise<number> {
   try {
     const result = await pool.query(
-      `INSERT INTO meals (plan_id, day_of_week, meal_type, title, comfort_flag, shortcut_flag, cultural_riff_flag, veggie_inclusion) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-      [meal.plan_id, meal.day_of_week, meal.meal_type, meal.title, meal.comfort_flag, meal.shortcut_flag, meal.cultural_riff_flag, meal.veggie_inclusion]
+      `INSERT INTO meals (plan_id, day_of_week, meal_type, title, brief_description, main_ingredients, comfort_flag, shortcut_flag, cultural_riff_flag, veggie_inclusion) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+      [meal.plan_id, meal.day_of_week, meal.meal_type, meal.title, meal.brief_description, meal.main_ingredients, meal.comfort_flag, meal.shortcut_flag, meal.cultural_riff_flag, meal.veggie_inclusion]
     );
     
     return result.rows[0].id;
@@ -324,6 +328,33 @@ export interface AIMenuCache {
   created_at?: Date;
 }
 
+export interface BankedMeal {
+  id?: number;
+  title: string;
+  day_of_week: number;
+  meal_type: 'cooking' | 'leftovers' | 'eating_out';
+  comfort_flag?: boolean;
+  shortcut_flag?: boolean;
+  cultural_riff_flag?: boolean;
+  veggie_inclusion?: boolean;
+  bank_reason?: string;
+  original_meal_title?: string;
+  times_used?: number;
+  rating?: number;
+  status?: 'banked' | 'favorited' | 'archived';
+  created_at?: Date;
+}
+
+export interface MealAlternativeHistory {
+  id?: number;
+  original_meal_id: number;
+  alternative_title: string;
+  chosen?: boolean;
+  ai_reasoning?: string;
+  generation_cost_tokens?: number;
+  created_at?: Date;
+}
+
 export async function initializeAIMenuTables(): Promise<void> {
   try {
     // Create AI menu cache table for cost optimization
@@ -348,6 +379,39 @@ export async function initializeAIMenuTables(): Promise<void> {
         total_tokens INTEGER DEFAULT 0,
         total_cost_estimate DECIMAL(10,4) DEFAULT 0.00,
         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create meal banking table for saving alternatives
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS banked_meals (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        day_of_week INTEGER NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6),
+        meal_type VARCHAR(20) NOT NULL CHECK (meal_type IN ('cooking', 'leftovers', 'eating_out')),
+        comfort_flag BOOLEAN DEFAULT FALSE,
+        shortcut_flag BOOLEAN DEFAULT FALSE,
+        cultural_riff_flag BOOLEAN DEFAULT FALSE,
+        veggie_inclusion BOOLEAN DEFAULT FALSE,
+        bank_reason VARCHAR(255),
+        original_meal_title VARCHAR(255),
+        times_used INTEGER DEFAULT 0,
+        rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+        status VARCHAR(20) DEFAULT 'banked' CHECK (status IN ('banked', 'favorited', 'archived')),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create meal alternatives history
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS meal_alternatives_history (
+        id SERIAL PRIMARY KEY,
+        original_meal_id INTEGER REFERENCES meals(id) ON DELETE CASCADE,
+        alternative_title VARCHAR(255) NOT NULL,
+        chosen BOOLEAN DEFAULT FALSE,
+        ai_reasoning TEXT,
+        generation_cost_tokens INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -448,5 +512,84 @@ export async function getAIUsageStats(): Promise<any> {
   } catch (error) {
     console.error('Error getting AI usage stats:', error);
     return { total_calls: 0, total_tokens: 0, total_cost_estimate: 0 };
+  }
+}
+
+// Meal Banking Functions
+
+export async function bankMeal(meal: Omit<BankedMeal, 'id' | 'created_at'>): Promise<number> {
+  try {
+    const result = await pool.query(
+      `INSERT INTO banked_meals (title, day_of_week, meal_type, comfort_flag, shortcut_flag, 
+       cultural_riff_flag, veggie_inclusion, bank_reason, original_meal_title, rating, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+      [meal.title, meal.day_of_week, meal.meal_type, meal.comfort_flag, meal.shortcut_flag,
+       meal.cultural_riff_flag, meal.veggie_inclusion, meal.bank_reason, meal.original_meal_title,
+       meal.rating, meal.status || 'banked']
+    );
+    return result.rows[0].id;
+  } catch (error) {
+    console.error('Error banking meal:', error);
+    throw error;
+  }
+}
+
+export async function getBankedMeals(status?: string): Promise<BankedMeal[]> {
+  try {
+    let query = 'SELECT * FROM banked_meals';
+    let params: any[] = [];
+    
+    if (status) {
+      query += ' WHERE status = $1';
+      params = [status];
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    const result = await pool.query(query, params);
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting banked meals:', error);
+    throw error;
+  }
+}
+
+export async function updateBankedMealUsage(mealId: number): Promise<void> {
+  try {
+    await pool.query(
+      'UPDATE banked_meals SET times_used = times_used + 1 WHERE id = $1',
+      [mealId]
+    );
+  } catch (error) {
+    console.error('Error updating banked meal usage:', error);
+    throw error;
+  }
+}
+
+export async function saveMealAlternative(alternative: Omit<MealAlternativeHistory, 'id' | 'created_at'>): Promise<number> {
+  try {
+    const result = await pool.query(
+      `INSERT INTO meal_alternatives_history (original_meal_id, alternative_title, chosen, ai_reasoning, generation_cost_tokens)
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [alternative.original_meal_id, alternative.alternative_title, alternative.chosen,
+       alternative.ai_reasoning, alternative.generation_cost_tokens]
+    );
+    return result.rows[0].id;
+  } catch (error) {
+    console.error('Error saving meal alternative:', error);
+    throw error;
+  }
+}
+
+export async function getMealAlternatives(mealId: number): Promise<MealAlternativeHistory[]> {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM meal_alternatives_history WHERE original_meal_id = $1 ORDER BY created_at DESC',
+      [mealId]
+    );
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting meal alternatives:', error);
+    throw error;
   }
 }

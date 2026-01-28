@@ -36,6 +36,23 @@ export const getRainbowCoverage = (meals: Meal[]) => {
   return cookingCount > 0 ? Math.round((veggieCount / cookingCount) * 100) : 0;
 };
 
+export const fetchAIUsageStats = async () => {
+  try {
+    const response = await fetch('/api/menus?action=stats');
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        totalCalls: data.total_calls || 0,
+        totalTokens: data.total_tokens || 0,
+        estimatedCost: data.estimatedCost || '0.0000'
+      };
+    }
+  } catch (error) {
+    console.error('Failed to fetch AI usage stats:', error);
+  }
+  return { totalCalls: 0, totalTokens: 0, estimatedCost: '0.0000' };
+};
+
 export const fetchPlans = async (): Promise<WeeklyMealPlan[]> => {
   try {
     const response = await fetch('/api/meal-plans');

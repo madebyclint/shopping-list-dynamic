@@ -11,6 +11,8 @@ export interface Meal {
   day_of_week: number; // 0-6 (Sunday-Saturday)
   meal_type: 'cooking' | 'leftovers' | 'eating_out';
   title?: string;
+  brief_description?: string;
+  main_ingredients?: string;
   comfort_flag?: boolean;
   shortcut_flag?: boolean;
   cultural_riff_flag?: boolean;

@@ -34,6 +34,8 @@ interface GeneratedMeal {
   day_of_week: number;
   meal_type: 'cooking' | 'leftovers' | 'eating_out';
   title: string;
+  brief_description?: string;
+  main_ingredients?: string;
   comfort_flag: boolean;
   shortcut_flag: boolean;
   cultural_riff_flag: boolean;
@@ -69,6 +71,8 @@ RESPONSE FORMAT (JSON only, no markdown):
       "day_of_week": 0, // 0=Sunday, 1=Monday, etc.
       "meal_type": "cooking", // "cooking", "leftovers", "eating_out"
       "title": "Meal Name",
+      "brief_description": "Quick 2-3 sentence description of the dish and cooking method",
+      "main_ingredients": "chicken, broccoli, rice, garlic, soy sauce", // comma-separated list
       "comfort_flag": false, // true for comfort foods
       "shortcut_flag": false, // true for quick 30-min meals
       "cultural_riff_flag": false, // true for international/ethnic dishes
@@ -157,7 +161,7 @@ async function generateMenuWithAI(prompt: string): Promise<GeneratedMeal[]> {
     
   } catch (error) {
     console.error('Error generating menu with AI:', error);
-    throw new Error(`AI menu generation failed: ${error.message}`);
+    throw new Error(`AI menu generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -165,13 +169,83 @@ function generateFallbackMenu(weekStartDate: string): GeneratedMeal[] {
   console.log('Generating fallback menu...');
   
   return [
-    { day_of_week: 0, meal_type: 'cooking', title: 'Sunday Pancakes with Berries', comfort_flag: true, shortcut_flag: false, cultural_riff_flag: false, veggie_inclusion: true },
-    { day_of_week: 1, meal_type: 'cooking', title: 'Monday Quick Stir-Fry', comfort_flag: false, shortcut_flag: true, cultural_riff_flag: true, veggie_inclusion: true },
-    { day_of_week: 2, meal_type: 'cooking', title: 'Tuesday Pasta Primavera', comfort_flag: false, shortcut_flag: true, cultural_riff_flag: false, veggie_inclusion: true },
-    { day_of_week: 3, meal_type: 'cooking', title: 'Wednesday Chicken & Vegetables', comfort_flag: false, shortcut_flag: true, cultural_riff_flag: false, veggie_inclusion: true },
-    { day_of_week: 4, meal_type: 'cooking', title: 'Thursday Tacos', comfort_flag: false, shortcut_flag: true, cultural_riff_flag: true, veggie_inclusion: true },
-    { day_of_week: 5, meal_type: 'cooking', title: 'Friday Pizza Night', comfort_flag: true, shortcut_flag: true, cultural_riff_flag: false, veggie_inclusion: true },
-    { day_of_week: 6, meal_type: 'cooking', title: 'Saturday Slow-Cooked Stew', comfort_flag: true, shortcut_flag: false, cultural_riff_flag: false, veggie_inclusion: true }
+    { 
+      day_of_week: 0, 
+      meal_type: 'cooking', 
+      title: 'Sunday Pancakes with Berries', 
+      brief_description: 'Fluffy homemade pancakes topped with fresh mixed berries and maple syrup. A perfect family breakfast to start the week.',
+      main_ingredients: 'flour, eggs, milk, butter, mixed berries, maple syrup',
+      comfort_flag: true, 
+      shortcut_flag: false, 
+      cultural_riff_flag: false, 
+      veggie_inclusion: true 
+    },
+    { 
+      day_of_week: 1, 
+      meal_type: 'cooking', 
+      title: 'Monday Quick Stir-Fry', 
+      brief_description: 'Fast weeknight stir-fry with colorful vegetables and your choice of protein over rice.',
+      main_ingredients: 'chicken or tofu, broccoli, bell peppers, carrots, garlic, soy sauce, rice',
+      comfort_flag: false, 
+      shortcut_flag: true, 
+      cultural_riff_flag: true, 
+      veggie_inclusion: true 
+    },
+    { 
+      day_of_week: 2, 
+      meal_type: 'cooking', 
+      title: 'Tuesday Pasta Primavera', 
+      brief_description: 'Light pasta dish with seasonal vegetables in a garlic olive oil sauce, ready in 25 minutes.',
+      main_ingredients: 'pasta, zucchini, cherry tomatoes, spinach, garlic, olive oil, parmesan',
+      comfort_flag: false, 
+      shortcut_flag: true, 
+      cultural_riff_flag: false, 
+      veggie_inclusion: true 
+    },
+    { 
+      day_of_week: 3, 
+      meal_type: 'cooking', 
+      title: 'Wednesday Chicken & Vegetables', 
+      brief_description: 'One-pan roasted chicken with rainbow vegetables, seasoned with herbs and lemon.',
+      main_ingredients: 'chicken thighs, sweet potatoes, green beans, red onion, lemon, herbs',
+      comfort_flag: false, 
+      shortcut_flag: true, 
+      cultural_riff_flag: false, 
+      veggie_inclusion: true 
+    },
+    { 
+      day_of_week: 4, 
+      meal_type: 'cooking', 
+      title: 'Thursday Tacos', 
+      brief_description: 'Build-your-own taco night with seasoned protein and fresh toppings for family fun.',
+      main_ingredients: 'ground turkey, black beans, tortillas, lettuce, tomatoes, avocado, cheese',
+      comfort_flag: false, 
+      shortcut_flag: true, 
+      cultural_riff_flag: true, 
+      veggie_inclusion: true 
+    },
+    { 
+      day_of_week: 5, 
+      meal_type: 'cooking', 
+      title: 'Friday Pizza Night', 
+      brief_description: 'Homemade or store-bought pizza with family-chosen toppings, including lots of veggies.',
+      main_ingredients: 'pizza dough, tomato sauce, mozzarella, bell peppers, mushrooms, olives',
+      comfort_flag: true, 
+      shortcut_flag: true, 
+      cultural_riff_flag: false, 
+      veggie_inclusion: true 
+    },
+    { 
+      day_of_week: 6, 
+      meal_type: 'cooking', 
+      title: 'Saturday Slow-Cooked Stew', 
+      brief_description: 'Hearty weekend stew with tender meat and vegetables, simmered all day for maximum flavor.',
+      main_ingredients: 'beef, potatoes, carrots, celery, onions, tomatoes, herbs, broth',
+      comfort_flag: true, 
+      shortcut_flag: false, 
+      cultural_riff_flag: false, 
+      veggie_inclusion: true 
+    }
   ];
 }
 
@@ -187,6 +261,8 @@ async function saveMenuToDatabase(meals: GeneratedMeal[], weekStartDate: string,
         day_of_week: meal.day_of_week,
         meal_type: meal.meal_type,
         title: meal.title,
+        brief_description: meal.brief_description,
+        main_ingredients: meal.main_ingredients,
         comfort_flag: meal.comfort_flag,
         shortcut_flag: meal.shortcut_flag,
         cultural_riff_flag: meal.cultural_riff_flag,
@@ -292,7 +368,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Failed to generate menu',
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error' 
       },
       { status: 500 }
     );
