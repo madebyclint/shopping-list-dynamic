@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { GroceryItem, GroceryList } from '@/lib/database';
 import { groupItemsByCategory, calculateCategoryCost, calculateTotalCost, parseGroceryListText } from '@/lib/utils';
+import ItemEditor from './ItemEditor';
+import IngredientSearch from './IngredientSearch';
 
 interface GroceryListViewProps {
   listId: number | null;
@@ -13,6 +15,8 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
   const [list, setList] = useState<GroceryList | null>(null);
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [editingItem, setEditingItem] = useState<GroceryItem | null>(null);
+  const [showAddItem, setShowAddItem] = useState(false);
 
   useEffect(() => {
     if (listId) {
@@ -75,6 +79,77 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
     }
   };
 
+  const handleEditItem = (updatedFields: Partial<GroceryItem>) => {
+    if (!editingItem?.id || listId === null) return;
+
+    fetch('/api/items', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId: editingItem.id, ...updatedFields }),
+    })
+      .then(response => {
+        if (response.ok) {
+          setItems(prevItems =>
+            prevItems.map(item =>
+              item.id === editingItem.id ? { ...item, ...updatedFields } : item
+            )
+          );
+          setEditingItem(null);
+        }
+      })
+      .catch(console.error);
+  };
+
+  const handleDeleteItem = () => {
+    if (!editingItem?.id || listId === null) return;
+
+    fetch('/api/items', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId: editingItem.id }),
+    })
+      .then(response => {
+        if (response.ok) {
+          setItems(prevItems => prevItems.filter(item => item.id !== editingItem.id));
+          setEditingItem(null);
+        }
+      })
+      .catch(console.error);
+  };
+
+  const handleAddItem = (ingredient: any) => {
+    if (listId === null) return;
+
+    const newItem = {
+      listId,
+      name: ingredient.name || ingredient,
+      qty: '1',
+      price: ingredient.avgPrice || '2.99',
+      category: ingredient.category || 'Other',
+      meal: '',
+    };
+
+    fetch('/api/items', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newItem),
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.id) {
+          const createdItem: GroceryItem = {
+            id: data.id,
+            ...newItem,
+            is_purchased: false,
+            list_id: listId,
+          };
+          setItems(prevItems => [...prevItems, createdItem]);
+          setShowAddItem(false);
+        }
+      })
+      .catch(console.error);
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -102,6 +177,44 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
         )}
       </p>
 
+      {/* Add Item Section */}
+      {listId !== null && (
+        <div className="add-item-section">
+          {!showAddItem ? (
+            <button
+              onClick={() => setShowAddItem(true)}
+              className="add-item-btn"
+            >
+              ➕ Add Item
+            </button>
+          ) : (
+            <div>
+              <h3>Add New Item</h3>
+              <IngredientSearch
+                onSelectIngredient={handleAddItem}
+                placeholder="Search ingredients or type new item name..."
+              />
+              <button
+                onClick={() => setShowAddItem(false)}
+                className="cancel-btn"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Item Editor */}
+      {editingItem && (
+        <ItemEditor
+          item={editingItem}
+          onSave={handleEditItem}
+          onCancel={() => setEditingItem(null)}
+          onDelete={handleDeleteItem}
+        />
+      )}
+
       <article>
         {Object.entries(itemsByCategory).map(([category, { items: categoryItems }]) => {
           const categoryCost = calculateCategoryCost(categoryItems);
@@ -126,6 +239,16 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
                         {item.name} ({item.qty} @ {item.price})
                         <span className="js-meal">for {item.meal}</span>
                       </label>
+                      {item.id && listId !== null && (
+                        <div className="item-actions">
+                          <button
+                            onClick={() => setEditingItem(item)}
+                            className="edit-item-btn"
+                          >
+                            ✏️ Edit
+                          </button>
+                        </div>
+                      )}
                     </li>
                   );
                 })}

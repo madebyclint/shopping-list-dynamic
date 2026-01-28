@@ -149,3 +149,18 @@ li label span {
   font-size: 0.9rem;
   color: var(--text-subdued);
 }
+
+.add-new-item {
+  padding: 0.75rem;
+  background: #4CAF50;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  margin: 0.5rem;
+}
+
+.add-new-item:hover {
+  background: #45a049;
+}
