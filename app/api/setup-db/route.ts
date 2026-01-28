@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       { 
         success: false, 
         error: 'Database setup failed',
-        details: error.message 
+        details: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }
     );

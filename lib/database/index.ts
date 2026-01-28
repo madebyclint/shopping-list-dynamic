@@ -1,0 +1,229 @@
+import { Pool } from 'pg';
+
+// Shared database connection pool
+export const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 5000,
+  idleTimeoutMillis: 30000,
+  max: 10,
+});
+
+// Shared type definitions
+export interface GroceryItem {
+  id?: number;
+  name: string;
+  qty: string;
+  price: string;
+  category: string;
+  meal: string;
+  is_purchased?: boolean;
+  list_id: number;
+  created_at?: Date;
+}
+
+export interface GroceryList {
+  id?: number;
+  name: string;
+  raw_text: string;
+  created_at?: Date;
+}
+
+export interface WeeklyMealPlan {
+  id?: number;
+  name: string;
+  week_start_date: string;
+  created_at?: Date;
+}
+
+export interface Meal {
+  id?: number;
+  plan_id: number;
+  day_of_week: number; // 0-6 (Sunday-Saturday)
+  meal_type: 'cooking' | 'leftovers' | 'eating_out';
+  title?: string;
+  brief_description?: string;
+  main_ingredients?: string;
+  comfort_flag?: boolean;
+  shortcut_flag?: boolean;
+  cultural_riff_flag?: boolean;
+  veggie_inclusion?: boolean;
+  created_at?: Date;
+}
+
+export interface AIMenuCache {
+  id?: number;
+  week_start_date: string;
+  plan_id: number;
+  preferences_hash: string;
+  ai_cost_tokens: number;
+  generation_time_ms: number;
+  created_at?: Date;
+}
+
+export interface BankedMeal {
+  id?: number;
+  title: string;
+  day_of_week: number;
+  meal_type: 'cooking' | 'leftovers' | 'eating_out';
+  comfort_flag?: boolean;
+  shortcut_flag?: boolean;
+  cultural_riff_flag?: boolean;
+  veggie_inclusion?: boolean;
+  bank_reason?: string;
+  original_meal_title?: string;
+  times_used?: number;
+  rating?: number;
+  status?: 'banked' | 'favorited' | 'archived';
+  created_at?: Date;
+}
+
+export interface MealAlternativeHistory {
+  id?: number;
+  original_meal_id: number;
+  alternative_title: string;
+  chosen?: boolean;
+  ai_reasoning?: string;
+  generation_cost_tokens?: number;
+  created_at?: Date;
+}
+
+// Database initialization functions
+export async function initializeDatabase() {
+  try {
+    // Test the connection with a simple query first
+    await pool.query('SELECT 1');
+    
+    // Create tables if connection succeeds
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS grocery_lists (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        raw_text TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create grocery_items table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS grocery_items (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        qty VARCHAR(100) NOT NULL,
+        price VARCHAR(50) NOT NULL,
+        category VARCHAR(255) NOT NULL,
+        meal VARCHAR(255) NOT NULL,
+        is_purchased BOOLEAN DEFAULT FALSE,
+        list_id INTEGER REFERENCES grocery_lists(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create weekly_meal_plans table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS weekly_meal_plans (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        week_start_date DATE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create meals table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS meals (
+        id SERIAL PRIMARY KEY,
+        plan_id INTEGER REFERENCES weekly_meal_plans(id) ON DELETE CASCADE,
+        day_of_week INTEGER NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6),
+        meal_type VARCHAR(20) NOT NULL CHECK (meal_type IN ('cooking', 'leftovers', 'eating_out')),
+        title VARCHAR(255),
+        brief_description TEXT,
+        main_ingredients TEXT,
+        comfort_flag BOOLEAN DEFAULT FALSE,
+        shortcut_flag BOOLEAN DEFAULT FALSE,
+        cultural_riff_flag BOOLEAN DEFAULT FALSE,
+        veggie_inclusion BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    console.log('Database initialized successfully');
+
+  } catch (error) {
+    console.error('Error initializing database:', error);
+    throw error;
+  }
+}
+
+export async function initializeAIMenuTables(): Promise<void> {
+  try {
+    // Create AI menu cache table for cost optimization
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ai_menu_cache (
+        id SERIAL PRIMARY KEY,
+        week_start_date DATE NOT NULL,
+        plan_id INTEGER REFERENCES weekly_meal_plans(id) ON DELETE CASCADE,
+        preferences_hash VARCHAR(255) NOT NULL,
+        ai_cost_tokens INTEGER NOT NULL,
+        generation_time_ms INTEGER NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(week_start_date, preferences_hash)
+      )
+    `);
+
+    // Create AI usage tracking table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ai_usage_stats (
+        id SERIAL PRIMARY KEY,
+        total_calls INTEGER DEFAULT 0,
+        total_tokens INTEGER DEFAULT 0,
+        total_cost_estimate DECIMAL(10,4) DEFAULT 0.00,
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create meal banking table for saving alternatives
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS banked_meals (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        day_of_week INTEGER NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6),
+        meal_type VARCHAR(20) NOT NULL CHECK (meal_type IN ('cooking', 'leftovers', 'eating_out')),
+        comfort_flag BOOLEAN DEFAULT FALSE,
+        shortcut_flag BOOLEAN DEFAULT FALSE,
+        cultural_riff_flag BOOLEAN DEFAULT FALSE,
+        veggie_inclusion BOOLEAN DEFAULT FALSE,
+        bank_reason VARCHAR(255),
+        original_meal_title VARCHAR(255),
+        times_used INTEGER DEFAULT 0,
+        rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+        status VARCHAR(20) DEFAULT 'banked' CHECK (status IN ('banked', 'favorited', 'archived')),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create meal alternatives history
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS meal_alternatives_history (
+        id SERIAL PRIMARY KEY,
+        original_meal_id INTEGER REFERENCES meals(id) ON DELETE CASCADE,
+        alternative_title VARCHAR(255) NOT NULL,
+        chosen BOOLEAN DEFAULT FALSE,
+        ai_reasoning TEXT,
+        generation_cost_tokens INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Initialize stats if empty
+    const statsResult = await pool.query('SELECT COUNT(*) FROM ai_usage_stats');
+    if (parseInt(statsResult.rows[0].count) === 0) {
+      await pool.query('INSERT INTO ai_usage_stats (total_calls, total_tokens) VALUES (0, 0)');
+    }
+
+    console.log('AI menu tables initialized successfully');
+  } catch (error) {
+    console.error('Error initializing AI menu tables:', error);
+    throw error;
+  }
+}

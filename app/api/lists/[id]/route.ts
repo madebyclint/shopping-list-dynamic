@@ -5,11 +5,12 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let listId: number = 1; // Default value
   try {
     await initializeDatabase();
     
     const { id } = await params;
-    const listId = parseInt(id);
+    listId = parseInt(id);
     if (isNaN(listId)) {
       return NextResponse.json(
         { error: 'Invalid list ID' },
@@ -32,7 +33,7 @@ export async function GET(
     // Return mock data for development when DB is not available
     if (process.env.NODE_ENV === 'development') {
       return NextResponse.json({ 
-        list: { id: parseInt(id), name: 'Mock List', raw_text: '', created_at: new Date() }, 
+        list: { id: listId, name: 'Mock List', raw_text: '', created_at: new Date() }, 
         items: [] 
       });
     }
