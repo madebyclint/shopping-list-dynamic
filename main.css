@@ -1031,3 +1031,178 @@ li.skipped .item-label {
   color: #007bff;
   font-weight: 500;
 }
+
+/* Audit Modal Styling */
+.audit-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.audit-modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.audit-header {
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+  position: relative;
+  background: #f8f9fa;
+  border-radius: 12px 12px 0 0;
+}
+
+.audit-header h3 {
+  margin: 0 30px 10px 0;
+  color: #333;
+  font-size: 1.3rem;
+}
+
+.audit-header p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.close-audit-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.close-audit-btn:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.audit-results {
+  padding: 20px;
+}
+
+.missing-section {
+  margin-bottom: 25px;
+}
+
+.missing-section h4 {
+  margin: 0 0 12px 0;
+  color: #d63384;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.missing-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.missing-item {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  border: 1px solid #ffeaa7;
+  transition: background-color 0.2s ease;
+}
+
+.missing-item:hover {
+  background-color: #fff8dc;
+}
+
+.audit-success {
+  text-align: center;
+  padding: 30px 20px;
+  background: #d4edda;
+  border-radius: 8px;
+  border: 1px solid #c3e6cb;
+}
+
+.audit-success h4 {
+  margin: 0 0 10px 0;
+  color: #155724;
+  font-size: 1.2rem;
+}
+
+.audit-success p {
+  margin: 0;
+  color: #155724;
+  font-size: 1rem;
+}
+
+.audit-actions {
+  padding: 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background: #f8f9fa;
+  border-radius: 0 0 12px 12px;
+}
+
+.audit-close-btn, .add-missing-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.audit-close-btn {
+  background-color: #6c757d;
+  color: white;
+}
+
+.audit-close-btn:hover {
+  background-color: #5a6268;
+}
+
+.add-missing-btn {
+  background-color: #007bff;
+  color: white;
+}
+
+.add-missing-btn:hover {
+  background-color: #0056b3;
+}
+
+.audit-btn {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+}
+
+.audit-btn:hover {
+  background-color: #138496;
+}

@@ -23,6 +23,12 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
   const [bulkCategory, setBulkCategory] = useState('');
   const [progressVisible, setProgressVisible] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
+  const [auditResults, setAuditResults] = useState<{
+    missingIngredients: string[];
+    missingPantryItems: string[];
+    mealPlanName?: string;
+  } | null>(null);
+  const [showAuditResults, setShowAuditResults] = useState(false);
 
   const CATEGORIES = [
     'Produce',
@@ -307,7 +313,99 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
       alert('Error clearing items. Please try again.');
     }
   };
+  const handleAuditList = async () => {
+    if (!list?.meal_plan_id) {
+      alert('This shopping list is not linked to a meal plan, so we cannot audit against it.');
+      return;
+    }
 
+    setProgressVisible(true);
+    setProgressMessage('Auditing shopping list against meal plan...');
+
+    try {
+      // Get meal plan data
+      const mealPlanResponse = await fetch(`/api/meal-plans/${list.meal_plan_id}`);
+      if (!mealPlanResponse.ok) {
+        throw new Error('Failed to fetch meal plan');
+      }
+      const mealPlanData = await mealPlanResponse.json();
+
+      // Get pantry items
+      const pantryResponse = await fetch(`/api/pantry/${list.meal_plan_id}`);
+      if (!pantryResponse.ok) {
+        throw new Error('Failed to fetch pantry items');
+      }
+      const pantryData = await pantryResponse.json();
+
+      // Extract all ingredients from meals
+      const allMealIngredients = new Set<string>();
+      mealPlanData.meals?.forEach((meal: any) => {
+        if (meal.main_ingredients) {
+          // Split by comma and clean up each ingredient
+          meal.main_ingredients.split(',').forEach((ingredient: string) => {
+            const clean = ingredient.trim().toLowerCase();
+            if (clean && clean !== 'leftovers') {
+              allMealIngredients.add(clean);
+            }
+          });
+        }
+      });
+
+      // Extract all pantry items
+      const allPantryItems = new Set<string>();
+      pantryData.items?.forEach((item: any) => {
+        if (item.name) {
+          allPantryItems.add(item.name.trim().toLowerCase());
+        }
+      });
+
+      // Get current shopping list items (normalize names)
+      const currentItemNames = new Set<string>();
+      items.forEach(item => {
+        if (item.name) {
+          currentItemNames.add(item.name.trim().toLowerCase());
+        }
+      });
+
+      // Find missing ingredients from meals
+      const missingIngredients: string[] = [];
+      allMealIngredients.forEach(ingredient => {
+        // Check if ingredient is in shopping list or if a similar item exists
+        const isInList = Array.from(currentItemNames).some(listItem =>
+          listItem.includes(ingredient) || ingredient.includes(listItem)
+        );
+
+        if (!isInList) {
+          missingIngredients.push(ingredient);
+        }
+      });
+
+      // Find missing pantry items
+      const missingPantryItems: string[] = [];
+      allPantryItems.forEach(pantryItem => {
+        const isInList = Array.from(currentItemNames).some(listItem =>
+          listItem.includes(pantryItem) || pantryItem.includes(listItem)
+        );
+
+        if (!isInList) {
+          missingPantryItems.push(pantryItem);
+        }
+      });
+
+      setAuditResults({
+        missingIngredients,
+        missingPantryItems,
+        mealPlanName: mealPlanData.plan?.name
+      });
+      setShowAuditResults(true);
+
+    } catch (error) {
+      console.error('Error auditing list:', error);
+      alert('Failed to audit the shopping list. Please try again.');
+    } finally {
+      setProgressVisible(false);
+    }
+  };
   const handleClearGenerated = async () => {
     if (!listId) return;
 
@@ -522,6 +620,13 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
               >
                 🗑️ Clear All
               </button>
+              <button
+                onClick={handleAuditList}
+                className="audit-btn"
+                title="Check against weekly menu for missing ingredients"
+              >
+                🔍 Audit List
+              </button>
             </div>
           ) : (
             <div>
@@ -688,6 +793,79 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
             );
           })}
       </article>
+
+      {/* Audit Results Modal */}
+      {showAuditResults && auditResults && (
+        <div className="audit-modal">
+          <div className="audit-modal-content">
+            <div className="audit-header">
+              <h3>🔍 Audit Results</h3>
+              <p>Checked against meal plan: <strong>{auditResults.mealPlanName || 'Unknown'}</strong></p>
+              <button
+                onClick={() => setShowAuditResults(false)}
+                className="close-audit-btn"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="audit-results">
+              {auditResults.missingIngredients.length > 0 && (
+                <div className="missing-section">
+                  <h4>🍽️ Missing Meal Ingredients ({auditResults.missingIngredients.length})</h4>
+                  <div className="missing-items">
+                    {auditResults.missingIngredients.map((ingredient, index) => (
+                      <span key={index} className="missing-item">
+                        {toTitleCase(ingredient)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {auditResults.missingPantryItems.length > 0 && (
+                <div className="missing-section">
+                  <h4>🥫 Missing Pantry Items ({auditResults.missingPantryItems.length})</h4>
+                  <div className="missing-items">
+                    {auditResults.missingPantryItems.map((item, index) => (
+                      <span key={index} className="missing-item">
+                        {toTitleCase(item)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {auditResults.missingIngredients.length === 0 && auditResults.missingPantryItems.length === 0 && (
+                <div className="audit-success">
+                  <h4>✅ Audit Complete</h4>
+                  <p>Great! Your shopping list appears to cover all the ingredients from your meal plan and pantry items.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="audit-actions">
+              <button
+                onClick={() => setShowAuditResults(false)}
+                className="audit-close-btn"
+              >
+                Close
+              </button>
+              {(auditResults.missingIngredients.length > 0 || auditResults.missingPantryItems.length > 0) && (
+                <button
+                  onClick={() => {
+                    // TODO: Could add functionality to bulk add missing items
+                    alert('Bulk add missing items feature coming soon!');
+                  }}
+                  className="add-missing-btn"
+                >
+                  Add Missing Items
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Progress Overlay */}
       <ProgressOverlay
