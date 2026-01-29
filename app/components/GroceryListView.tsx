@@ -522,18 +522,6 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
               >
                 🗑️ Clear All
               </button>
-              <button
-                onClick={handleClearGenerated}
-                className="clear-generated-btn"
-              >
-                🧹 Clear Generated
-              </button>
-              <button
-                onClick={handleClearAll}
-                className="clear-all-btn"
-              >
-                🗑️ Clear All
-              </button>
             </div>
           ) : (
             <div>
