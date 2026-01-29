@@ -5,6 +5,7 @@ import { GroceryItem, GroceryList } from '@/lib/database';
 import { groupItemsByCategory, calculateCategoryCost, calculateTotalCost, parseGroceryListText, formatQuantityWithUnit, cleanIngredientDisplayName } from '@/lib/utils';
 import ItemEditor from './ItemEditor';
 import IngredientSearch from './IngredientSearch';
+import ProgressOverlay from './ProgressOverlay';
 
 interface GroceryListViewProps {
   listId: number | null;
@@ -20,6 +21,8 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
   const [showBulkRecategorize, setShowBulkRecategorize] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [bulkCategory, setBulkCategory] = useState('');
+  const [progressVisible, setProgressVisible] = useState(false);
+  const [progressMessage, setProgressMessage] = useState('');
 
   const CATEGORIES = [
     'Produce',
@@ -245,9 +248,15 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
       return; // User cancelled or typed wrong confirmation
     }
 
+    setProgressVisible(true);
+    setProgressMessage('Clearing all items...');
+
     try {
       // Delete all items from database
-      for (const item of items) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        setProgressMessage(`Deleting item ${i + 1} of ${items.length}...`);
+
         if (item.id) {
           await fetch('/api/items', {
             method: 'DELETE',
@@ -259,9 +268,16 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
 
       // Clear local state
       setItems([]);
-      alert(`Successfully cleared all ${items.length} items from the shopping list!`);
+      setProgressMessage('All items cleared successfully!');
+
+      // Short delay to show completion message
+      setTimeout(() => {
+        setProgressVisible(false);
+      }, 1000);
+
     } catch (error) {
       console.error('Error clearing all items:', error);
+      setProgressVisible(false);
       alert('Error clearing items. Please try again.');
     }
   };
@@ -284,9 +300,15 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
 
     if (!confirmed) return;
 
+    setProgressVisible(true);
+    setProgressMessage('Clearing generated items...');
+
     try {
       // Delete generated items from database
-      for (const item of generatedItems) {
+      for (let i = 0; i < generatedItems.length; i++) {
+        const item = generatedItems[i];
+        setProgressMessage(`Deleting generated item ${i + 1} of ${generatedItems.length}...`);
+
         if (item.id) {
           await fetch('/api/items', {
             method: 'DELETE',
@@ -298,14 +320,20 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
 
       // Update local state to keep only manual items
       setItems(manualItems);
-      alert(`Successfully cleared ${generatedItems.length} generated items! Kept ${manualItems.length} manual items.`);
+      setProgressMessage('Generated items cleared successfully!');
+
+      // Short delay to show completion message
+      setTimeout(() => {
+        setProgressVisible(false);
+      }, 1000);
+
     } catch (error) {
       console.error('Error clearing generated items:', error);
-      alert('Error clearing generated items. Please try again.');
+      setProgressVisible(false);
     }
   };
 
-  const handleAddItem = (ingredient: any) => {
+  const addIngredientToList = (ingredient: any) => {
     if (listId === null) return;
 
     const newItem = {
@@ -604,6 +632,12 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
             );
           })}
       </article>
+
+      {/* Progress Overlay */}
+      <ProgressOverlay
+        isVisible={progressVisible}
+        message={progressMessage}
+      />
     </div>
   );
 }

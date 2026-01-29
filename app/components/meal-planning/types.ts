@@ -13,6 +13,10 @@ export interface Meal {
   title?: string;
   brief_description?: string;
   main_ingredients?: string;
+  cooking_instructions?: string;
+  estimated_time_minutes?: number;
+  cooking_temp_f?: number;
+  cooking_time_minutes?: number;
   comfort_flag?: boolean;
   shortcut_flag?: boolean;
   cultural_riff_flag?: boolean;

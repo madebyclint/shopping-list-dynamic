@@ -97,6 +97,25 @@ export default function DayCard({ day, dayIndex, meal, onMealUpdate, allMeals }:
                   )}
                 </div>
 
+                {/* Cooking Time and Instructions */}
+                <div className="meal-cooking-info">
+                  {meal.estimated_time_minutes && (
+                    <div className="cooking-time">
+                      ⏱️ {meal.estimated_time_minutes} minutes
+                    </div>
+                  )}
+                  {meal.cooking_instructions && (
+                    <button
+                      className="instructions-button"
+                      onClick={() => {
+                        alert(`Cooking Instructions for ${meal.title || 'This Meal'}:\n\n${meal.cooking_instructions}`);
+                      }}
+                    >
+                      📋 See Instructions
+                    </button>
+                  )}
+                </div>
+
                 <div className="meal-flags">
                   <label className="flag-label">
                     <input

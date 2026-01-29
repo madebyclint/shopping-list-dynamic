@@ -6,11 +6,23 @@ import EditForm from './EditForm';
 import GroceryListView from './GroceryListView';
 import ListSelector from './ListSelector';
 
-export default function ShoppingLists() {
+interface ShoppingListsProps {
+  initialListId?: number;
+}
+
+export default function ShoppingLists({ initialListId }: ShoppingListsProps) {
   const searchParams = useSearchParams();
   const [isEditing, setIsEditing] = useState(false);
-  const [currentListId, setCurrentListId] = useState<number | null>(null);
+  const [currentListId, setCurrentListId] = useState<number | null>(initialListId || null);
   const [rawText, setRawText] = useState('');
+
+  // Update currentListId when initialListId changes
+  useEffect(() => {
+    if (initialListId && initialListId !== currentListId) {
+      setCurrentListId(initialListId);
+      setIsEditing(false);
+    }
+  }, [initialListId]);
 
   useEffect(() => {
     const rawTextParam = searchParams.get('rawText');
@@ -25,10 +37,10 @@ export default function ShoppingLists() {
         setCurrentListId(id);
         setIsEditing(false);
       }
-    } else {
+    } else if (!initialListId) {
       setIsEditing(true);
     }
-  }, [searchParams]);
+  }, [searchParams, initialListId]);
 
   const handleFormSubmit = async (name: string, text: string) => {
     try {
@@ -77,6 +89,7 @@ export default function ShoppingLists() {
 
       <div className="list-container">
         <ListSelector
+          key={`list-selector-${initialListId || 'default'}-${Date.now()}`}
           currentListId={currentListId}
           onListSelect={setCurrentListId}
         />

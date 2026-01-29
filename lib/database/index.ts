@@ -45,6 +45,10 @@ export interface Meal {
   title?: string;
   brief_description?: string;
   main_ingredients?: string;
+  cooking_instructions?: string;
+  estimated_time_minutes?: number;
+  cooking_temp_f?: number;
+  cooking_time_minutes?: number;
   comfort_flag?: boolean;
   shortcut_flag?: boolean;
   cultural_riff_flag?: boolean;
@@ -65,6 +69,12 @@ export interface AIMenuCache {
 export interface BankedMeal {
   id?: number;
   title: string;
+  brief_description?: string;
+  main_ingredients?: string;
+  cooking_instructions?: string;
+  estimated_time_minutes?: number;
+  cooking_temp_f?: number;
+  cooking_time_minutes?: number;
   day_of_week: number;
   meal_type: 'cooking' | 'leftovers' | 'eating_out';
   comfort_flag?: boolean;
@@ -75,7 +85,7 @@ export interface BankedMeal {
   original_meal_title?: string;
   times_used?: number;
   rating?: number;
-  status?: 'banked' | 'favorited' | 'archived';
+  status?: 'banked' | 'favorited' | 'archived' | 'generated';
   created_at?: Date;
 }
 
@@ -147,6 +157,10 @@ export async function initializeDatabase() {
         title VARCHAR(255),
         brief_description TEXT,
         main_ingredients TEXT,
+        cooking_instructions TEXT,
+        estimated_time_minutes INTEGER,
+        cooking_temp_f INTEGER,
+        cooking_time_minutes INTEGER,
         comfort_flag BOOLEAN DEFAULT FALSE,
         shortcut_flag BOOLEAN DEFAULT FALSE,
         cultural_riff_flag BOOLEAN DEFAULT FALSE,
@@ -154,6 +168,16 @@ export async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Add new cooking instruction columns if they don't exist (for existing databases)
+    try {
+      await pool.query(`ALTER TABLE meals ADD COLUMN IF NOT EXISTS cooking_instructions TEXT`);
+      await pool.query(`ALTER TABLE meals ADD COLUMN IF NOT EXISTS estimated_time_minutes INTEGER`);
+      await pool.query(`ALTER TABLE meals ADD COLUMN IF NOT EXISTS cooking_temp_f INTEGER`);
+      await pool.query(`ALTER TABLE meals ADD COLUMN IF NOT EXISTS cooking_time_minutes INTEGER`);
+    } catch (error) {
+      // Columns might already exist, ignore error
+    }
 
     console.log('Database initialized successfully');
 
@@ -195,17 +219,23 @@ export async function initializeAIMenuTables(): Promise<void> {
       CREATE TABLE IF NOT EXISTS banked_meals (
         id SERIAL PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
+        brief_description TEXT,
+        main_ingredients TEXT,
+        cooking_instructions TEXT,
+        estimated_time_minutes INTEGER,
+        cooking_temp_f INTEGER,
+        cooking_time_minutes INTEGER,
         day_of_week INTEGER NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6),
         meal_type VARCHAR(20) NOT NULL CHECK (meal_type IN ('cooking', 'leftovers', 'eating_out')),
         comfort_flag BOOLEAN DEFAULT FALSE,
         shortcut_flag BOOLEAN DEFAULT FALSE,
         cultural_riff_flag BOOLEAN DEFAULT FALSE,
         veggie_inclusion BOOLEAN DEFAULT FALSE,
-        bank_reason VARCHAR(255),
+        bank_reason VARCHAR(255) DEFAULT 'auto_generated',
         original_meal_title VARCHAR(255),
         times_used INTEGER DEFAULT 0,
         rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-        status VARCHAR(20) DEFAULT 'banked' CHECK (status IN ('banked', 'favorited', 'archived')),
+        status VARCHAR(20) DEFAULT 'generated' CHECK (status IN ('banked', 'favorited', 'archived', 'generated')),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -239,6 +269,13 @@ export async function initializeAIMenuTables(): Promise<void> {
 // Re-export functions from grocery-lists module
 export { 
   createGroceryList, 
+  getGroceryList,
+  getAllGroceryLists,
+  updateItemPurchaseStatus,
+  updateGroceryItem,
+  addItemToList,
+  deleteItemFromList,
+  searchIngredients,
   updateExistingList, 
   findExistingListForMealPlan, 
   deleteGroceryListItems,

@@ -8,6 +8,7 @@ import PlanCreationForm from './meal-planning/PlanCreationForm';
 import PlanManagement from './meal-planning/PlanManagement';
 import DayCard from './meal-planning/DayCard';
 import WeeklyOverview from './meal-planning/WeeklyOverview';
+import ProgressOverlay from './ProgressOverlay';
 
 export default function WeeklyMenus() {
   const [plans, setPlans] = useState<WeeklyMealPlan[]>([]);
@@ -76,7 +77,9 @@ export default function WeeklyMenus() {
 
       if (response.ok) {
         const result = await response.json();
+        console.log('WeeklyMenus: Shopping list generation result:', result);
         setGeneratedListId(result.id);
+        console.log('WeeklyMenus: Set generatedListId to:', result.id);
 
         // Show different feedback for updates vs new lists
         if (result.isUpdate) {
@@ -88,6 +91,12 @@ export default function WeeklyMenus() {
         } else {
           alert(`Smart shopping list generated! 🎉\n\n✅ ${result.itemCount} items processed\n🤖 Smart units applied (eggs→doz, etc.)\n🎯 Intelligent consolidation\n💰 AI price estimation\n\nNo duplicates found. Click "Go to Shopping List" to review.`);
         }
+
+        // Auto-navigate to the newly created shopping list
+        console.log('WeeklyMenus: Auto-navigating to newly created list:', result.id);
+        setTimeout(() => {
+          window.location.href = `/?listId=${result.id}`;
+        }, 1000);
       } else {
         console.error('Failed to generate shopping list');
         alert('Failed to generate shopping list. Please try again.');
@@ -113,9 +122,13 @@ export default function WeeklyMenus() {
   };
 
   const handleGoToShoppingList = () => {
+    console.log('WeeklyMenus: handleGoToShoppingList called with generatedListId:', generatedListId);
     if (generatedListId) {
+      console.log('WeeklyMenus: Navigating to listId:', generatedListId);
       // Navigate to shopping lists tab with the generated list ID
       window.location.href = `/?listId=${generatedListId}`;
+    } else {
+      console.warn('WeeklyMenus: No generatedListId available');
     }
   };
 
@@ -170,30 +183,55 @@ export default function WeeklyMenus() {
         </div>
       )}
 
-      {/* Fun Loading Animation */}
-      {isGeneratingList && (
-        <div className="loading-overlay">
-          <div className="loading-content">
-            <div className="bouncing-groceries">
-              <span className="grocery-emoji">🥕</span>
-              <span className="grocery-emoji">🍎</span>
-              <span className="grocery-emoji">🥖</span>
-              <span className="grocery-emoji">🧀</span>
-              <span className="grocery-emoji">🥚</span>
-            </div>
-            <div className="loading-text">
-              <h3>🤖 AI Chef is cooking up your list...</h3>
-              <div className="progress-bar">
-                <div className="progress-fill"></div>
-              </div>
-              <p>Analyzing ingredients • Optimizing quantities • Smart categorizing</p>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProgressOverlay
+        isVisible={isGeneratingList}
+        message="🤖 AI Chef is cooking up your list..."
+        subMessage="Analyzing ingredients • Optimizing quantities • Smart categorizing"
+      />
 
       {currentPlan && (
         <div>
+          {/* At-a-Glance Weekly Menu */}
+          <div className="at-a-glance-section">
+            <h2>📋 At-a-Glance Weekly Menu</h2>
+            <div className="glance-grid">
+              {DAYS_OF_WEEK.map((day, dayIndex) => {
+                const dayMeal = meals.find(m => m.day_of_week === dayIndex);
+                return (
+                  <div key={day} className="glance-day">
+                    <h4>{day}</h4>
+                    {dayMeal && dayMeal.meal_type === 'cooking' ? (
+                      <div className="glance-meal">
+                        <div className="glance-title">{dayMeal.title || 'Untitled Meal'}</div>
+                        {dayMeal.estimated_time_minutes && (
+                          <div className="glance-time">⏱️ {dayMeal.estimated_time_minutes} min</div>
+                        )}
+                        {dayMeal.cooking_instructions && (
+                          <button
+                            className="glance-instructions-btn"
+                            onClick={() => {
+                              alert(`Cooking Instructions for ${dayMeal.title}:\n\n${dayMeal.cooking_instructions}`);
+                            }}
+                          >
+                            📋 Instructions
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="glance-non-cooking">
+                        {dayMeal?.meal_type === 'leftovers' ? '🍱 Leftovers' :
+                          dayMeal?.meal_type === 'eating_out' ? '🍽️ Eating Out' :
+                            '🚫 No meal planned'}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <WeeklyOverview meals={meals} />
+
           <div className="plan-summary">
             <h2>{currentPlan.name}</h2>
             <div className="plan-stats">
@@ -259,8 +297,6 @@ export default function WeeklyMenus() {
               );
             })}
           </div>
-
-          <WeeklyOverview meals={meals} />
         </div>
       )}
 

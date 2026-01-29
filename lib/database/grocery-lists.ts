@@ -2,25 +2,34 @@ import { pool, GroceryItem, GroceryList } from './index';
 
 export async function createGroceryList(name: string, rawText: string, items: Omit<GroceryItem, 'id' | 'list_id' | 'created_at'>[], mealPlanId?: number): Promise<number> {
   try {
-    // Create the list with optional meal_plan_id
+    console.log('createGroceryList: Creating list with name:', name, 'mealPlanId:', mealPlanId, 'items count:', items.length);
+    
+    // Create the list with optional meal_plan_id and explicit timestamp
     const listResult = await pool.query(
-      'INSERT INTO grocery_lists (name, raw_text, meal_plan_id) VALUES ($1, $2, $3) RETURNING id',
+      'INSERT INTO grocery_lists (name, raw_text, meal_plan_id, created_at) VALUES ($1, $2, $3, NOW()) RETURNING id, created_at',
       [name, rawText, mealPlanId || null]
     );
     
     const listId = listResult.rows[0].id;
+    const createdAt = listResult.rows[0].created_at;
+    console.log('createGroceryList: Created list with ID:', listId, 'at:', createdAt);
 
     // Create the items
-    for (const item of items) {
+    console.log('createGroceryList: Adding', items.length, 'items to list');
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      console.log(`createGroceryList: Adding item ${i + 1}/${items.length}:`, item.name);
       await pool.query(
         'INSERT INTO grocery_items (name, qty, price, category, meal, list_id) VALUES ($1, $2, $3, $4, $5, $6)',
         [item.name, item.qty, item.price, item.category, item.meal, listId]
       );
     }
 
+    console.log('createGroceryList: Successfully created list and all items');
     return listId;
   } catch (error) {
     console.error('Error creating grocery list:', error);
+    console.error('Error details:', error.message);
     throw error;
   }
 }

@@ -151,8 +151,12 @@ export async function POST(request: NextRequest) {
       preservationStats = { preserved: 0, added: processedItems.length, updated: 0 };
     } else {
       // Create new grocery list in the database
+      console.log('Creating new grocery list:', finalListName, 'with', processedItems.length, 'items');
       listId = await createGroceryList(finalListName, rawIngredients, processedItems, planId);
+      console.log('Created grocery list with ID:', listId);
     }
+    
+    console.log('Shopping list generation completed successfully. ListId:', listId);
     
     return NextResponse.json({ 
       id: listId, 
@@ -171,19 +175,12 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error generating shopping list:', error);
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
     
-    // Return mock success for development when DB is not available
-    if (process.env.NODE_ENV === 'development') {
-      return NextResponse.json({ 
-        id: Date.now(), 
-        name: 'Development Shopping List',
-        itemCount: 5,
-        message: 'Shopping list generated successfully (mock)' 
-      });
-    }
-    
+    // Don't return mock success - let the error be visible
     return NextResponse.json(
-      { error: 'Failed to generate shopping list' },
+      { error: `Failed to generate shopping list: ${error.message}` },
       { status: 500 }
     );
   }
