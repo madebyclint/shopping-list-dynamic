@@ -9,6 +9,7 @@ import PlanManagement from './meal-planning/PlanManagement';
 import DayCard from './meal-planning/DayCard';
 import WeeklyOverview from './meal-planning/WeeklyOverview';
 import ProgressOverlay from './ProgressOverlay';
+import PantryExtras from './PantryExtras';
 
 interface WeeklyMenusProps {
   initialPlanId?: number;
@@ -24,6 +25,7 @@ export default function WeeklyMenus({ initialPlanId }: WeeklyMenusProps) {
   const [aiStats, setAiStats] = useState({ totalCalls: 0, totalTokens: 0, estimatedCost: '0.0000' });
   const [isGeneratingList, setIsGeneratingList] = useState(false);
   const [generatedListId, setGeneratedListId] = useState<number | null>(null);
+  const [pantryItems, setPantryItems] = useState<any[]>([]);
   const router = useRouter();
 
   // Helper functions for ingredient and cost calculations
@@ -99,9 +101,49 @@ export default function WeeklyMenus({ initialPlanId }: WeeklyMenusProps) {
     const mealData = await fetchPlanDetails(planId);
     setMeals(mealData);
 
+    // Load pantry items for this plan
+    await loadPantryItems(planId);
+
     // Also load AI usage stats
     const stats = await fetchAIUsageStats();
     setAiStats(stats);
+  };
+
+  const loadPantryItems = async (planId: number) => {
+    try {
+      const response = await fetch(`/api/pantry/${planId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPantryItems(data.items || []);
+      } else {
+        setPantryItems([]);
+      }
+    } catch (error) {
+      console.error('Error loading pantry items:', error);
+      setPantryItems([]);
+    }
+  };
+
+  const handlePantryItemsUpdate = async (items: any[]) => {
+    if (!currentPlan?.id) return;
+
+    setPantryItems(items);
+
+    try {
+      const response = await fetch(`/api/pantry/${currentPlan.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ items }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to update pantry items');
+      }
+    } catch (error) {
+      console.error('Error updating pantry items:', error);
+    }
   };
 
   const refreshAIStats = async () => {
@@ -356,6 +398,13 @@ export default function WeeklyMenus({ initialPlanId }: WeeklyMenusProps) {
               )}
             </div>
           </div>
+
+          <PantryExtras
+            planId={currentPlan.id!}
+            onItemsGenerated={handlePantryItemsUpdate}
+            onStatsUpdate={refreshAIStats}
+            existingItems={pantryItems}
+          />
 
           <div className="week-grid">
             {DAYS_OF_WEEK.map((day, dayIndex) => {

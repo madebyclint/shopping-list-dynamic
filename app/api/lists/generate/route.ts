@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeDatabase, getWeeklyMealPlan, createGroceryList, updateAIUsageStats, searchIngredients, findExistingListForMealPlan, updateExistingList, deleteGroceryListItems, addItemsToGroceryList } from '@/lib/database';
+import { initializeDatabase, getWeeklyMealPlan, createGroceryList, updateAIUsageStats, searchIngredients, findExistingListForMealPlan, updateExistingList, deleteGroceryListItems, addItemsToGroceryList, getPantryItems } from '@/lib/database';
 import { parseGroceryListText, consolidateDuplicateIngredients, processIngredientsWithAI, findSimilarIngredients } from '@/lib/utils';
 import OpenAI from 'openai';
 
@@ -97,6 +97,22 @@ export async function POST(request: NextRequest) {
         mealIngredients.push(meal.main_ingredients);
       }
     });
+
+    // Get pantry items for this meal plan
+    let pantryItems: any[] = [];
+    try {
+      pantryItems = await getPantryItems(planId);
+      if (pantryItems.length > 0) {
+        // Add pantry items as a separate section
+        mealIngredients.push('\n# Pantry & Extras');
+        pantryItems.forEach(item => {
+          mealIngredients.push(`${item.qty} ${item.name}`);
+        });
+      }
+    } catch (error) {
+      console.warn('Error fetching pantry items:', error);
+      // Continue without pantry items if there's an error
+    }
 
     if (mealIngredients.length === 0) {
       return NextResponse.json(
@@ -214,12 +230,14 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error generating shopping list:', error);
-    console.error('Error details:', error.message);
-    console.error('Error stack:', error.stack);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : 'No stack trace';
+    console.error('Error details:', errorMessage);
+    console.error('Error stack:', errorStack);
     
     // Don't return mock success - let the error be visible
     return NextResponse.json(
-      { error: `Failed to generate shopping list: ${error.message}` },
+      { error: `Failed to generate shopping list: ${errorMessage}` },
       { status: 500 }
     );
   }

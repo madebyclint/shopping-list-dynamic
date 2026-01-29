@@ -15,3 +15,6 @@ export * from './database/ai-cache';
 
 // Export meal banking functions
 export * from './database/meal-banking';
+
+// Export pantry items functions
+export * from './database/pantry-items';

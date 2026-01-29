@@ -100,6 +100,16 @@ export interface MealAlternativeHistory {
   created_at?: Date;
 }
 
+export interface PantryItem {
+  id?: number;
+  plan_id: number;
+  name: string;
+  category: string;
+  qty: string;
+  estimated_price?: number;
+  created_at?: Date;
+}
+
 // Database initialization functions
 export async function initializeDatabase() {
   try {
@@ -186,6 +196,19 @@ export async function initializeDatabase() {
     } catch (error) {
       // Columns might already exist, ignore error
     }
+
+    // Create pantry_items table for extra items added to meal plans
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS pantry_items (
+        id SERIAL PRIMARY KEY,
+        plan_id INTEGER REFERENCES weekly_meal_plans(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        category VARCHAR(100) NOT NULL,
+        qty VARCHAR(100) NOT NULL,
+        estimated_price DECIMAL(8,2) DEFAULT 0.00,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
     console.log('Database initialized successfully');
 
@@ -294,8 +317,8 @@ export {
 export { 
   createWeeklyMealPlan, 
   getWeeklyMealPlan, 
-  updateMealPlan, 
-  deleteMealPlan 
+  updateWeeklyMealPlan, 
+  deleteWeeklyMealPlan 
 } from './meal-planning';
 
 // Re-export functions from meal-banking module
@@ -306,3 +329,12 @@ export {
   getBankedMeals,
   updateBankedMealUsage
 } from './meal-banking';
+
+// Re-export functions from pantry-items module
+export {
+  addPantryItems,
+  getPantryItems,
+  updatePantryItems,
+  deletePantryItem,
+  clearPantryItems
+} from './pantry-items';
