@@ -1,3 +1,6 @@
+// Import GroceryItem type
+import { GroceryItem } from './database';
+
 export interface ParsedItem {
   name: string;
   qty: string;
@@ -8,7 +11,7 @@ export interface ParsedItem {
 
 export interface ItemsByCategory {
   [category: string]: {
-    items: ParsedItem[];
+    items: (ParsedItem | GroceryItem)[];
   };
 }
 
@@ -72,12 +75,15 @@ export function parseGroceryListText(inputString: string): ParsedItem[] {
   return consolidateItems(items);
 }
 
-export function groupItemsByCategory(items: ParsedItem[]): ItemsByCategory {
+export function groupItemsByCategory(items: (ParsedItem | GroceryItem)[]): ItemsByCategory {
   return items.reduce((acc, item) => {
-    if (!acc[item.category]) {
-      acc[item.category] = { items: [] };
+    // Normalize category by trimming and converting to title case
+    const normalizedCategory = toTitleCase(item.category.trim());
+    
+    if (!acc[normalizedCategory]) {
+      acc[normalizedCategory] = { items: [] };
     }
-    acc[item.category].items.push(item);
+    acc[normalizedCategory].items.push(item);
     return acc;
   }, {} as ItemsByCategory);
 }
@@ -92,17 +98,17 @@ export function getPrice(inputString: string): number {
   return isNaN(price) ? 0 : price;
 }
 
-export function calculateCost(item: ParsedItem): number {
+export function calculateCost(item: ParsedItem | GroceryItem): number {
   const qty = parseFloat(item.qty) || 1;
   const price = getPrice(item.price);
   return price * qty;
 }
 
-export function calculateTotalCost(items: ParsedItem[]): number {
+export function calculateTotalCost(items: (ParsedItem | GroceryItem)[]): number {
   return items.reduce((total, item) => total + calculateCost(item), 0);
 }
 
-export function calculateCategoryCost(items: ParsedItem[]): number {
+export function calculateCategoryCost(items: (ParsedItem | GroceryItem)[]): number {
   return items.reduce((total, item) => total + calculateCost(item), 0);
 }
 
