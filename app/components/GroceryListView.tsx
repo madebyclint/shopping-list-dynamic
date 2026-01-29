@@ -95,6 +95,32 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
     }
   };
 
+  const handleItemSkipToggle = async (itemId: number, isSkipped: boolean) => {
+    if (listId === null) return; // Can't update preview items
+
+    try {
+      const response = await fetch('/api/items', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ itemId, isSkipped }),
+      });
+
+      if (response.ok) {
+        setItems(prevItems =>
+          prevItems.map(item =>
+            item.id === itemId ? { ...item, is_skipped: isSkipped } : item
+          )
+        );
+      } else {
+        console.error('Failed to update item skip status');
+      }
+    } catch (error) {
+      console.error('Error updating item skip status:', error);
+    }
+  };
+
   const handleEditItem = (updatedFields: Partial<GroceryItem>) => {
     if (!editingItem?.id || listId === null) return;
 
@@ -357,6 +383,7 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
             id: data.id,
             ...newItem,
             is_purchased: false,
+            is_skipped: false,
             list_id: listId,
           };
           setItems(prevItems => [...prevItems, createdItem]);
@@ -428,16 +455,31 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
   const itemsByCategory = groupItemsByCategory(items);
   const totalEstimate = calculateTotalCost(items);
   const totalSpent = calculateTotalCost(items.filter(item => item.is_purchased));
+  const totalSkipped = calculateTotalCost(items.filter(item => item.is_skipped));
+  const remainingBudget = totalEstimate - totalSpent;
 
   return (
     <div>
       <h1>{list.name}</h1>
-      <p className="budget">
-        <span>${totalEstimate.toFixed(2)} estimated</span>
-        {totalSpent > 0 && (
-          <span> - ${totalSpent.toFixed(2)} spent = ${(totalEstimate - totalSpent).toFixed(2)} remaining</span>
+      <div className="budget">
+        <div className="budget-line">
+          <span className="budget-estimated">${totalEstimate.toFixed(2)} estimated</span>
+          {totalSpent > 0 && (
+            <span className="budget-spent"> • ${totalSpent.toFixed(2)} bought</span>
+          )}
+          {totalSkipped > 0 && (
+            <span className="budget-skipped"> • ${totalSkipped.toFixed(2)} skipped</span>
+          )}
+        </div>
+        {(totalSpent > 0 || totalSkipped > 0) && (
+          <div className="budget-summary">
+            <span className="budget-remaining">${remainingBudget.toFixed(2)} remaining</span>
+            {totalSkipped > 0 && (
+              <span className="budget-savings"> (${totalSkipped.toFixed(2)} saved by skipping)</span>
+            )}
+          </div>
         )}
-      </p>
+      </div>
       {list.name.includes('Shopping for') && (
         <p className="smart-processing-note">
           🤖 AI enhanced: Smart units (eggs→doz), intelligent consolidation, variant detection, price estimation
@@ -593,7 +635,14 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
                     const formattedQty = formatQuantityWithUnit(item.qty);
 
                     return (
-                      <li key={item.id || itemId} className={showBulkRecategorize ? 'bulk-select-mode' : ''}>
+                      <li
+                        key={item.id || itemId}
+                        className={`
+                          ${showBulkRecategorize ? 'bulk-select-mode' : ''}
+                          ${item.is_purchased ? 'purchased' : ''}
+                          ${item.is_skipped ? 'skipped' : ''}
+                        `.trim()}
+                      >
                         {showBulkRecategorize && item.id && (
                           <input
                             type="checkbox"
@@ -602,17 +651,36 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
                             onChange={() => handleSelectItem(item.id!)}
                           />
                         )}
-                        <input
-                          type="checkbox"
-                          id={itemId}
-                          checked={item.is_purchased || false}
-                          onChange={(e) => item.id && handleItemToggle(item.id, e.target.checked)}
-                          disabled={!item.id || showBulkRecategorize} // Disable for preview items or during bulk select
-                        />
-                        <label htmlFor={itemId}>
-                          {cleanName} ({formattedQty} @ {item.price})
-                          <span className="js-meal">for {item.meal}</span>
-                        </label>
+                        <div className="item-content">
+                          <div className="item-checkboxes">
+                            <input
+                              type="checkbox"
+                              id={itemId}
+                              checked={item.is_purchased || false}
+                              onChange={(e) => item.id && handleItemToggle(item.id, e.target.checked)}
+                              disabled={!item.id || showBulkRecategorize || item.is_skipped} // Disable for preview items, bulk select, or skipped items
+                              title="Mark as purchased"
+                            />
+                            <button
+                              onClick={() => item.id && handleItemSkipToggle(item.id, !item.is_skipped)}
+                              disabled={!item.id || showBulkRecategorize || item.is_purchased}
+                              className={`skip-btn ${item.is_skipped ? 'skipped' : ''}`}
+                              title={item.is_skipped ? "Unskip - add back to list" : "Skip - already have this"}
+                            >
+                              {item.is_skipped ? '↩️' : '⏭️'}
+                            </button>
+                          </div>
+                          <label htmlFor={itemId} className="item-label">
+                            <span className="item-name">
+                              {item.is_skipped && <span className="skip-indicator">[SKIPPED] </span>}
+                              {cleanName}
+                            </span>
+                            <span className="item-details">
+                              ({formattedQty} @ {item.price})
+                              <span className="js-meal">for {item.meal}</span>
+                            </span>
+                          </label>
+                        </div>
                         {item.id && listId !== null && !showBulkRecategorize && (
                           <div className="item-actions">
                             <button

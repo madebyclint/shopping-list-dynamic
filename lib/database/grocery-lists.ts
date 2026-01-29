@@ -20,8 +20,8 @@ export async function createGroceryList(name: string, rawText: string, items: Om
       const item = items[i];
       console.log(`createGroceryList: Adding item ${i + 1}/${items.length}:`, item.name);
       await pool.query(
-        'INSERT INTO grocery_items (name, qty, price, category, meal, list_id) VALUES ($1, $2, $3, $4, $5, $6)',
-        [item.name, item.qty, item.price, item.category, item.meal, listId]
+        'INSERT INTO grocery_items (name, qty, price, category, meal, is_purchased, is_skipped, list_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [item.name, item.qty, item.price, item.category, item.meal, item.is_purchased || false, item.is_skipped || false, listId]
       );
     }
 
@@ -72,6 +72,18 @@ export async function updateItemPurchaseStatus(itemId: number, isPurchased: bool
   }
 }
 
+export async function updateItemSkipStatus(itemId: number, isSkipped: boolean): Promise<void> {
+  try {
+    await pool.query(
+      'UPDATE grocery_items SET is_skipped = $1 WHERE id = $2',
+      [isSkipped, itemId]
+    );
+  } catch (error) {
+    console.error('Error updating item skip status:', error);
+    throw error;
+  }
+}
+
 export async function getAllGroceryLists(): Promise<GroceryList[]> {
   try {
     const result = await pool.query(
@@ -109,8 +121,8 @@ export async function updateGroceryItem(itemId: number, updates: Partial<Grocery
 export async function addItemToList(listId: number, item: Omit<GroceryItem, 'id' | 'list_id' | 'created_at'>): Promise<number> {
   try {
     const result = await pool.query(
-      'INSERT INTO grocery_items (name, qty, price, category, meal, list_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-      [item.name, item.qty, item.price, item.category, item.meal, listId]
+      'INSERT INTO grocery_items (name, qty, price, category, meal, is_purchased, is_skipped, list_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
+      [item.name, item.qty, item.price, item.category, item.meal, item.is_purchased || false, item.is_skipped || false, listId]
     );
     
     return result.rows[0].id;

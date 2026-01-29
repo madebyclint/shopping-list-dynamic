@@ -18,6 +18,7 @@ export interface GroceryItem {
   category: string;
   meal: string;
   is_purchased?: boolean;
+  is_skipped?: boolean;
   list_id: number;
   created_at?: Date;
 }
@@ -132,9 +133,16 @@ export async function initializeDatabase() {
         category VARCHAR(255) NOT NULL,
         meal VARCHAR(255) NOT NULL,
         is_purchased BOOLEAN DEFAULT FALSE,
+        is_skipped BOOLEAN DEFAULT FALSE,
         list_id INTEGER REFERENCES grocery_lists(id) ON DELETE CASCADE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Add is_skipped column if it doesn't exist (for existing databases)
+    await pool.query(`
+      ALTER TABLE grocery_items 
+      ADD COLUMN IF NOT EXISTS is_skipped BOOLEAN DEFAULT FALSE
     `);
 
     // Create weekly_meal_plans table

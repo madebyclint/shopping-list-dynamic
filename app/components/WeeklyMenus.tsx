@@ -26,6 +26,45 @@ export default function WeeklyMenus({ initialPlanId }: WeeklyMenusProps) {
   const [generatedListId, setGeneratedListId] = useState<number | null>(null);
   const router = useRouter();
 
+  // Helper functions for ingredient and cost calculations
+  const countIngredientsInText = (text: string): number => {
+    if (!text) return 0;
+
+    // Split by common separators and count distinct items
+    const ingredients = text.split(/[,;]|\band\b/i)
+      .map(item => item.trim())
+      .filter(item => item.length > 3) // Filter out very short items
+      .map(item => item.replace(/^\d+\.?\d*\s*(cups?|lbs?|pounds?|oz|ounces?|tbsp|tablespoons?|tsp|teaspoons?|cloves?|cans?|packages?|heads?|bunches?)?\s*/i, '')) // Remove quantities
+      .filter(item => item.length > 0);
+
+    return new Set(ingredients.map(ing => ing.toLowerCase())).size; // Use Set to count unique ingredients
+  };
+
+  const getIngredientCount = (meal: Meal): number => {
+    if (meal.meal_type !== 'cooking') return 0;
+    return countIngredientsInText(meal.main_ingredients || '');
+  };
+
+  const getTotalIngredientCount = (meals: Meal[]): number => {
+    return meals
+      .filter(m => m.meal_type === 'cooking')
+      .reduce((total, meal) => total + getIngredientCount(meal), 0);
+  };
+
+  const estimateMealCost = (meal: Meal): number => {
+    if (meal.meal_type !== 'cooking') return 0;
+
+    const ingredientCount = getIngredientCount(meal);
+    // Simple cost estimation: $2.50 per ingredient on average
+    return ingredientCount * 2.5;
+  };
+
+  const getTotalEstimatedCost = (meals: Meal[]): number => {
+    return meals
+      .filter(m => m.meal_type === 'cooking')
+      .reduce((total, meal) => total + estimateMealCost(meal), 0);
+  };
+
   useEffect(() => {
     loadPlans();
   }, []);
@@ -272,9 +311,10 @@ export default function WeeklyMenus({ initialPlanId }: WeeklyMenusProps) {
             <h2>{currentPlan.name}</h2>
             <div className="plan-stats">
               <span>🍳 Cooking meals: {meals.filter(m => m.meal_type === 'cooking').length}</span>
+              <span>� Total ingredients: {getTotalIngredientCount(meals)}</span>
               <span>🥕 Rainbow coverage: {getRainbowCoverage(meals)}%</span>
-              <span>🤖 AI generations: {aiStats.totalCalls}</span>
-              <span>💰 Total cost: ${aiStats.estimatedCost}</span>
+              <span>💰 Estimated food cost: ${getTotalEstimatedCost(meals).toFixed(2)}</span>
+              <span>🤖 AI cost: ${aiStats.estimatedCost}</span>
             </div>
             <div className="plan-actions">
               <button

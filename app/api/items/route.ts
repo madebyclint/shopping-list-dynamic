@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { 
   initializeDatabase, 
-  updateItemPurchaseStatus, 
+  updateItemPurchaseStatus,
+  updateItemSkipStatus,
   updateGroceryItem, 
   addItemToList, 
   deleteItemFromList,
@@ -122,16 +123,31 @@ export async function PATCH(request: NextRequest) {
     await initializeDatabase();
     
     const body = await request.json();
-    const { itemId, isPurchased } = body;
+    const { itemId, isPurchased, isSkipped } = body;
 
-    if (typeof itemId !== 'number' || typeof isPurchased !== 'boolean') {
+    if (typeof itemId !== 'number') {
       return NextResponse.json(
-        { error: 'itemId (number) and isPurchased (boolean) are required' },
+        { error: 'itemId (number) is required' },
         { status: 400 }
       );
     }
 
-    await updateItemPurchaseStatus(itemId, isPurchased);
+    // Handle purchase status update
+    if (typeof isPurchased === 'boolean') {
+      await updateItemPurchaseStatus(itemId, isPurchased);
+    }
+
+    // Handle skip status update
+    if (typeof isSkipped === 'boolean') {
+      await updateItemSkipStatus(itemId, isSkipped);
+    }
+
+    if (typeof isPurchased !== 'boolean' && typeof isSkipped !== 'boolean') {
+      return NextResponse.json(
+        { error: 'Either isPurchased (boolean) or isSkipped (boolean) is required' },
+        { status: 400 }
+      );
+    }
     
     return NextResponse.json({ message: 'Item updated successfully' });
   } catch (error) {

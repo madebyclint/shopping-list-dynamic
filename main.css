@@ -873,3 +873,161 @@ li label {
   font-style: italic;
   line-height: 1.3;
 }
+
+/* Shopping List Skip Functionality */
+.budget {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+}
+
+.budget-line {
+  margin-bottom: 0.5rem;
+}
+
+.budget-estimated {
+  font-weight: bold;
+  color: #007bff;
+}
+
+.budget-spent {
+  color: #28a745;
+}
+
+.budget-skipped {
+  color: #ffc107;
+}
+
+.budget-summary {
+  padding-top: 0.5rem;
+  border-top: 1px solid #e9ecef;
+  font-size: 0.9rem;
+}
+
+.budget-remaining {
+  font-weight: bold;
+  color: #6f42c1;
+}
+
+.budget-savings {
+  color: #17a2b8;
+  font-style: italic;
+}
+
+/* Skip functionality for list items */
+li.skipped {
+  opacity: 0.6;
+  background-color: #fff3cd !important;
+}
+
+li.skipped .item-label {
+  opacity: 0.8;
+}
+
+.item-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.item-checkboxes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.item-label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.item-name {
+  font-weight: 500;
+}
+
+.item-details {
+  font-size: 0.8rem;
+  color: var(--text-subdued);
+}
+
+.skip-btn {
+  background: none;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skip-btn:hover:not(:disabled) {
+  background-color: #ffc107;
+  transform: scale(1.05);
+}
+
+.skip-btn.skipped {
+  background-color: #ffc107;
+  border-color: #e0a800;
+}
+
+.skip-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.skip-indicator {
+  color: #ffc107;
+  font-weight: bold;
+  font-size: 0.8rem;
+}
+
+.item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-item-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.edit-item-btn:hover {
+  opacity: 1;
+}
+
+/* Meal cost and ingredient count styling */
+.meal-ingredients-info {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+}
+
+.ingredient-count {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.estimated-cost {
+  color: #007bff;
+  font-weight: 500;
+}

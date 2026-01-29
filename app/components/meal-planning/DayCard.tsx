@@ -143,17 +143,33 @@ export default function DayCard({ day, dayIndex, meal, onMealUpdate, onStatsUpda
 
                 {/* Ingredient Count */}
                 {meal.main_ingredients && (
-                  <div className="ingredient-count">
-                    🥬 {(() => {
-                      try {
-                        // Try parsing as JSON array first
-                        const parsed = JSON.parse(meal.main_ingredients);
-                        return Array.isArray(parsed) ? parsed.length : meal.main_ingredients.split(',').length;
-                      } catch {
-                        // Fall back to comma-separated string
-                        return meal.main_ingredients.split(',').length;
-                      }
-                    })()} ingredients
+                  <div className="meal-ingredients-info">
+                    <div className="ingredient-count">
+                      🥬 {(() => {
+                        try {
+                          // Try parsing as JSON array first
+                          const parsed = JSON.parse(meal.main_ingredients);
+                          return Array.isArray(parsed) ? parsed.length : meal.main_ingredients.split(',').length;
+                        } catch {
+                          // Fall back to comma-separated string
+                          return meal.main_ingredients.split(',').length;
+                        }
+                      })()} ingredients
+                    </div>
+                    <div className="estimated-cost">
+                      💰 Est. ${(() => {
+                        try {
+                          // Try parsing as JSON array first
+                          const parsed = JSON.parse(meal.main_ingredients);
+                          const count = Array.isArray(parsed) ? parsed.length : meal.main_ingredients.split(',').length;
+                          return (count * 2.5).toFixed(2);
+                        } catch {
+                          // Fall back to comma-separated string
+                          const count = meal.main_ingredients.split(',').length;
+                          return (count * 2.5).toFixed(2);
+                        }
+                      })()}
+                    </div>
                   </div>
                 )}
 
