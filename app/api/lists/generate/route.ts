@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     const mealIngredients: string[] = [];
 
     meals.forEach((meal, index) => {
-      if (meal.main_ingredients && meal.meal_type === 'cooking') {
+      if (meal.main_ingredients) {
         // Add a header for each meal
         mealIngredients.push(`\n# ${meal.title || `Day ${meal.day_of_week + 1} Meal`}`);
         mealIngredients.push(meal.main_ingredients);
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
 
     if (mealIngredients.length === 0) {
       return NextResponse.json(
-        { error: 'No cooking meals with ingredients found in this plan' },
+        { error: 'No meals with ingredients found in this plan' },
         { status: 400 }
       );
     }

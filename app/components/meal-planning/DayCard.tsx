@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Meal } from './types';
-import { updateMeal as updateMealAPI } from './utils';
+import { updateMeal as updateMealAPI, enhanceMealWithAI } from './utils';
 import MealManager from '../MealManager';
 
 interface DayCardProps {
@@ -8,12 +8,14 @@ interface DayCardProps {
   dayIndex: number;
   meal?: Meal;
   onMealUpdate: (meals: Meal[]) => void;
+  onStatsUpdate?: () => void; // New prop to refresh AI stats
   allMeals: Meal[];
 }
 
-export default function DayCard({ day, dayIndex, meal, onMealUpdate, allMeals }: DayCardProps) {
+export default function DayCard({ day, dayIndex, meal, onMealUpdate, onStatsUpdate, allMeals }: DayCardProps) {
   const [localTitle, setLocalTitle] = useState(meal?.title || '');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   // Update local state when meal prop changes
   useEffect(() => {
@@ -59,6 +61,41 @@ export default function DayCard({ day, dayIndex, meal, onMealUpdate, allMeals }:
     }
   };
 
+  const mealNeedsData = (meal: Meal) => {
+    return !meal.main_ingredients || !meal.brief_description ||
+      !meal.cooking_instructions || !meal.estimated_time_minutes;
+  };
+
+  const handleEnhanceMeal = async () => {
+    if (!meal?.id || !meal.plan_id) return;
+
+    setIsEnhancing(true);
+    try {
+      const result = await enhanceMealWithAI(meal);
+
+      if (result.success) {
+        // Refresh stats in parent component
+        if (onStatsUpdate) {
+          onStatsUpdate();
+        }
+
+        // Navigate back to weekly menus with current plan to maintain state
+        const params = new URLSearchParams();
+        params.set('section', 'weeklyMenus');
+        params.set('planId', meal.plan_id.toString());
+        window.location.href = `/?${params.toString()}`;
+
+        alert(`✅ ${result.message}\nUpdated: ${result.updatedFields?.join(', ')}\n\nAI costs have been updated in the Weekly Menu stats.`);
+      } else {
+        alert(`❌ Failed to enhance meal: ${result.message}`);
+      }
+    } catch (error) {
+      alert(`❌ Error enhancing meal: ${error}`);
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
   return (
     <div className="day-card">
       <h3>{day}</h3>
@@ -97,11 +134,34 @@ export default function DayCard({ day, dayIndex, meal, onMealUpdate, allMeals }:
                   )}
                 </div>
 
+                {/* Description */}
+                {meal.brief_description && (
+                  <div className="meal-description">
+                    📝 {meal.brief_description}
+                  </div>
+                )}
+
+                {/* Ingredient Count */}
+                {meal.main_ingredients && (
+                  <div className="ingredient-count">
+                    🥬 {(() => {
+                      try {
+                        // Try parsing as JSON array first
+                        const parsed = JSON.parse(meal.main_ingredients);
+                        return Array.isArray(parsed) ? parsed.length : meal.main_ingredients.split(',').length;
+                      } catch {
+                        // Fall back to comma-separated string
+                        return meal.main_ingredients.split(',').length;
+                      }
+                    })()} ingredients
+                  </div>
+                )}
+
                 {/* Cooking Time and Instructions */}
                 <div className="meal-cooking-info">
                   {meal.estimated_time_minutes && (
                     <div className="cooking-time">
-                      ⏱️ {meal.estimated_time_minutes} minutes
+                      ⏱️ Total Time: {meal.estimated_time_minutes} minutes
                     </div>
                   )}
                   {meal.cooking_instructions && (
@@ -111,7 +171,7 @@ export default function DayCard({ day, dayIndex, meal, onMealUpdate, allMeals }:
                         alert(`Cooking Instructions for ${meal.title || 'This Meal'}:\n\n${meal.cooking_instructions}`);
                       }}
                     >
-                      📋 See Instructions
+                      📋 View Instructions
                     </button>
                   )}
                 </div>
@@ -150,6 +210,28 @@ export default function DayCard({ day, dayIndex, meal, onMealUpdate, allMeals }:
                     🥕 Veggies
                   </label>
                 </div>
+
+                {/* Enhance Meal Button */}
+                {meal.meal_type === 'cooking' && mealNeedsData(meal) && (
+                  <div className="enhance-meal-section">
+                    <button
+                      onClick={handleEnhanceMeal}
+                      disabled={isEnhancing}
+                      className="enhance-meal-button"
+                      title="Use AI to add missing ingredients, description, instructions, and cooking time"
+                    >
+                      {isEnhancing ? '🤖 Enhancing...' : '✨ Complete with AI'}
+                    </button>
+                    <span className="enhance-hint">
+                      Missing: {[
+                        !meal.main_ingredients ? 'ingredients' : null,
+                        !meal.brief_description ? 'description' : null,
+                        !meal.cooking_instructions ? 'instructions' : null,
+                        !meal.estimated_time_minutes ? 'time' : null
+                      ].filter(Boolean).join(', ')}
+                    </span>
+                  </div>
+                )}
 
                 {/* AI Meal Management */}
 

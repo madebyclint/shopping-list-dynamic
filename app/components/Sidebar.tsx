@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 type TabType = 'weeklyMenus' | 'shoppingLists' | 'ingredients' | 'utilities';
 
@@ -10,6 +11,18 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ onTabChange, currentTab }: SidebarProps) {
+  const router = useRouter();
+
+  const handleTabClick = (tab: TabType) => {
+    // Update URL with section parameter
+    const params = new URLSearchParams();
+    params.set('section', tab);
+    router.push(`/?${params.toString()}`);
+
+    // Update the current tab
+    onTabChange(tab);
+  };
+
   const tabs = [
     { id: 'weeklyMenus' as TabType, label: 'Weekly Menus', icon: '📅' },
     { id: 'shoppingLists' as TabType, label: 'Shopping Lists', icon: '🛒' },
@@ -27,7 +40,7 @@ export default function Sidebar({ onTabChange, currentTab }: SidebarProps) {
           <button
             key={tab.id}
             className={`sidebar-tab ${currentTab === tab.id ? 'active' : ''}`}
-            onClick={() => onTabChange(tab.id)}
+            onClick={() => handleTabClick(tab.id)}
           >
             <span className="tab-icon">{tab.icon}</span>
             <span className="tab-label">{tab.label}</span>

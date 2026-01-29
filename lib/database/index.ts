@@ -293,6 +293,8 @@ export {
 // Re-export functions from meal-banking module
 export { 
   getMealAlternatives, 
-  saveMealAlternative, 
-  chooseMealAlternative 
+  saveMealAlternative,
+  bankMeal,
+  getBankedMeals,
+  updateBankedMealUsage
 } from './meal-banking';

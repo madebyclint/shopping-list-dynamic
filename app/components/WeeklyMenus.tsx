@@ -10,7 +10,11 @@ import DayCard from './meal-planning/DayCard';
 import WeeklyOverview from './meal-planning/WeeklyOverview';
 import ProgressOverlay from './ProgressOverlay';
 
-export default function WeeklyMenus() {
+interface WeeklyMenusProps {
+  initialPlanId?: number;
+}
+
+export default function WeeklyMenus({ initialPlanId }: WeeklyMenusProps) {
   const [plans, setPlans] = useState<WeeklyMealPlan[]>([]);
   const [currentPlan, setCurrentPlan] = useState<WeeklyMealPlan | null>(null);
   const [meals, setMeals] = useState<Meal[]>([]);
@@ -25,6 +29,20 @@ export default function WeeklyMenus() {
   useEffect(() => {
     loadPlans();
   }, []);
+
+  useEffect(() => {
+    // Handle initial plan ID from URL
+    if (initialPlanId && plans.length > 0) {
+      const plan = plans.find(p => p.id === initialPlanId);
+      if (plan) {
+        setCurrentPlan(plan);
+        loadPlanDetails(initialPlanId);
+      }
+    } else if (plans.length > 0 && !currentPlan) {
+      setCurrentPlan(plans[0]);
+      loadPlanDetails(plans[0].id!);
+    }
+  }, [initialPlanId, plans, currentPlan]);
 
   useEffect(() => {
     if (currentPlan) {
@@ -45,6 +63,20 @@ export default function WeeklyMenus() {
     // Also load AI usage stats
     const stats = await fetchAIUsageStats();
     setAiStats(stats);
+  };
+
+  const refreshAIStats = async () => {
+    const stats = await fetchAIUsageStats();
+    setAiStats(stats);
+  };
+
+  const updateURL = (planId?: number) => {
+    const params = new URLSearchParams();
+    params.set('section', 'weeklyMenus');
+    if (planId) {
+      params.set('planId', planId.toString());
+    }
+    router.push(`/?${params.toString()}`);
   };
 
   const handlePlanCreated = () => {
@@ -135,6 +167,10 @@ export default function WeeklyMenus() {
   const handlePlanSelect = (planId: string) => {
     const selected = plans.find(p => p.id === parseInt(planId));
     setCurrentPlan(selected || null);
+    if (selected?.id) {
+      updateURL(selected.id);
+      loadPlanDetails(selected.id);
+    }
   };
 
   return (
@@ -292,6 +328,7 @@ export default function WeeklyMenus() {
                   dayIndex={dayIndex}
                   meal={dayMeal}
                   onMealUpdate={setMeals}
+                  onStatsUpdate={refreshAIStats}
                   allMeals={meals}
                 />
               );

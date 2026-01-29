@@ -17,17 +17,23 @@ export default function HomePage() {
   // Handle URL parameters for automatic navigation to shopping lists
   useEffect(() => {
     const listId = searchParams.get('listId');
-    if (listId) {
+    const section = searchParams.get('section') as TabType;
+    const planId = searchParams.get('planId');
+
+    if (section && ['weeklyMenus', 'shoppingLists', 'ingredients', 'utilities'].includes(section)) {
+      setCurrentTab(section);
+    } else if (listId) {
       setCurrentTab('shoppingLists');
     }
   }, [searchParams]);
 
   const renderContent = () => {
     const listId = searchParams.get('listId');
+    const planId = searchParams.get('planId');
 
     switch (currentTab) {
       case 'weeklyMenus':
-        return <WeeklyMenus />;
+        return <WeeklyMenus initialPlanId={planId ? parseInt(planId) : undefined} />;
       case 'shoppingLists':
         return <ShoppingLists initialListId={listId ? parseInt(listId) : undefined} />;
       case 'ingredients':

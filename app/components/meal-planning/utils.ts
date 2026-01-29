@@ -220,3 +220,39 @@ export const updateMealPlan = async (planId: number, updates: Partial<WeeklyMeal
     return false;
   }
 };
+
+export const enhanceMealWithAI = async (meal: Meal): Promise<{ success: boolean; message: string; updatedFields?: string[] }> => {
+  try {
+    const response = await fetch('/api/meals/enhance', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        mealId: meal.id,
+        title: meal.title,
+        currentData: {
+          main_ingredients: meal.main_ingredients,
+          brief_description: meal.brief_description,
+          cooking_instructions: meal.cooking_instructions,
+          estimated_time_minutes: meal.estimated_time_minutes,
+        }
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { success: false, message: data.error || 'Failed to enhance meal' };
+    }
+
+    return { 
+      success: true, 
+      message: data.message,
+      updatedFields: data.updatedFields 
+    };
+  } catch (error) {
+    console.error('Error enhancing meal:', error);
+    return { success: false, message: 'Network error while enhancing meal' };
+  }
+};

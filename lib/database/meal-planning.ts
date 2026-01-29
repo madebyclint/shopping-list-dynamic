@@ -70,7 +70,7 @@ export async function getAllWeeklyMealPlans(): Promise<WeeklyMealPlan[]> {
   }
 }
 
-export async function updateMeal(mealId: number, updates: Partial<Meal>): Promise<void> {
+export async function updateMeal(mealId: number, updates: Partial<Meal>): Promise<boolean> {
   try {
     const setClause = Object.keys(updates)
       .filter(key => key !== 'id' && key !== 'plan_id' && key !== 'created_at')
@@ -81,13 +81,15 @@ export async function updateMeal(mealId: number, updates: Partial<Meal>): Promis
       .filter(key => key !== 'id' && key !== 'plan_id' && key !== 'created_at')
       .map(key => updates[key as keyof Meal]);
 
-    await pool.query(
+    const result = await pool.query(
       `UPDATE meals SET ${setClause} WHERE id = $1`,
       [mealId, ...values]
     );
+    
+    return result.rowCount !== null && result.rowCount > 0;
   } catch (error) {
     console.error('Error updating meal:', error);
-    throw error;
+    return false;
   }
 }
 
