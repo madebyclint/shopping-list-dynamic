@@ -935,7 +935,7 @@ li.skipped .item-label {
 
 .item-checkboxes {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
 }
 

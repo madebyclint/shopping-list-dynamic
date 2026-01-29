@@ -107,7 +107,10 @@ export interface PantryItem {
   category: string;
   qty: string;
   estimated_price?: number;
+  added_via_prompt?: string;
+  prompt_tokens_used?: number;
   created_at?: Date;
+  updated_at?: Date;
 }
 
 // Database initialization functions
@@ -206,9 +209,21 @@ export async function initializeDatabase() {
         category VARCHAR(100) NOT NULL,
         qty VARCHAR(100) NOT NULL,
         estimated_price DECIMAL(8,2) DEFAULT 0.00,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        added_via_prompt TEXT,
+        prompt_tokens_used INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Add new columns to existing pantry_items table for tracking
+    try {
+      await pool.query(`ALTER TABLE pantry_items ADD COLUMN IF NOT EXISTS added_via_prompt TEXT`);
+      await pool.query(`ALTER TABLE pantry_items ADD COLUMN IF NOT EXISTS prompt_tokens_used INTEGER DEFAULT 0`);
+      await pool.query(`ALTER TABLE pantry_items ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
+    } catch (error) {
+      // Columns might already exist, ignore error
+    }
 
     console.log('Database initialized successfully');
 
@@ -336,5 +351,6 @@ export {
   getPantryItems,
   updatePantryItems,
   deletePantryItem,
-  clearPantryItems
+  clearPantryItems,
+  getPantryAnalytics
 } from './pantry-items';

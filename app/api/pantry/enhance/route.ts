@@ -58,19 +58,26 @@ Guidelines:
 1. Convert vague requests into specific grocery items
 2. Suggest reasonable quantities for a typical household
 3. Categorize items appropriately (produce, dairy, meat, pantry, frozen, etc.)
-4. Estimate realistic prices in USD
+4. ALWAYS provide realistic price estimates in USD (very important!)
 5. If the user mentions running low or needing to restock, suggest typical household quantities
 6. For cooking ingredients, consider standard recipe amounts
 7. Break down complex requests into individual items
+8. Base prices on current 2026 grocery store prices
 
 Categories to use: produce, meat, dairy, pantry, frozen, beverages, snacks, household, personal care, other
+
+IMPORTANT: Always include a numeric estimatedPrice for each item. Examples:
+- Bananas: $1.99
+- Milk (1 gallon): $3.49
+- Bread: $2.79
+- Olive oil: $4.99
 
 Return your response as a JSON array of objects with this structure:
 {
   "name": "specific item name",
   "category": "appropriate category", 
   "qty": "quantity with unit (e.g., 1 bottle, 2 lbs, 1 dozen)",
-  "estimatedPrice": number
+  "estimatedPrice": 1.99
 }
 
 Example input: "need stuff for making pasta and some basic pantry staples"
@@ -123,11 +130,18 @@ Example output: [
           throw new Error(`Item ${index + 1} is missing required fields`);
         }
         
+        // Ensure price is a valid number
+        let estimatedPrice = 0;
+        if (item.estimatedPrice !== undefined && item.estimatedPrice !== null) {
+          const priceNum = typeof item.estimatedPrice === 'string' ? parseFloat(item.estimatedPrice) : Number(item.estimatedPrice);
+          estimatedPrice = isNaN(priceNum) ? 0 : Math.max(0, priceNum);
+        }
+        
         return {
           name: item.name.toLowerCase(),
           category: item.category.toLowerCase(),
           qty: item.qty,
-          estimatedPrice: item.estimatedPrice || 0
+          estimatedPrice: estimatedPrice
         };
       });
 

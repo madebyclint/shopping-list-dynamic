@@ -8,7 +8,13 @@ interface PantryItemRequest {
   estimatedPrice?: number;
 }
 
-export async function GET(request: NextRequest, { params }: { params: { planId: string } }) {
+interface PantryUpdateRequest {
+  items: PantryItemRequest[];
+  prompt?: string;
+  tokensUsed?: number;
+}
+
+export async function GET(request: NextRequest, { params }: { params: Promise<{ planId: string }> }) {
   try {
     // Skip database in development unless forced
     if (process.env.NODE_ENV === 'development' && !process.env.FORCE_DATABASE) {
@@ -20,7 +26,8 @@ export async function GET(request: NextRequest, { params }: { params: { planId: 
 
     await initializeDatabase();
     
-    const planId = parseInt(params.planId);
+    const { planId: planIdStr } = await params;
+    const planId = parseInt(planIdStr);
     if (isNaN(planId)) {
       return NextResponse.json(
         { error: 'Invalid plan ID' },
@@ -44,7 +51,7 @@ export async function GET(request: NextRequest, { params }: { params: { planId: 
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { planId: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ planId: string }> }) {
   try {
     // Skip database in development unless forced
     if (process.env.NODE_ENV === 'development' && !process.env.FORCE_DATABASE) {
@@ -56,7 +63,8 @@ export async function PUT(request: NextRequest, { params }: { params: { planId: 
 
     await initializeDatabase();
     
-    const planId = parseInt(params.planId);
+    const { planId: planIdStr } = await params;
+    const planId = parseInt(planIdStr);
     if (isNaN(planId)) {
       return NextResponse.json(
         { error: 'Invalid plan ID' },
@@ -65,7 +73,7 @@ export async function PUT(request: NextRequest, { params }: { params: { planId: 
     }
 
     const body = await request.json();
-    const { items } = body as { items: PantryItemRequest[] };
+    const { items, prompt, tokensUsed } = body as PantryUpdateRequest;
 
     if (!Array.isArray(items)) {
       return NextResponse.json(
@@ -80,15 +88,22 @@ export async function PUT(request: NextRequest, { params }: { params: { planId: 
         throw new Error(`Item ${index + 1} is missing required fields (name, category, qty)`);
       }
       
+      // Safely handle price conversion
+      let estimatedPrice = 0;
+      if (item.estimatedPrice !== undefined && item.estimatedPrice !== null) {
+        const priceNum = typeof item.estimatedPrice === 'string' ? parseFloat(item.estimatedPrice) : Number(item.estimatedPrice);
+        estimatedPrice = isNaN(priceNum) ? 0 : Math.max(0, priceNum);
+      }
+      
       return {
         name: item.name.toLowerCase().trim(),
         category: item.category.toLowerCase().trim(),
         qty: item.qty.trim(),
-        estimated_price: item.estimatedPrice || 0
+        estimated_price: estimatedPrice
       };
     });
 
-    await updatePantryItems(planId, validatedItems);
+    await updatePantryItems(planId, validatedItems, prompt, tokensUsed);
     
     return NextResponse.json({
       success: true,
@@ -105,7 +120,7 @@ export async function PUT(request: NextRequest, { params }: { params: { planId: 
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { planId: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ planId: string }> }) {
   try {
     // Skip database in development unless forced
     if (process.env.NODE_ENV === 'development' && !process.env.FORCE_DATABASE) {
@@ -117,7 +132,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { planI
 
     await initializeDatabase();
     
-    const planId = parseInt(params.planId);
+    const { planId: planIdStr } = await params;
+    const planId = parseInt(planIdStr);
     if (isNaN(planId)) {
       return NextResponse.json(
         { error: 'Invalid plan ID' },

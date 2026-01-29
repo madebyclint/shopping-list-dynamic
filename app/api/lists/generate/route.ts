@@ -101,11 +101,15 @@ export async function POST(request: NextRequest) {
     // Get pantry items for this meal plan
     let pantryItems: any[] = [];
     try {
+      console.log('Fetching pantry items for plan ID:', planId);
       pantryItems = await getPantryItems(planId);
+      console.log('Found pantry items:', pantryItems.length, pantryItems);
+      
       if (pantryItems.length > 0) {
         // Add pantry items as a separate section
         mealIngredients.push('\n# Pantry & Extras');
         pantryItems.forEach(item => {
+          console.log('Adding pantry item to ingredients:', item);
           mealIngredients.push(`${item.qty} ${item.name}`);
         });
       }

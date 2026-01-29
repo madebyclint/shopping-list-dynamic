@@ -67,6 +67,18 @@ export default function WeeklyMenus({ initialPlanId }: WeeklyMenusProps) {
       .reduce((total, meal) => total + estimateMealCost(meal), 0);
   };
 
+  const getPantryItemsCount = (): number => {
+    return pantryItems.length;
+  };
+
+  const getPantryEstimatedCost = (): number => {
+    return pantryItems.reduce((total, item) => total + (item.estimatedPrice || 0), 0);
+  };
+
+  const getTotalCostWithPantry = (meals: Meal[]): number => {
+    return getTotalEstimatedCost(meals) + getPantryEstimatedCost();
+  };
+
   useEffect(() => {
     loadPlans();
   }, []);
@@ -124,7 +136,7 @@ export default function WeeklyMenus({ initialPlanId }: WeeklyMenusProps) {
     }
   };
 
-  const handlePantryItemsUpdate = async (items: any[]) => {
+  const handlePantryItemsUpdate = async (items: any[], prompt?: string, tokensUsed?: number) => {
     if (!currentPlan?.id) return;
 
     setPantryItems(items);
@@ -135,7 +147,7 @@ export default function WeeklyMenus({ initialPlanId }: WeeklyMenusProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({ items, prompt, tokensUsed }),
       });
 
       if (!response.ok) {
@@ -354,8 +366,11 @@ export default function WeeklyMenus({ initialPlanId }: WeeklyMenusProps) {
             <div className="plan-stats">
               <span>🍳 Cooking meals: {meals.filter(m => m.meal_type === 'cooking').length}</span>
               <span>� Total ingredients: {getTotalIngredientCount(meals)}</span>
-              <span>🥕 Rainbow coverage: {getRainbowCoverage(meals)}%</span>
-              <span>💰 Estimated food cost: ${getTotalEstimatedCost(meals).toFixed(2)}</span>
+              <span>🏠 Pantry items: {getPantryItemsCount()}</span>
+              <span>🌈 Rainbow coverage: {getRainbowCoverage(meals)}%</span>
+              <span>💰 Meal cost: ${getTotalEstimatedCost(meals).toFixed(2)}</span>
+              <span>🛒 Pantry cost: ${getPantryEstimatedCost().toFixed(2)}</span>
+              <span>💵 Total food cost: ${getTotalCostWithPantry(meals).toFixed(2)}</span>
               <span>🤖 AI cost: ${aiStats.estimatedCost}</span>
             </div>
             <div className="plan-actions">

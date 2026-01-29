@@ -11,7 +11,7 @@ interface PantryItem {
 
 interface PantryExtrasProps {
   planId: number;
-  onItemsGenerated: (items: PantryItem[]) => void;
+  onItemsGenerated: (items: PantryItem[], prompt?: string, tokensUsed?: number) => void;
   onStatsUpdate: () => void;
   existingItems: PantryItem[];
 }
@@ -27,6 +27,13 @@ export default function PantryExtras({
   const [previewItems, setPreviewItems] = useState<PantryItem[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [error, setError] = useState('');
+
+  const [lastPrompt, setLastPrompt] = useState('');
+  const [lastTokensUsed, setLastTokensUsed] = useState(0);
+  const [cachedItems, setCachedItems] = useState<PantryItem[]>([]);
+  const [cachedPrompt, setCachedPrompt] = useState('');
+  const [cachedTokensUsed, setCachedTokensUsed] = useState(0);
+  const [isAddingToList, setIsAddingToList] = useState(false);
 
   const handleEnhancePrompt = async () => {
     if (!prompt.trim()) {
@@ -58,6 +65,8 @@ export default function PantryExtras({
       if (result.success && result.items) {
         setPreviewItems(result.items);
         setShowPreview(true);
+        setLastPrompt(result.originalPrompt || prompt.trim());
+        setLastTokensUsed(result.tokensUsed || 0);
         onStatsUpdate(); // Update AI usage stats
       } else {
         setError(result.error || 'Failed to process pantry items');
@@ -88,10 +97,86 @@ export default function PantryExtras({
       }
     });
 
-    onItemsGenerated(combinedItems);
+    // Cache the generated items for potential re-use
+    setCachedItems([...previewItems]);
+    setCachedPrompt(lastPrompt);
+    setCachedTokensUsed(lastTokensUsed);
+
+    onItemsGenerated(combinedItems, lastPrompt, lastTokensUsed);
     setPreviewItems([]);
     setShowPreview(false);
     setPrompt('');
+    setLastPrompt('');
+    setLastTokensUsed(0);
+  };
+
+  const handleReAddCachedItems = () => {
+    if (cachedItems.length === 0) return;
+
+    // Merge cached items with existing items, avoiding duplicates
+    const combinedItems = [...existingItems];
+
+    cachedItems.forEach(cachedItem => {
+      const existingIndex = combinedItems.findIndex(
+        existing => existing.name.toLowerCase() === cachedItem.name.toLowerCase()
+      );
+
+      if (existingIndex >= 0) {
+        // Update existing item with cached version
+        combinedItems[existingIndex] = cachedItem;
+      } else {
+        // Add new item
+        combinedItems.push(cachedItem);
+      }
+    });
+
+    // Re-add without hitting AI again (no tokens used)
+    onItemsGenerated(combinedItems, cachedPrompt, 0);
+  };
+
+  const handleClearCache = () => {
+    setCachedItems([]);
+    setCachedPrompt('');
+    setCachedTokensUsed(0);
+  };
+
+  const handleAddToShoppingList = async () => {
+    if (existingItems.length === 0) {
+      setError('No pantry items to add to shopping list');
+      return;
+    }
+
+    setIsAddingToList(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/pantry/add-to-list', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          planId
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add pantry items to shopping list');
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(`✅ Success! Added ${result.addedItems} pantry items to your shopping list.\n\nGo to Shopping Lists to see the updates.`);
+      } else {
+        setError(result.error || 'Failed to add items to shopping list');
+      }
+    } catch (err) {
+      console.error('Error adding to shopping list:', err);
+      setError('Failed to add items to shopping list. Make sure you have generated a shopping list first.');
+    } finally {
+      setIsAddingToList(false);
+    }
   };
 
   const handleRemoveItem = (index: number) => {
@@ -174,9 +259,47 @@ export default function PantryExtras({
         </div>
       )}
 
+      {cachedItems.length > 0 && !showPreview && (
+        <div className="cached-items-section">
+          <div className="cached-header">
+            <h3>♻️ Previously Generated Items</h3>
+            <p>From prompt: "{cachedPrompt}" (saved {cachedTokensUsed} tokens)</p>
+            <div className="cached-actions">
+              <button onClick={handleReAddCachedItems} className="readd-cached-btn">
+                🔄 Re-add Items ({cachedItems.length}) - No AI Cost
+              </button>
+              <button onClick={handleClearCache} className="clear-cache-btn">
+                🗑️ Clear Cache
+              </button>
+            </div>
+          </div>
+
+          <div className="cached-items-preview">
+            {cachedItems.slice(0, 3).map((item, index) => (
+              <span key={index} className="cached-item-preview">
+                {item.name} ({item.qty})
+              </span>
+            ))}
+            {cachedItems.length > 3 && (
+              <span className="cached-more">...and {cachedItems.length - 3} more</span>
+            )}
+          </div>
+        </div>
+      )}
+
       {existingItems.length > 0 && (
         <div className="existing-items-section">
-          <h3>📝 Added Pantry Items ({existingItems.length})</h3>
+          <div className="existing-items-header">
+            <h3>📝 Added Pantry Items ({existingItems.length})</h3>
+            <button
+              onClick={handleAddToShoppingList}
+              disabled={isAddingToList}
+              className="add-to-list-btn"
+              title="Add these pantry items directly to your shopping list"
+            >
+              {isAddingToList ? '🔄 Adding...' : '🛒 Add to Shopping List'}
+            </button>
+          </div>
           <div className="existing-items-list">
             {existingItems.map((item, index) => (
               <div key={index} className="existing-item">
@@ -411,9 +534,113 @@ export default function PantryExtras({
           margin: 16px 0;
         }
 
-        .existing-items-section h3 {
-          margin: 0 0 16px 0;
+        .existing-items-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+
+        .existing-items-header h3 {
+          margin: 0;
           color: #28a745;
+        }
+
+        .add-to-list-btn {
+          padding: 10px 16px;
+          background: #007bff;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+
+        .add-to-list-btn:hover:not(:disabled) {
+          background: #0056b3;
+        }
+
+        .add-to-list-btn:disabled {
+          background: #6c757d;
+          cursor: not-allowed;
+        }
+
+        .cached-items-section {
+          background: #fff3cd;
+          border: 2px solid #ffc107;
+          border-radius: 8px;
+          padding: 16px;
+          margin: 16px 0;
+        }
+
+        .cached-header h3 {
+          margin: 0 0 8px 0;
+          color: #856404;
+        }
+
+        .cached-header p {
+          margin: 0 0 12px 0;
+          font-size: 13px;
+          color: #6c757d;
+          font-style: italic;
+        }
+
+        .cached-actions {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+
+        .readd-cached-btn {
+          padding: 8px 16px;
+          background: #17a2b8;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-size: 14px;
+          cursor: pointer;
+          font-weight: 500;
+        }
+
+        .readd-cached-btn:hover {
+          background: #138496;
+        }
+
+        .clear-cache-btn {
+          padding: 8px 16px;
+          background: #6c757d;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-size: 14px;
+          cursor: pointer;
+        }
+
+        .clear-cache-btn:hover {
+          background: #5a6268;
+        }
+
+        .cached-items-preview {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .cached-item-preview {
+          background: #f8f9fa;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          color: #495057;
+          border: 1px solid #dee2e6;
+        }
+
+        .cached-more {
+          color: #6c757d;
+          font-size: 12px;
+          font-style: italic;
         }
 
         .empty-state {
