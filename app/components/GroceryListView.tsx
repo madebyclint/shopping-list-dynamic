@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { GroceryItem, GroceryList } from '@/lib/database';
-import { groupItemsByCategory, calculateCategoryCost, calculateTotalCost, parseGroceryListText, formatQuantityWithUnit, cleanIngredientDisplayName } from '@/lib/utils';
+import { groupItemsByCategory, calculateCategoryCost, calculateTotalCost, parseGroceryListText, formatQuantityWithUnit, cleanIngredientDisplayName, toTitleCase } from '@/lib/utils';
 import ItemEditor from './ItemEditor';
 import IngredientSearch from './IngredientSearch';
 import ProgressOverlay from './ProgressOverlay';
@@ -615,7 +615,7 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
 
             return (
               <section key={category}>
-                <h2>{category} (${categoryCost.toFixed(2)})</h2>
+                <h2>{toTitleCase(category)} (${categoryCost.toFixed(2)})</h2>
                 <ul>
                   {sortedCategoryItems.map((item) => {
                     const itemId = `groceryItem-${category}-${item.name}`;

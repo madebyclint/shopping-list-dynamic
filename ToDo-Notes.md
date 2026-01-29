@@ -1,4 +1,4 @@
-1. I want to add an audit butotn in the shopping list to double check against the weekly menu to make sure we didn't miss anything in meals or pantry.
+1. I want to add an audit button in the shopping list to double check against the weekly menu to make sure we didn't miss anything in meals or pantry.
 
 2. we need the ability for two people who are editing or checking off items at the same time each other gets the update immediately
 

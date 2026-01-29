@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { formatPrice, toTitleCase } from '../../lib/utils';
 
 interface PantryItem {
   name: string;
   category: string;
   qty: string;
-  estimatedPrice: number;
+  estimated_price: number;
 }
 
 interface PantryExtrasProps {
@@ -191,7 +192,7 @@ export default function PantryExtras({
   };
 
   const getTotalEstimatedCost = (items: PantryItem[]) => {
-    return items.reduce((total, item) => total + (item.estimatedPrice || 0), 0);
+    return items.reduce((total, item) => total + (item.estimated_price || 0), 0);
   };
 
   return (
@@ -247,8 +248,8 @@ export default function PantryExtras({
                 <div className="item-details">
                   <span className="item-name">{item.name}</span>
                   <span className="item-qty">{item.qty}</span>
-                  <span className="item-category">{item.category}</span>
-                  <span className="item-price">${item.estimatedPrice?.toFixed(2) || '0.00'}</span>
+                  <span className="item-category">{toTitleCase(item.category)}</span>
+                  <span className="item-price">{formatPrice(Number(item.estimated_price) || 0)}</span>
                 </div>
               </div>
             ))}
@@ -306,8 +307,8 @@ export default function PantryExtras({
                 <div className="item-details">
                   <span className="item-name">{item.name}</span>
                   <span className="item-qty">{item.qty}</span>
-                  <span className="item-category">{item.category}</span>
-                  <span className="item-price">${item.estimatedPrice?.toFixed(2) || '0.00'}</span>
+                  <span className="item-category">{toTitleCase(item.category)}</span>
+                  <span className="item-price">{formatPrice(Number(item.estimated_price) || 0)}</span>
                 </div>
                 <button
                   onClick={() => handleRemoveItem(index)}

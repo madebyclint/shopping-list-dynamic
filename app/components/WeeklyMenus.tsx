@@ -72,11 +72,20 @@ export default function WeeklyMenus({ initialPlanId }: WeeklyMenusProps) {
   };
 
   const getPantryEstimatedCost = (): number => {
-    return pantryItems.reduce((total, item) => total + (item.estimatedPrice || 0), 0);
+    if (!pantryItems || !Array.isArray(pantryItems)) {
+      return 0;
+    }
+    const cost = pantryItems.reduce((total, item) => {
+      const itemPrice = Number(item.estimated_price) || 0;
+      return total + itemPrice;
+    }, 0);
+    return isNaN(cost) ? 0 : cost;
   };
 
   const getTotalCostWithPantry = (meals: Meal[]): number => {
-    return getTotalEstimatedCost(meals) + getPantryEstimatedCost();
+    const mealCost = getTotalEstimatedCost(meals) || 0;
+    const pantryCost = getPantryEstimatedCost() || 0;
+    return mealCost + pantryCost;
   };
 
   useEffect(() => {
@@ -330,8 +339,8 @@ export default function WeeklyMenus({ initialPlanId }: WeeklyMenusProps) {
               <span>🏠 Pantry items: {getPantryItemsCount()}</span>
               <span>🌈 Rainbow coverage: {getRainbowCoverage(meals)}%</span>
               <span>💰 Meal cost: ${getTotalEstimatedCost(meals).toFixed(2)}</span>
-              <span>🛒 Pantry cost: ${getPantryEstimatedCost().toFixed(2)}</span>
-              <span>💵 Total food cost: ${getTotalCostWithPantry(meals).toFixed(2)}</span>
+              <span>🛒 Pantry cost: ${Number(getPantryEstimatedCost() || 0).toFixed(2)}</span>
+              <span>💵 Total food cost: ${Number(getTotalCostWithPantry(meals) || 0).toFixed(2)}</span>
               <span>🤖 AI cost: ${aiStats.estimatedCost}</span>
             </div>
             <div className="plan-actions">

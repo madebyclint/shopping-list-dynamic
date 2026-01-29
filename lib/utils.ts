@@ -590,3 +590,19 @@ export async function findSimilarIngredients(newItems: ParsedItem[], searchIngre
   
   return similarItems;
 }
+
+// Helper function to convert strings to title case
+export function toTitleCase(str: string): string {
+  if (!str) return str;
+  return str.replace(/\w\S*/g, (txt) => 
+    txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+  );
+}
+
+// Helper function to format price with dollar sign
+export function formatPrice(price: number): string {
+  if (typeof price !== 'number' || isNaN(price)) {
+    return '$0.00';
+  }
+  return `$${price.toFixed(2)}`;
+}
