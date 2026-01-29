@@ -58,7 +58,7 @@ export default function WeeklyMenus() {
     }
   };
 
-  const handleGenerateShoppingList = async (forceNew = false, forceRefresh = false) => {
+  const handleGenerateShoppingList = async (forceNew = true, forceRefresh = false) => {
     if (!currentPlan) return;
 
     setIsGeneratingList(true);
