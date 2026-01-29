@@ -537,3 +537,44 @@ li label {
 .dedupe-btn:active {
   background: #6A1B9A;
 }
+
+/* Clear Buttons Styling */
+.clear-generated-btn {
+  background: #FF9800;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.clear-generated-btn:hover {
+  background: #F57C00;
+}
+
+.clear-generated-btn:active {
+  background: #E65100;
+}
+
+.clear-all-btn {
+  background: #F44336;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.clear-all-btn:hover {
+  background: #D32F2F;
+}
+
+.clear-all-btn:active {
+  background: #B71C1C;
+}

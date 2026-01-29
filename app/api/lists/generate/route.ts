@@ -100,9 +100,47 @@ export async function POST(request: NextRequest) {
     let isUpdate = false;
 
     if (existingList && !forceRefresh) {
-      // Update existing list while preserving customizations
+      // Update existing list: Replace all items with current meal ingredients, but preserve customizations
       listId = existingList.list.id!;
-      preservationStats = await updateExistingList(listId, processedItems, existingList.items);
+      
+      // Get current items that match the new ingredients (to preserve customizations)
+      const currentItemsMap = new Map();
+      existingList.items.forEach(item => {
+        const key = item.name.toLowerCase().trim();
+        currentItemsMap.set(key, item);
+      });
+      
+      // Apply customizations to new items where applicable
+      const itemsWithCustomizations = processedItems.map(newItem => {
+        const key = newItem.name.toLowerCase().trim();
+        const existingItem = currentItemsMap.get(key);
+        
+        if (existingItem) {
+          // Preserve user customizations but update meal information
+          return {
+            ...newItem,
+            category: existingItem.category, // Keep user's category choice
+            price: existingItem.price, // Keep user's price
+            qty: existingItem.qty // Keep user's quantity adjustment
+          };
+        }
+        return newItem;
+      });
+      
+      // Replace all items with the new set (removes ingredients from deleted meals)
+      await deleteGroceryListItems(listId);
+      await addItemsToGroceryList(listId, itemsWithCustomizations);
+      
+      const preserved = itemsWithCustomizations.filter(item => {
+        const key = item.name.toLowerCase().trim();
+        return currentItemsMap.has(key);
+      }).length;
+      
+      preservationStats = { 
+        preserved, 
+        added: itemsWithCustomizations.length - preserved, 
+        updated: 0 
+      };
       isUpdate = true;
     } else if (existingList && forceRefresh) {
       // Force refresh: Delete existing items and recreate with fresh AI categorization
@@ -127,7 +165,7 @@ export async function POST(request: NextRequest) {
       message: isUpdate 
         ? forceRefresh
           ? `Shopping list refreshed! All ${preservationStats.added} items recategorized with fresh AI processing`
-          : `Shopping list updated! ${preservationStats.preserved} items preserved, ${preservationStats.added} added, ${preservationStats.updated} updated`
+          : `Shopping list updated! ${preservationStats.preserved} customizations preserved, ${preservationStats.added} new items added, removed ingredients from changed meals`
         : 'Shopping list generated with AI-powered consolidation, smart units, and price estimation' 
     });
 

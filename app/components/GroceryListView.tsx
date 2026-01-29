@@ -237,6 +237,74 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
     }
   };
 
+  const handleClearAll = async () => {
+    if (!listId) return;
+
+    const userInput = prompt('This will delete ALL items in your shopping list. Type "all" to confirm:');
+    if (userInput !== 'all') {
+      return; // User cancelled or typed wrong confirmation
+    }
+
+    try {
+      // Delete all items from database
+      for (const item of items) {
+        if (item.id) {
+          await fetch('/api/items', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itemId: item.id }),
+          });
+        }
+      }
+
+      // Clear local state
+      setItems([]);
+      alert(`Successfully cleared all ${items.length} items from the shopping list!`);
+    } catch (error) {
+      console.error('Error clearing all items:', error);
+      alert('Error clearing items. Please try again.');
+    }
+  };
+
+  const handleClearGenerated = async () => {
+    if (!listId) return;
+
+    // Find generated items (items with meal information)
+    const generatedItems = items.filter(item => item.meal && item.meal.trim() !== '');
+    const manualItems = items.filter(item => !item.meal || item.meal.trim() === '');
+
+    if (generatedItems.length === 0) {
+      alert('No generated items to clear. All items appear to be manually added.');
+      return;
+    }
+
+    const confirmed = confirm(
+      `Clear ${generatedItems.length} generated items? This will keep ${manualItems.length} manually added items.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      // Delete generated items from database
+      for (const item of generatedItems) {
+        if (item.id) {
+          await fetch('/api/items', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itemId: item.id }),
+          });
+        }
+      }
+
+      // Update local state to keep only manual items
+      setItems(manualItems);
+      alert(`Successfully cleared ${generatedItems.length} generated items! Kept ${manualItems.length} manual items.`);
+    } catch (error) {
+      console.error('Error clearing generated items:', error);
+      alert('Error clearing generated items. Please try again.');
+    }
+  };
+
   const handleAddItem = (ingredient: any) => {
     if (listId === null) return;
 
@@ -371,6 +439,30 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
                 className="dedupe-btn"
               >
                 🔄 Remove Duplicates
+              </button>
+              <button
+                onClick={handleClearGenerated}
+                className="clear-generated-btn"
+              >
+                🧹 Clear Generated
+              </button>
+              <button
+                onClick={handleClearAll}
+                className="clear-all-btn"
+              >
+                🗑️ Clear All
+              </button>
+              <button
+                onClick={handleClearGenerated}
+                className="clear-generated-btn"
+              >
+                🧹 Clear Generated
+              </button>
+              <button
+                onClick={handleClearAll}
+                className="clear-all-btn"
+              >
+                🗑️ Clear All
               </button>
             </div>
           ) : (
