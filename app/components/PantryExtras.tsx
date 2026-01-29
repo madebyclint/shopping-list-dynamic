@@ -191,8 +191,15 @@ export default function PantryExtras({
     setError('');
   };
 
-  const getTotalEstimatedCost = (items: PantryItem[]) => {
-    return items.reduce((total, item) => total + (item.estimated_price || 0), 0);
+  const getTotalEstimatedCost = (items: PantryItem[]): number => {
+    if (!items || !Array.isArray(items)) {
+      return 0;
+    }
+    const total = items.reduce((acc, item) => {
+      const price = Number(item.estimated_price) || 0;
+      return acc + price;
+    }, 0);
+    return isNaN(total) ? 0 : total;
   };
 
   return (
@@ -320,7 +327,7 @@ export default function PantryExtras({
               </div>
             ))}
             <div className="existing-total">
-              Total estimated cost: ${getTotalEstimatedCost(existingItems).toFixed(2)}
+              Total estimated cost: {formatPrice(getTotalEstimatedCost(existingItems))}
             </div>
           </div>
         </div>
