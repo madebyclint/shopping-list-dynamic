@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { GroceryList } from '@/lib/database';
 
 interface ListSelectorProps {
@@ -12,25 +12,22 @@ export default function ListSelector({ currentListId, onListSelect }: ListSelect
   const [lists, setLists] = useState<GroceryList[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fetchedRef = useRef(false);
 
   useEffect(() => {
-    fetchLists();
+    if (!fetchedRef.current) {
+      fetchLists();
+      fetchedRef.current = true;
+    }
   }, []);
 
   // Refresh lists when currentListId changes to a new value not in our current list
   useEffect(() => {
-    if (currentListId && !lists.find(list => list.id === currentListId)) {
+    if (currentListId && fetchedRef.current && lists.length > 0 && !lists.find(list => list.id === currentListId)) {
       console.log('ListSelector: Refreshing lists because currentListId not found:', currentListId);
       fetchLists();
     }
-  }, [currentListId]);
-
-  // Force refresh when component receives a new key (from parent)
-  useEffect(() => {
-    if (lists.length > 0) {
-      fetchLists();
-    }
-  }, []);
+  }, [currentListId]); // Removed 'lists' from dependencies
 
   const fetchLists = async () => {
     setLoading(true);

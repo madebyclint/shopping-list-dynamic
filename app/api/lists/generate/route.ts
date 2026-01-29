@@ -136,23 +136,30 @@ export async function POST(request: NextRequest) {
     // Step 2: Check for similar ingredients in existing database
     const similarItems = await findSimilarIngredients(consolidatedItems, searchIngredients);
     
-    // Step 3: Comprehensive AI processing (units, consolidation, pricing, categorization)
+    // Step 3: DEPRECATED - AI processing disabled for performance
+    // TODO: Remove AI processing completely in future version
     let processedItems = consolidatedItems;
     
-    try {
-      processedItems = await processIngredientsWithAI(consolidatedItems, openai);
-      
-      // Update AI usage stats for comprehensive processing
-      const tokensUsed = (processIngredientsWithAI as any).lastTokenUsage || 0;
-      if (tokensUsed > 0) {
-        await updateAIUsageStats(1, tokensUsed);
-      }
-      
-    } catch (error) {
-      console.error('Error in comprehensive AI processing:', error);
-      // Fall back to basic price estimation if full AI processing fails
-      processedItems = await addPriceEstimates(consolidatedItems);
-    }
+    // PERFORMANCE FIX: Skip expensive AI processing
+    // Use basic price estimation for faster loading
+    console.log('AI processing disabled for performance - using basic price estimation');
+    processedItems = await addPriceEstimates(consolidatedItems);
+    
+    // // DEPRECATED: Comprehensive AI processing (was causing slow loading)
+    // try {
+    //   processedItems = await processIngredientsWithAI(consolidatedItems, openai);
+    //   
+    //   // Update AI usage stats for comprehensive processing
+    //   const tokensUsed = (processIngredientsWithAI as any).lastTokenUsage || 0;
+    //   if (tokensUsed > 0) {
+    //     await updateAIUsageStats(1, tokensUsed);
+    //   }
+    //   
+    // } catch (error) {
+    //   console.error('Error in comprehensive AI processing:', error);
+    //   // Fall back to basic price estimation if full AI processing fails
+    //   processedItems = await addPriceEstimates(consolidatedItems);
+    // }
 
     let listId: number;
     let preservationStats = { preserved: 0, added: 0, updated: 0 };

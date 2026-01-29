@@ -39,7 +39,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse the raw text into items
+    // DEPRECATED: The raw text parsing is deprecated due to performance issues
+    // This endpoint is maintained for backwards compatibility but AI processing is disabled
+    // Parse the raw text into items (basic parsing only, no AI processing for performance)
     const parsedItems = parseGroceryListText(rawText);
     
     // Create the grocery list in the database

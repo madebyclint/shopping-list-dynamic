@@ -15,6 +15,8 @@ export interface ItemsByCategory {
   };
 }
 
+// PERFORMANCE NOTE: This parser function is kept for basic text parsing
+// but the expensive AI processing has been disabled for faster shopping list loading
 export function parseGroceryListText(inputString: string): ParsedItem[] {
   const lines = inputString.split('\n');
   const items: ParsedItem[] = [];
@@ -449,8 +451,11 @@ export function consolidateDuplicateIngredients(items: ParsedItem[]): ParsedItem
   return result;
 }
 
-// Enhanced AI-powered ingredient processing
+// DEPRECATED: Enhanced AI-powered ingredient processing
+// This function is deprecated due to performance issues causing slow shopping list loading
+// Use basic consolidation and price estimation instead for faster performance
 export async function processIngredientsWithAI(items: ParsedItem[], openaiClient: any): Promise<ParsedItem[]> {
+  console.warn('⚠️  DEPRECATED: processIngredientsWithAI is deprecated due to performance issues');
   if (items.length === 0) return items;
   
   try {

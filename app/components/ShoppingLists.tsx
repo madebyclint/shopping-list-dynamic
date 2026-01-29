@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import EditForm from './EditForm';
 import GroceryListView from './GroceryListView';
 import ListSelector from './ListSelector';
+import { GroceryList } from '@/lib/database';
 
 interface ShoppingListsProps {
   initialListId?: number;
@@ -15,6 +16,41 @@ export default function ShoppingLists({ initialListId }: ShoppingListsProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [currentListId, setCurrentListId] = useState<number | null>(initialListId || null);
   const [rawText, setRawText] = useState('');
+  const [loadingMostRecent, setLoadingMostRecent] = useState(false);
+
+  // Automatically load most recent list if no initial list is provided
+  useEffect(() => {
+    const loadMostRecentList = async () => {
+      if (!initialListId && !searchParams.get('rawText') && !loadingMostRecent && !currentListId) {
+        setLoadingMostRecent(true);
+        try {
+          const response = await fetch('/api/lists');
+          if (response.ok) {
+            const lists = await response.json();
+            if (Array.isArray(lists) && lists.length > 0) {
+              // Sort by created_at to get the most recent
+              const sortedLists = lists.sort((a: GroceryList, b: GroceryList) => {
+                const dateA = new Date(a.created_at || 0).getTime();
+                const dateB = new Date(b.created_at || 0).getTime();
+                return dateB - dateA; // Most recent first
+              });
+
+              const mostRecent = sortedLists[0];
+              console.log('Auto-loading most recent shopping list:', mostRecent.name);
+              setCurrentListId(mostRecent.id!);
+              setIsEditing(false);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading most recent list:', error);
+        } finally {
+          setLoadingMostRecent(false);
+        }
+      }
+    };
+
+    loadMostRecentList();
+  }, [initialListId, searchParams]); // Removed loadingMostRecent and currentListId from dependencies
 
   // Update currentListId when initialListId changes
   useEffect(() => {
@@ -37,9 +73,9 @@ export default function ShoppingLists({ initialListId }: ShoppingListsProps) {
         setCurrentListId(id);
         setIsEditing(false);
       }
-    } else if (!initialListId) {
-      setIsEditing(true);
     }
+    // DEPRECATED: No longer show edit form by default
+    // The most recent list is auto-loaded instead for better UX
   }, [searchParams, initialListId]);
 
   const handleFormSubmit = async (name: string, text: string) => {
@@ -89,15 +125,21 @@ export default function ShoppingLists({ initialListId }: ShoppingListsProps) {
 
       <div className="list-container">
         <ListSelector
-          key={`list-selector-${initialListId || 'default'}-${Date.now()}`}
+          key={`list-selector-${initialListId || 'default'}`}
           currentListId={currentListId}
           onListSelect={setCurrentListId}
         />
 
-        <GroceryListView
-          listId={currentListId}
-          rawText={rawText}
-        />
+        {loadingMostRecent ? (
+          <div className="loading-container">
+            <div>Loading most recent shopping list...</div>
+          </div>
+        ) : (
+          <GroceryListView
+            listId={currentListId}
+            rawText={rawText}
+          />
+        )}
       </div>
     </div>
   );

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+// DEPRECATED: This manual text-based edit form is deprecated due to performance issues
+// The app now auto-loads the most recent shopping list for better user experience
 interface EditFormProps {
   isVisible: boolean;
   onSubmit: (name: string, rawText: string) => void;
