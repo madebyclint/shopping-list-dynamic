@@ -29,8 +29,9 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
     mealPlanName?: string;
   } | null>(null);
   const [showAuditResults, setShowAuditResults] = useState(false);
+  const [isUsingStoreLayout, setIsUsingStoreLayout] = useState(false);
 
-  const CATEGORIES = [
+  const AI_CATEGORIES = [
     'Produce',
     'Protein',
     'Dairy',
@@ -39,6 +40,18 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
     'Frozen',
     'Other'
   ];
+
+  const STORE_CATEGORIES = [
+    'Produce',
+    'Refrigerated',
+    'Bakery/Deli',
+    'Frozen',
+    'Aisles',
+    'Other'
+  ];
+
+  // Use the appropriate categories based on current mode
+  const CATEGORIES = isUsingStoreLayout ? STORE_CATEGORIES : AI_CATEGORIES;
 
   useEffect(() => {
     if (listId) {
@@ -65,6 +78,12 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
         const data = await response.json();
         setList(data.list);
         setItems(data.items);
+
+        // Detect if we're using store layout categories by checking for store-specific categories
+        const hasStoreCategories = data.items.some((item: GroceryItem) =>
+          ['Refrigerated', 'Bakery/Deli', 'Aisles'].includes(item.category)
+        );
+        setIsUsingStoreLayout(hasStoreCategories);
       } else {
         console.error('Failed to fetch list');
       }
@@ -168,16 +187,14 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
   const handleDedupeItems = async () => {
     if (!listId) return;
 
-    console.log('=== DEDUPE DEBUG ===');
+    console.log('=== INTELLIGENT MERGE DEBUG ===');
 
-    // Simple duplicate detection - clean up malformed JSON artifacts
-    const duplicateGroups = new Map<string, GroceryItem[]>();
+    // Group items by cleaned base name for intelligent merging
+    const mergeGroups = new Map<string, GroceryItem[]>();
 
     items.forEach(item => {
-      // Clean up malformed JSON artifacts in names
+      // Clean up name for comparison
       let baseName = item.name.toLowerCase().trim();
-
-      // Remove malformed JSON characters like "}  and {"
       baseName = baseName
         .replace(/^[{"]+/g, '')     // Remove {" at start
         .replace(/["}]+$/g, '')     // Remove "} at end
@@ -186,73 +203,118 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
 
       console.log(`Original: "${item.name}" -> Base: "${baseName}"`);
 
-      if (!duplicateGroups.has(baseName)) {
-        duplicateGroups.set(baseName, []);
+      if (!mergeGroups.has(baseName)) {
+        mergeGroups.set(baseName, []);
       }
-      duplicateGroups.get(baseName)!.push(item);
+      mergeGroups.get(baseName)!.push(item);
     });
-
-    console.log('Duplicate groups found:', duplicateGroups);
 
     const itemsToDelete: number[] = [];
-    let duplicateCount = 0;
+    const itemsToUpdate: Array<{ id: number, updatedItem: Partial<GroceryItem> }> = [];
+    let mergeCount = 0;
 
-    // Find groups with duplicates
-    duplicateGroups.forEach((group, baseName) => {
+    // Process groups that need merging
+    mergeGroups.forEach((group, baseName) => {
       if (group.length > 1) {
-        console.log(`DUPLICATE GROUP for "${baseName}":`, group);
+        console.log(`MERGE GROUP for "${baseName}":`, group);
 
-        // Check if any item has "ea" in the qty and others have proper units
-        const eaItems = group.filter(item => {
-          const qtyStr = item.qty.toLowerCase().trim();
-          // Check for "ea" as unit or just a plain number (which defaults to ea)
-          const hasEa = qtyStr.includes('ea') || /^\d+$/.test(qtyStr);
-          console.log(`Item "${item.name}" qty "${item.qty}" has EA: ${hasEa}`);
-          return hasEa;
+        // Sort by preference: non-"ea" units first, then by ID
+        const sortedGroup = [...group].sort((a, b) => {
+          const aHasEa = a.qty.toLowerCase().includes('ea') || /^\d+$/.test(a.qty.trim());
+          const bHasEa = b.qty.toLowerCase().includes('ea') || /^\d+$/.test(b.qty.trim());
+
+          if (aHasEa && !bHasEa) return 1;  // b wins (non-ea preferred)
+          if (!aHasEa && bHasEa) return -1; // a wins (non-ea preferred)
+          return (a.id || 0) - (b.id || 0); // fallback to ID order
         });
 
-        const nonEaItems = group.filter(item => {
-          const qtyStr = item.qty.toLowerCase().trim();
-          return !(qtyStr.includes('ea') || /^\d+$/.test(qtyStr));
+        // Keep the first item as the master
+        const masterItem = sortedGroup[0];
+        const duplicateItems = sortedGroup.slice(1);
+
+        // Merge data from all items
+        let totalQuantity = parseFloat(masterItem.qty.replace(/[^0-9.]/g, '')) || 1;
+        let totalPrice = parseFloat(masterItem.price.replace(/[^0-9.]/g, '')) || 0;
+        const allMeals = new Set([masterItem.meal].filter(Boolean));
+
+        duplicateItems.forEach(item => {
+          const itemQty = parseFloat(item.qty.replace(/[^0-9.]/g, '')) || 1;
+          const itemPrice = parseFloat(item.price.replace(/[^0-9.]/g, '')) || 0;
+
+          totalQuantity += itemQty;
+          totalPrice += itemPrice;
+
+          if (item.meal && item.meal.trim()) {
+            allMeals.add(item.meal.trim());
+          }
         });
 
-        console.log(`EA items (${eaItems.length}):`, eaItems);
-        console.log(`Non-EA items (${nonEaItems.length}):`, nonEaItems);
+        // Extract unit from the master item (prefer non-"ea" units)
+        let unit = masterItem.qty.replace(/[0-9.,\s]/g, '').trim();
+        if (!unit || unit === 'ea') {
+          // Try to find a better unit from the duplicates
+          const betterUnit = duplicateItems.find(item => {
+            const itemUnit = item.qty.replace(/[0-9.,\s]/g, '').trim();
+            return itemUnit && itemUnit !== 'ea';
+          })?.qty.replace(/[0-9.,\s]/g, '').trim();
+          unit = betterUnit || unit || 'ea';
+        }
 
-        if (eaItems.length > 0 && nonEaItems.length > 0) {
-          console.log('Will remove EA items in favor of non-EA items');
-          eaItems.forEach(item => {
-            if (item.id) {
-              itemsToDelete.push(item.id);
-              duplicateCount++;
-              console.log(`Marking for deletion: ${item.name} (ID: ${item.id})`);
+        // Create merged item data
+        const combinedMeals = Array.from(allMeals).join(', ') || 'Various';
+        const updatedQty = unit ? `${totalQuantity} ${unit}` : totalQuantity.toString();
+        const updatedPrice = totalPrice.toFixed(2);
+
+        console.log(`Merging ${group.length} items into:`, {
+          name: masterItem.name,
+          qty: updatedQty,
+          price: updatedPrice,
+          meal: combinedMeals
+        });
+
+        // Update the master item
+        if (masterItem.id) {
+          itemsToUpdate.push({
+            id: masterItem.id,
+            updatedItem: {
+              qty: updatedQty,
+              price: updatedPrice,
+              meal: combinedMeals
             }
           });
-        } else {
-          console.log('All items have same unit type, removing extras');
-          // Remove all but the first item
-          for (let i = 1; i < group.length; i++) {
-            if (group[i].id) {
-              itemsToDelete.push(group[i].id);
-              duplicateCount++;
-              console.log(`Marking for deletion (duplicate): ${group[i].name} (ID: ${group[i].id})`);
-            }
-          }
         }
+
+        // Mark duplicates for deletion
+        duplicateItems.forEach(item => {
+          if (item.id) {
+            itemsToDelete.push(item.id);
+            mergeCount++;
+          }
+        });
       }
     });
 
-    console.log('Final items to delete:', itemsToDelete);
+    console.log('Items to merge:', itemsToUpdate);
+    console.log('Items to delete:', itemsToDelete);
     console.log('=== END DEBUG ===');
 
     if (itemsToDelete.length === 0) {
-      alert('No duplicates found to remove!');
+      alert('No duplicates found to merge!');
       return;
     }
 
-    if (confirm(`Remove ${duplicateCount} duplicate items?`)) {
+    if (confirm(`Merge ${mergeCount} duplicate items? This will combine quantities, costs, and meal lists.`)) {
       try {
-        // Delete items from database
+        // Update master items with merged data
+        for (const { id, updatedItem } of itemsToUpdate) {
+          await fetch(`/api/items/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedItem),
+          });
+        }
+
+        // Delete duplicate items
         for (const itemId of itemsToDelete) {
           await fetch('/api/items', {
             method: 'DELETE',
@@ -261,13 +323,13 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
           });
         }
 
-        // Update local state
-        setItems(prevItems => prevItems.filter(item => !item.id || !itemsToDelete.includes(item.id)));
+        await fetchGroceryList(); // Refresh the data
 
-        alert(`Successfully removed ${duplicateCount} duplicate items!`);
+        const mergeGroupCount = itemsToUpdate.length;
+        alert(`Successfully merged ${mergeCount} duplicate items into ${mergeGroupCount} consolidated entries!`);
       } catch (error) {
-        console.error('Error removing duplicates:', error);
-        alert('Error removing duplicates. Please try again.');
+        console.error('Error merging duplicates:', error);
+        alert('Failed to merge duplicates.');
       }
     }
   };
@@ -335,6 +397,9 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
       // Refresh the list to get the updated categories
       await fetchList(listId);
 
+      // Update mode state to show store layout categories
+      setIsUsingStoreLayout(true);
+
       setProgressVisible(false);
       setProgressMessage('');
 
@@ -368,6 +433,9 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
 
       // Refresh the list to get the updated categories
       await fetchList(listId);
+
+      // Update mode state to show AI categories
+      setIsUsingStoreLayout(false);
 
       setProgressVisible(false);
       setProgressMessage('');
