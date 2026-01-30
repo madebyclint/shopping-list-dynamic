@@ -318,43 +318,40 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
 
     const targetMode = !isStoreLayoutMode;
     const modeLabel = targetMode ? 'store layout' : 'AI categories';
+    const apiMode = targetMode ? 'store' : 'ai';
 
     setProgressVisible(true);
     setProgressMessage(`Switching to ${modeLabel}...`);
 
     try {
-      // Update each item's category using the appropriate mapping function
-      const updatePromises = items.map(async (item) => {
-        if (!item.id) return;
-
-        const newCategory = targetMode
-          ? mapToPreferredCategories(item.category)
-          : mapBackToAICategories(item.category, item.name);
-
-        // Only update if category changed
-        if (newCategory !== item.category) {
-          const response = await fetch(`/api/items/${item.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...item, category: newCategory })
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to update item: ${item.name}`);
-          }
-        }
-
-        return { ...item, category: newCategory };
+      // Use bulk update endpoint
+      const response = await fetch(`/api/lists/${listId}/categorize`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: apiMode })
       });
 
-      const updatedItems = await Promise.all(updatePromises);
+      if (!response.ok) {
+        throw new Error('Failed to update categories');
+      }
 
-      // Update local state with new categories and mode
-      setItems(updatedItems.filter(item => item !== undefined) as GroceryItem[]);
+      const result = await response.json();
+
+      // Update local state with new categories
+      const updatedItems = items.map(item => ({
+        ...item,
+        category: targetMode
+          ? mapToPreferredCategories(item.category)
+          : mapBackToAICategories(item.category, item.name)
+      }));
+
+      setItems(updatedItems);
       setIsStoreLayoutMode(targetMode);
 
       setProgressVisible(false);
       setProgressMessage('');
+
+      console.log(`Updated ${result.updatedCount} items to ${modeLabel}`);
 
     } catch (error) {
       console.error('Error switching categorization:', error);

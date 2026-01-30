@@ -16,13 +16,36 @@ export async function createGroceryList(name: string, rawText: string, items: Om
 
     // Create the items
     console.log('createGroceryList: Adding', items.length, 'items to list');
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      console.log(`createGroceryList: Adding item ${i + 1}/${items.length}:`, item.name);
-      await pool.query(
-        'INSERT INTO grocery_items (name, qty, price, category, meal, is_purchased, is_skipped, list_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-        [item.name, item.qty, item.price, item.category, item.meal, item.is_purchased || false, item.is_skipped || false, listId]
-      );
+    
+    if (items.length > 0) {
+      // Build bulk insert query
+      const values = [];
+      const placeholders = [];
+      let paramIndex = 1;
+      
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        values.push(
+          item.name, 
+          item.qty, 
+          item.price, 
+          item.category, 
+          item.meal, 
+          item.is_purchased || false, 
+          item.is_skipped || false, 
+          listId
+        );
+        placeholders.push(`($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, $${paramIndex + 3}, $${paramIndex + 4}, $${paramIndex + 5}, $${paramIndex + 6}, $${paramIndex + 7})`);
+        paramIndex += 8;
+      }
+      
+      const bulkInsertQuery = `
+        INSERT INTO grocery_items (name, qty, price, category, meal, is_purchased, is_skipped, list_id) 
+        VALUES ${placeholders.join(', ')}
+      `;
+      
+      await pool.query(bulkInsertQuery, values);
+      console.log(`createGroceryList: Successfully bulk inserted ${items.length} items`);
     }
 
     console.log('createGroceryList: Successfully created list and all items');

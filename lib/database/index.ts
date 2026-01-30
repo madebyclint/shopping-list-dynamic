@@ -225,6 +225,31 @@ export async function initializeDatabase() {
       // Columns might already exist, ignore error
     }
 
+    // Create performance indexes
+    try {
+      // Index for grocery_items queries
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_grocery_items_list_id ON grocery_items(list_id)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_grocery_items_category ON grocery_items(category)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_grocery_items_list_category ON grocery_items(list_id, category)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_grocery_items_purchased ON grocery_items(is_purchased)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_grocery_items_skipped ON grocery_items(is_skipped)`);
+      
+      // Index for grocery_lists queries
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_grocery_lists_created_at ON grocery_lists(created_at DESC)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_grocery_lists_meal_plan_id ON grocery_lists(meal_plan_id)`);
+      
+      // Index for meals queries
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_meals_plan_id ON meals(plan_id)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_meals_plan_day ON meals(plan_id, day_of_week)`);
+      
+      // Index for pantry_items queries
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_pantry_items_plan_id ON pantry_items(plan_id)`);
+      
+      console.log('Database indexes created successfully');
+    } catch (error) {
+      console.warn('Some database indexes may already exist:', error.message);
+    }
+
     console.log('Database initialized successfully');
 
   } catch (error) {
