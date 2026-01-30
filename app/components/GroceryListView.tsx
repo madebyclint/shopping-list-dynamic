@@ -29,14 +29,14 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
     mealPlanName?: string;
   } | null>(null);
   const [showAuditResults, setShowAuditResults] = useState(false);
-  const [isStoreLayoutMode, setIsStoreLayoutMode] = useState(false);
 
   const CATEGORIES = [
-    'Bakery/Deli',
-    'Refrigerated',
-    'Frozen',
     'Produce',
-    'Aisles',
+    'Protein',
+    'Dairy',
+    'Pantry',
+    'Bakery',
+    'Frozen',
     'Other'
   ];
 
@@ -312,52 +312,73 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
       setProgressVisible(false);
       alert('Error clearing items. Please try again.');
     }
-  };
-  const handleToggleCategorization = async () => {
+  }; const handleSortByStoreLayout = async () => {
     if (!listId) return;
 
-    const targetMode = !isStoreLayoutMode;
-    const modeLabel = targetMode ? 'store layout' : 'AI categories';
-    const apiMode = targetMode ? 'store' : 'ai';
-
     setProgressVisible(true);
-    setProgressMessage(`Switching to ${modeLabel}...`);
+    setProgressMessage('Organizing by store layout...');
 
     try {
-      // Use bulk update endpoint
+      // Use the existing bulk categorize endpoint with store mode
       const response = await fetch(`/api/lists/${listId}/categorize`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: apiMode })
+        body: JSON.stringify({ mode: 'store' })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update categories');
+        throw new Error('Failed to sort by store layout');
       }
 
       const result = await response.json();
 
-      // Update local state with new categories
-      const updatedItems = items.map(item => ({
-        ...item,
-        category: targetMode
-          ? mapToPreferredCategories(item.category)
-          : mapBackToAICategories(item.category, item.name)
-      }));
-
-      setItems(updatedItems);
-      setIsStoreLayoutMode(targetMode);
+      // Refresh the list to get the updated categories
+      await fetchList(listId);
 
       setProgressVisible(false);
       setProgressMessage('');
 
-      console.log(`Updated ${result.updatedCount} items to ${modeLabel}`);
+      console.log(`Sorted ${result.updatedCount} items by store layout`);
 
     } catch (error) {
-      console.error('Error switching categorization:', error);
+      console.error('Error sorting by store layout:', error);
       setProgressVisible(false);
       setProgressMessage('');
-      alert(`Failed to switch to ${modeLabel}. Please try again.`);
+      alert('Failed to sort by store layout. Please try again.');
+    }
+  };
+  const handleResetToAICategories = async () => {
+    if (!listId) return;
+
+    setProgressVisible(true);
+    setProgressMessage('Resetting to AI categories...');
+
+    try {
+      // Use a new endpoint that will recategorize based on item names using the original AI logic
+      const response = await fetch(`/api/lists/${listId}/reset-categories`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reset categories');
+      }
+
+      const result = await response.json();
+
+      // Refresh the list to get the updated categories
+      await fetchList(listId);
+
+      setProgressVisible(false);
+      setProgressMessage('');
+
+      console.log(`Reset ${result.updatedCount} items to AI categories`);
+
+    } catch (error) {
+      console.error('Error resetting categories:', error);
+      setProgressVisible(false);
+      setProgressMessage('');
+      alert(`Failed to reset categories. Please try again.`);
     }
   };
 
@@ -676,11 +697,18 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
                 🔍 Audit List
               </button>
               <button
-                onClick={handleToggleCategorization}
-                className={`categorization-toggle-btn ${isStoreLayoutMode ? 'store-mode' : 'ai-mode'}`}
-                title={isStoreLayoutMode ? 'Switch back to AI categorization' : 'Organize by store layout (Produce, Refrigerated, Bakery/Deli, etc.)'}
+                onClick={handleResetToAICategories}
+                className="reset-ai-categories-btn"
+                title="Reset all items to original AI categorization (Produce, Protein, Dairy, Pantry, Bakery, Frozen, Other)"
               >
-                {isStoreLayoutMode ? '🤖 AI Categories' : '🏪 Store Layout'}
+                🤖 Reset AI Categories
+              </button>
+              <button
+                onClick={handleSortByStoreLayout}
+                className="store-layout-btn"
+                title="Organize by store layout (Produce, Refrigerated, Bakery/Deli, Frozen, Aisles, Other)"
+              >
+                🏪 Store Layout
               </button>
             </div>
           ) : (
