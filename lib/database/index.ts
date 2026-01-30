@@ -354,3 +354,11 @@ export {
   clearPantryItems,
   getPantryAnalytics
 } from './pantry-items';
+
+// Re-export functions from data-export-import module
+export {
+  exportAllData,
+  importData,
+  getImportPreview,
+  DATA_EXPORT_VERSION
+} from './data-export-import';
