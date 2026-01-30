@@ -48,6 +48,9 @@ coverage/
 # nyc test coverage
 .nyc_output
 
+# Database backups
+backups/
+
 # Grunt intermediate storage
 .grunt
 
