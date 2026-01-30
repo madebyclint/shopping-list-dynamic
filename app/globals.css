@@ -248,6 +248,13 @@ li label span {
   line-height: 1.6;
 }
 
+.category-header h2 {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
 /* Placeholder Content */
 .placeholder-content {
   display: grid;

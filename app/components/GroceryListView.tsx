@@ -382,6 +382,29 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
     }
   };
 
+  const handleCopyCategory = async (category: string, categoryItems: GroceryItem[]) => {
+    try {
+      // Create a simple list with just item names and quantities, one per line
+      const itemList = categoryItems
+        .map(item => {
+          const cleanName = cleanIngredientDisplayName(item.name);
+          const formattedQty = formatQuantityWithUnit(item.qty);
+          return `${cleanName} - ${formattedQty}`;
+        })
+        .join('\n');
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(itemList);
+
+      // Show brief confirmation
+      alert(`Copied ${categoryItems.length} ${category.toLowerCase()} items to clipboard!`);
+
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
+      alert('Failed to copy to clipboard. Please try again.');
+    }
+  };
+
   const handleAuditList = async () => {
     if (!list?.meal_plan_id) {
       alert('This shopping list is not linked to a meal plan, so we cannot audit against it.');
@@ -803,7 +826,18 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
 
             return (
               <section key={category}>
-                <h2>{toTitleCase(category)} (${categoryCost.toFixed(2)})</h2>
+                <div className="category-header">
+                  <h2>
+                    {toTitleCase(category)} (${categoryCost.toFixed(2)})
+                    <button
+                      onClick={() => handleCopyCategory(category, categoryItems)}
+                      className="copy-category-icon"
+                      title={`Copy ${category.toLowerCase()} items to clipboard`}
+                    >
+                      📋
+                    </button>
+                  </h2>
+                </div>
                 <ul>
                   {sortedCategoryItems.map((item) => {
                     const itemId = `groceryItem-${category}-${item.name}`;
