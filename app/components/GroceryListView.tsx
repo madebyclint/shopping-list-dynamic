@@ -697,10 +697,20 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
                 ➕ Add Item
               </button>
               <button
-                onClick={() => setShowBulkRecategorize(true)}
-                className="bulk-categorize-btn"
+                onClick={() => {
+                  if (showBulkRecategorize) {
+                    // Cancel bulk mode
+                    setShowBulkRecategorize(false);
+                    setSelectedItems(new Set());
+                    setBulkCategory('');
+                  } else {
+                    // Enter bulk selection mode
+                    setShowBulkRecategorize(true);
+                  }
+                }}
+                className={`bulk-categorize-btn ${showBulkRecategorize ? 'active' : ''}`}
               >
-                🏷️ Bulk Categorize
+                {showBulkRecategorize ? '❌ Cancel Bulk' : '🏷️ Bulk Categorize'}
               </button>
               <button
                 onClick={handleDedupeItems}
@@ -760,54 +770,39 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
         </div>
       )}
 
-      {/* Bulk Recategorize Modal */}
+      {/* Bulk Recategorize Controls (inline when in bulk mode) */}
       {showBulkRecategorize && (
-        <div className="bulk-recategorize-modal">
-          <div className="modal-content">
-            <h3>Bulk Recategorize Items</h3>
-            <p>Select items to recategorize, then choose a new category:</p>
+        <div className="bulk-recategorize-controls">
+          <div className="bulk-instructions">
+            <h3>📝 Bulk Recategorize Mode</h3>
+            <p>Select items by clicking their checkboxes, then choose a new category below:</p>
+          </div>
 
-            <div className="bulk-select-actions">
-              <button onClick={handleSelectAll} className="select-all-btn">
-                {selectedItems.size === items.length ? 'Deselect All' : 'Select All'}
-              </button>
-              <span>{selectedItems.size} item(s) selected</span>
-            </div>
+          <div className="bulk-select-actions">
+            <button onClick={handleSelectAll} className="select-all-btn">
+              {selectedItems.size === items.length ? 'Deselect All' : 'Select All'}
+            </button>
+            <span>{selectedItems.size} item(s) selected</span>
+          </div>
 
-            <div className="category-selector">
-              <label>
-                New Category:
-                <select
-                  value={bulkCategory}
-                  onChange={(e) => setBulkCategory(e.target.value)}
-                >
-                  <option value="">Choose category...</option>
-                  {CATEGORIES.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div className="modal-actions">
-              <button
-                onClick={handleBulkRecategorize}
-                className="apply-btn"
-                disabled={selectedItems.size === 0 || !bulkCategory}
-              >
-                Apply Changes
-              </button>
-              <button
-                onClick={() => {
-                  setShowBulkRecategorize(false);
-                  setSelectedItems(new Set());
-                  setBulkCategory('');
-                }}
-                className="cancel-btn"
-              >
-                Cancel
-              </button>
-            </div>
+          <div className="bulk-category-actions">
+            <select
+              value={bulkCategory}
+              onChange={(e) => setBulkCategory(e.target.value)}
+              className="bulk-category-select"
+            >
+              <option value="">Choose new category...</option>
+              {CATEGORIES.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleBulkRecategorize}
+              className="apply-bulk-btn"
+              disabled={selectedItems.size === 0 || !bulkCategory}
+            >
+              Apply to {selectedItems.size} item(s)
+            </button>
           </div>
         </div>
       )}
