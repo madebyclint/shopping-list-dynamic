@@ -11,12 +11,11 @@ interface ItemEditorProps {
 }
 
 const CATEGORIES = [
-  'Produce',
-  'Protein',
-  'Dairy',
-  'Pantry',
-  'Bakery',
+  'Bakery/Deli',
+  'Refrigerated',
   'Frozen',
+  'Produce',
+  'Aisles',
   'Other'
 ];
 

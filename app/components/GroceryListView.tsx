@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { GroceryItem, GroceryList } from '@/lib/database';
-import { groupItemsByCategory, calculateCategoryCost, calculateTotalCost, parseGroceryListText, formatQuantityWithUnit, cleanIngredientDisplayName, toTitleCase } from '@/lib/utils';
+import { groupItemsByCategory, calculateCategoryCost, calculateTotalCost, parseGroceryListText, formatQuantityWithUnit, cleanIngredientDisplayName, toTitleCase, mapToPreferredCategories, mapBackToAICategories } from '@/lib/utils';
 import ItemEditor from './ItemEditor';
 import IngredientSearch from './IngredientSearch';
 import ProgressOverlay from './ProgressOverlay';
@@ -29,14 +29,14 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
     mealPlanName?: string;
   } | null>(null);
   const [showAuditResults, setShowAuditResults] = useState(false);
+  const [isStoreLayoutMode, setIsStoreLayoutMode] = useState(false);
 
   const CATEGORIES = [
-    'Produce',
-    'Protein',
-    'Dairy',
-    'Pantry',
-    'Bakery',
+    'Bakery/Deli',
+    'Refrigerated',
     'Frozen',
+    'Produce',
+    'Aisles',
     'Other'
   ];
 
@@ -313,6 +313,57 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
       alert('Error clearing items. Please try again.');
     }
   };
+  const handleToggleCategorization = async () => {
+    if (!listId) return;
+
+    const targetMode = !isStoreLayoutMode;
+    const modeLabel = targetMode ? 'store layout' : 'AI categories';
+
+    setProgressVisible(true);
+    setProgressMessage(`Switching to ${modeLabel}...`);
+
+    try {
+      // Update each item's category using the appropriate mapping function
+      const updatePromises = items.map(async (item) => {
+        if (!item.id) return;
+
+        const newCategory = targetMode
+          ? mapToPreferredCategories(item.category)
+          : mapBackToAICategories(item.category, item.name);
+
+        // Only update if category changed
+        if (newCategory !== item.category) {
+          const response = await fetch(`/api/items/${item.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...item, category: newCategory })
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to update item: ${item.name}`);
+          }
+        }
+
+        return { ...item, category: newCategory };
+      });
+
+      const updatedItems = await Promise.all(updatePromises);
+
+      // Update local state with new categories and mode
+      setItems(updatedItems.filter(item => item !== undefined) as GroceryItem[]);
+      setIsStoreLayoutMode(targetMode);
+
+      setProgressVisible(false);
+      setProgressMessage('');
+
+    } catch (error) {
+      console.error('Error switching categorization:', error);
+      setProgressVisible(false);
+      setProgressMessage('');
+      alert(`Failed to switch to ${modeLabel}. Please try again.`);
+    }
+  };
+
   const handleAuditList = async () => {
     if (!list?.meal_plan_id) {
       alert('This shopping list is not linked to a meal plan, so we cannot audit against it.');
@@ -626,6 +677,13 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
                 title="Check against weekly menu for missing ingredients"
               >
                 🔍 Audit List
+              </button>
+              <button
+                onClick={handleToggleCategorization}
+                className={`categorization-toggle-btn ${isStoreLayoutMode ? 'store-mode' : 'ai-mode'}`}
+                title={isStoreLayoutMode ? 'Switch back to AI categorization' : 'Organize by store layout (Produce, Refrigerated, Bakery/Deli, etc.)'}
+              >
+                {isStoreLayoutMode ? '🤖 AI Categories' : '🏪 Store Layout'}
               </button>
             </div>
           ) : (

@@ -191,6 +191,78 @@ function categorizeIngredient(name: string): string {
   return 'Other';
 }
 
+// Function to map broader categories to preferred store layout categories
+export function mapToPreferredCategories(category: string): string {
+  const normalizedCategory = category.toLowerCase().trim();
+  
+  switch (normalizedCategory) {
+    case 'produce':
+      return 'Produce';
+      
+    case 'protein':
+    case 'dairy':
+      return 'Refrigerated';
+      
+    case 'bakery':
+      return 'Bakery/Deli';
+      
+    case 'frozen':
+      return 'Frozen';
+      
+    case 'pantry':
+    case 'beverages':
+    case 'snacks':
+    case 'household':
+    case 'personal care':
+      return 'Aisles';
+      
+    default:
+      return 'Other';
+  }
+}
+
+// Function to reverse map from store layout back to AI categories
+export function mapBackToAICategories(storeCategory: string, itemName: string): string {
+  const normalizedCategory = storeCategory.toLowerCase().trim();
+  const lowerName = itemName.toLowerCase();
+  
+  switch (normalizedCategory) {
+    case 'produce':
+      return 'Produce';
+      
+    case 'refrigerated':
+      // Use item name to determine if it's protein or dairy
+      if (/\b(chicken|beef|pork|fish|salmon|tuna|turkey|lamb|egg|tofu)s?\b/.test(lowerName)) {
+        return 'Protein';
+      } else if (/\b(milk|cheese|butter|yogurt|cream|sour cream)s?\b/.test(lowerName)) {
+        return 'Dairy';
+      }
+      // Default to protein for refrigerated items
+      return 'Protein';
+      
+    case 'bakery/deli':
+      return 'Bakery';
+      
+    case 'frozen':
+      return 'Frozen';
+      
+    case 'aisles':
+      // Use item name to determine subcategory
+      if (/\b(rice|pasta|flour|sugar|salt|pepper|olive oil|oil|vinegar|sauce|stock|broth|can|canned)s?\b/.test(lowerName)) {
+        return 'Pantry';
+      } else if (/\b(soda|juice|coffee|tea|water|beer|wine)s?\b/.test(lowerName)) {
+        return 'Beverages';
+      } else if (/\b(chip|cookie|cracker|candy|snack)s?\b/.test(lowerName)) {
+        return 'Snacks';
+      }
+      // Default to pantry for aisles items
+      return 'Pantry';
+      
+    default:
+      return 'Other';
+  }
+}
+
 function consolidateItems(items: ParsedItem[]): ParsedItem[] {
   const consolidatedMap = new Map<string, ParsedItem>();
   
