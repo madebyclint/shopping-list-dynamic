@@ -248,6 +248,7 @@ li label span {
   line-height: 1.6;
 }
 
+.at-a-glance-section h2,
 .category-header h2 {
   display: flex;
   gap: 5px;
