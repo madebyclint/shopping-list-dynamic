@@ -7,11 +7,11 @@ export default function Utilities() {
     <div className="content-section">
       <h1>Utilities</h1>
       <p>Helpful tools and utilities for meal planning and shopping list management.</p>
-      
+
       <div className="space-y-8">
         {/* Data Management Section */}
         <DataManagement />
-        
+
         {/* Future Utilities */}
         <div className="placeholder-content">
           <div className="placeholder-item">

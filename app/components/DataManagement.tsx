@@ -78,7 +78,7 @@ export default function DataManagement() {
     skipDuplicates: true,
     preserveIds: false
   });
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle export metadata fetch
@@ -87,7 +87,7 @@ export default function DataManagement() {
       setIsExporting(true);
       const response = await fetch('/api/data/export', { method: 'POST' });
       const result = await response.json();
-      
+
       if (result.success) {
         setExportMetadata(result.metadata);
       } else {
@@ -105,11 +105,11 @@ export default function DataManagement() {
     try {
       setIsExporting(true);
       const response = await fetch('/api/data/export');
-      
+
       if (!response.ok) {
         throw new Error(`Export failed: ${response.statusText}`);
       }
-      
+
       // Get filename from Content-Disposition header
       const contentDisposition = response.headers.get('Content-Disposition');
       let filename = 'shopping-list-export.json';
@@ -119,7 +119,7 @@ export default function DataManagement() {
           filename = filenameMatch[1];
         }
       }
-      
+
       // Download the file
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -130,10 +130,10 @@ export default function DataManagement() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      
+
       alert('Data exported successfully!');
       setExportMetadata(null);
-      
+
     } catch (error) {
       alert(`Export failed: ${error}`);
     } finally {
@@ -145,23 +145,23 @@ export default function DataManagement() {
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
+
     if (!file.name.endsWith('.json')) {
       alert('Please select a JSON file');
       return;
     }
-    
+
     try {
       setImportFile(file);
       const text = await file.text();
       const data = JSON.parse(text);
       setImportData(data);
-      
+
       // Get import preview
       const encodedData = encodeURIComponent(JSON.stringify(data));
       const response = await fetch(`/api/data/import?data=${encodedData}`);
       const result = await response.json();
-      
+
       if (result.success) {
         setImportPreview(result.preview);
       } else {
@@ -175,7 +175,7 @@ export default function DataManagement() {
   // Handle actual import
   const handleImport = async () => {
     if (!importData) return;
-    
+
     try {
       setIsImporting(true);
       const response = await fetch('/api/data/import', {
@@ -188,16 +188,16 @@ export default function DataManagement() {
           options: importOptions
         })
       });
-      
+
       const result = await response.json();
       setImportResult(result.result);
-      
+
       if (result.success) {
         alert('Data imported successfully!');
       } else {
         alert(`Import completed with issues. Check the results below.`);
       }
-      
+
       // Reset form
       setImportFile(null);
       setImportData(null);
@@ -205,7 +205,7 @@ export default function DataManagement() {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      
+
     } catch (error) {
       alert(`Import failed: ${error}`);
     } finally {
@@ -233,9 +233,9 @@ export default function DataManagement() {
       {/* Export Section */}
       <div className="border-t pt-6">
         <h3 className="text-lg font-semibold mb-4">Export Data</h3>
-        
+
         {!exportMetadata ? (
-          <button 
+          <button
             onClick={handleGetExportInfo}
             disabled={isExporting}
             className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
@@ -268,7 +268,7 @@ export default function DataManagement() {
                 )}
               </div>
             </div>
-            
+
             <button
               onClick={() => {
                 if (window.confirm('This will download all your data including meal plans, shopping lists, and items. The export file will contain sensitive information, so keep it secure. Continue?')) {
@@ -280,8 +280,8 @@ export default function DataManagement() {
             >
               {isExporting ? 'Exporting...' : 'Download Export'}
             </button>
-            
-            <button 
+
+            <button
               onClick={() => setExportMetadata(null)}
               className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
             >
@@ -294,7 +294,7 @@ export default function DataManagement() {
       {/* Import Section */}
       <div className="border-t pt-6">
         <h3 className="text-lg font-semibold mb-4">Import Data</h3>
-        
+
         {!importPreview ? (
           <div className="space-y-4">
             <div>
@@ -309,7 +309,7 @@ export default function DataManagement() {
                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
             </div>
-            
+
             <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
               <h4 className="font-semibold text-yellow-800 mb-2">Import Modes</h4>
               <div className="space-y-2 text-sm text-yellow-700">
@@ -355,7 +355,7 @@ export default function DataManagement() {
                   <div><strong>Date Range:</strong> {importPreview.dateRange.earliest} to {importPreview.dateRange.latest}</div>
                 )}
               </div>
-              
+
               <div className="grid grid-cols-2 gap-2 mt-4 text-sm">
                 <div>Weekly Meal Plans: {importPreview.summary.weeklyMealPlans}</div>
                 <div>Meals: {importPreview.summary.meals}</div>
@@ -364,7 +364,7 @@ export default function DataManagement() {
                 <div>Pantry Items: {importPreview.summary.pantryItems}</div>
                 <div>Banked Meals: {importPreview.summary.bankedMeals}</div>
               </div>
-              
+
               {importPreview.warnings.length > 0 && (
                 <div className="mt-4 p-3 bg-yellow-100 rounded">
                   <strong>Warnings:</strong>
@@ -376,11 +376,11 @@ export default function DataManagement() {
                 </div>
               )}
             </div>
-            
+
             <button
               onClick={() => {
-                const confirmMessage = `This will import data into your current database. ${importOptions.supplementMode 
-                  ? 'New data will be added alongside your existing data.' 
+                const confirmMessage = `This will import data into your current database. ${importOptions.supplementMode
+                  ? 'New data will be added alongside your existing data.'
                   : 'This may overwrite existing data.'}${importOptions.skipDuplicates ? ' Duplicates will be skipped.' : ''} Continue?`;
                 if (window.confirm(confirmMessage)) {
                   handleImport();
@@ -391,8 +391,8 @@ export default function DataManagement() {
             >
               {isImporting ? 'Importing...' : 'Import Data'}
             </button>
-            
-            <button 
+
+            <button
               onClick={resetImport}
               className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
             >
@@ -410,7 +410,7 @@ export default function DataManagement() {
             <h4 className="font-semibold mb-2">
               {importResult.success ? '✅ Import Completed' : '⚠️ Import Completed with Issues'}
             </h4>
-            
+
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <strong>Imported:</strong>
@@ -435,7 +435,7 @@ export default function DataManagement() {
                 </ul>
               </div>
             </div>
-            
+
             {importResult.errors.length > 0 && (
               <div className="mt-4 p-3 bg-red-100 rounded">
                 <strong>Errors:</strong>
@@ -446,7 +446,7 @@ export default function DataManagement() {
                 </ul>
               </div>
             )}
-            
+
             {importResult.warnings.length > 0 && (
               <div className="mt-4 p-3 bg-yellow-100 rounded">
                 <strong>Warnings:</strong>
@@ -458,9 +458,9 @@ export default function DataManagement() {
               </div>
             )}
           </div>
-          
-          <button 
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" 
+
+          <button
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             onClick={() => setImportResult(null)}
           >
             Clear Results

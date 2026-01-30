@@ -566,7 +566,7 @@ export async function getImportPreview(exportData: DataExportFormat): Promise<{
         return null;
       })
       .filter(date => date && !isNaN(date.getTime()))
-      .sort();
+      .sort((a, b) => a.getTime() - b.getTime());
     
     if (validDates.length > 0) {
       dateRange = {
