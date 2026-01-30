@@ -384,12 +384,20 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
 
   const handleCopyCategory = async (category: string, categoryItems: GroceryItem[]) => {
     try {
-      // Create a simple list with just item names and quantities, one per line
+      // Create a detailed list with item names, quantities, costs, and meal info
       const itemList = categoryItems
         .map(item => {
           const cleanName = cleanIngredientDisplayName(item.name);
           const formattedQty = formatQuantityWithUnit(item.qty);
-          return `${cleanName} - ${formattedQty}`;
+          const price = item.price || '0.00';
+          const meal = item.meal || 'General';
+
+          // Calculate unit cost if possible (simple division for now)
+          const numericPrice = parseFloat(price.replace(/[^0-9.]/g, ''));
+          const numericQty = parseFloat(item.qty.replace(/[^0-9.]/g, ''));
+          const unitCost = (numericQty > 0) ? (numericPrice / numericQty).toFixed(2) : numericPrice.toFixed(2);
+
+          return `${cleanName} - ${formattedQty} - $${price} (${meal}) [Unit: $${unitCost}]`;
         })
         .join('\n');
 
