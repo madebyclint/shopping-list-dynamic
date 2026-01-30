@@ -18,3 +18,6 @@ export * from './database/meal-banking';
 
 // Export pantry items functions
 export * from './database/pantry-items';
+
+// Export analytics functions
+export * from './database/analytics';

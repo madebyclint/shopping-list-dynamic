@@ -30,6 +30,10 @@ export default function Sidebar({ onTabChange, currentTab }: SidebarProps) {
     { id: 'utilities' as TabType, label: 'Utilities', icon: '⚙️' },
   ];
 
+  const handleAnalyticsClick = () => {
+    router.push('/analytics');
+  };
+
   return (
     <div className="sidebar">
       <div className="sidebar-header">
@@ -46,6 +50,26 @@ export default function Sidebar({ onTabChange, currentTab }: SidebarProps) {
             <span className="tab-label">{tab.label}</span>
           </button>
         ))}
+
+        {/* Analytics Section */}
+        <hr className="sidebar-separator" style={{ margin: '20px 0', borderColor: '#e0e0e0' }} />
+        <button
+          className="sidebar-tab analytics-tab"
+          onClick={handleAnalyticsClick}
+          style={{ borderLeft: '4px solid #4A90E2' }}
+        >
+          <span className="tab-icon">📊</span>
+          <span className="tab-label">Analytics</span>
+        </button>
+
+        <button
+          className="sidebar-tab pantry-tab"
+          onClick={() => router.push('/pantry-suggestions')}
+          style={{ borderLeft: '4px solid #10B981' }}
+        >
+          <span className="tab-icon">🤖</span>
+          <span className="tab-label">Smart Pantry</span>
+        </button>
       </nav>
     </div>
   );

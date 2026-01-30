@@ -112,6 +112,14 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
             item.id === itemId ? { ...item, is_purchased: isPurchased } : item
           )
         );
+
+        // Track purchase in analytics when item is marked as purchased
+        if (isPurchased) {
+          const item = items.find(i => i.id === itemId);
+          if (item && listId) {
+            trackPurchaseAnalytics(item);
+          }
+        }
       } else {
         console.error('Failed to update item');
       }
@@ -138,6 +146,14 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
             item.id === itemId ? { ...item, is_skipped: isSkipped } : item
           )
         );
+
+        // Track skipped item in analytics when item is marked as skipped
+        if (isSkipped) {
+          const item = items.find(i => i.id === itemId);
+          if (item && listId) {
+            trackSkippedAnalytics(item);
+          }
+        }
       } else {
         console.error('Failed to update item skip status');
       }
@@ -182,6 +198,53 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
         }
       })
       .catch(console.error);
+  };
+
+  // Analytics tracking functions
+  const trackPurchaseAnalytics = async (item: GroceryItem) => {
+    try {
+      await fetch('/api/analytics/purchases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          grocery_list_id: listId,
+          grocery_item_id: item.id,
+          item_name: item.name,
+          planned_quantity: item.qty,
+          purchased_quantity: item.qty, // Assume same as planned for now
+          total_price: parseFloat(item.price) || 0,
+          was_planned: true,
+          was_extra_purchase: false,
+          was_substitute: false,
+          category: item.category,
+          purchase_date: new Date().toISOString().split('T')[0]
+        })
+      });
+    } catch (error) {
+      console.error('Failed to track purchase analytics:', error);
+    }
+  };
+
+  const trackSkippedAnalytics = async (item: GroceryItem) => {
+    try {
+      await fetch('/api/analytics/skipped', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'record-skip',
+          grocery_list_id: listId,
+          grocery_item_id: item.id,
+          item_name: item.name,
+          planned_quantity: item.qty,
+          estimated_price: parseFloat(item.price) || 0,
+          category: item.category,
+          meal: item.meal,
+          skip_reason: 'not_needed' // Default reason, could be made configurable
+        })
+      });
+    } catch (error) {
+      console.error('Failed to track skipped analytics:', error);
+    }
   };
 
   const handleDedupeItems = async () => {
