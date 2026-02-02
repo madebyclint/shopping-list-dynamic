@@ -2,6 +2,42 @@
 
 This document outlines medium and long-term performance optimizations that should be implemented to further improve the shopping list application's performance and user experience.
 
+## 🔥 Critical Performance Issues (Current Branch: perf)
+
+### Issue #1: Slow Item Toggle Response (CRITICAL - User Facing)
+**Problem**: Checking off items on shopping lists is unacceptably slow (~1-3 seconds)
+
+**Root Cause Analysis**:
+1. **Multiple Sequential API Calls**: Each item toggle triggers:
+   - Main update: `PATCH /api/items` 
+   - Analytics tracking: `POST /api/analytics/purchases` OR `POST /api/analytics/skipped`
+2. **Heavy Analytics Operations**: Analytics calls perform:
+   - Complex database categorization logic
+   - Duplicate checking queries
+   - Frequency tracking calculations
+3. **No Request Debouncing**: Rapid clicks create cascade of requests
+4. **No Optimistic UI**: UI waits for ALL operations before updating
+
+**Impact**: Poor user experience, especially when checking multiple items rapidly
+
+**Code Locations**:
+- `GroceryListView.tsx:97-125` - `handleItemToggle` function
+- `GroceryListView.tsx:127-158` - `handleItemSkipToggle` function  
+- `GroceryListView.tsx:204-247` - Analytics tracking functions
+- `/api/items/route.ts:122-160` - PATCH endpoint
+- `/api/analytics/purchases/route.ts` - Purchase analytics endpoint
+- `/api/analytics/skipped/route.ts` - Skip analytics endpoint
+
+### Issue #2: Slow Loading Performance
+**Problem**: Loading lists and weekly menus is still slow
+
+**Investigation Needed**: 
+- Check if bulk loading optimizations from tech debt items #4-6 have been implemented
+- Analyze current API response times for list loading
+- Review database query patterns for N+1 issues
+
+---
+
 ## Completed High-Impact Optimizations ✅
 
 ### 1. Bulk Item Creation
@@ -23,33 +59,45 @@ This document outlines medium and long-term performance optimizations that shoul
 
 ## Medium Impact Optimizations (Next Priority)
 
-### 4. Request Debouncing & Batching
-- **Priority**: Medium
+### 4. Request Debouncing & Batching - 🚨 NOW CRITICAL FOR ISSUE #1
+- **Priority**: HIGH (upgraded from Medium due to current performance issues)
 - **Effort**: Low-Medium 
-- **Expected Impact**: 50-80% reduction in API calls
+- **Expected Impact**: 50-80% reduction in API calls + near-instant perceived performance
 
-**Implementation Plan**:
-- Add debouncing to rapid toggle operations (purchase status, skip status)
-- Batch multiple item updates into single requests
-- Implement request queuing with flush intervals
+**IMMEDIATE Implementation Plan** (addresses Issue #1):
+1. **Implement Optimistic UI Updates**:
+   - Update checkbox state immediately on click
+   - Show visual feedback (loading state) during background operations
+   - Implement rollback mechanism for failed operations
+
+2. **Separate Analytics from Core Operations**:
+   - Make analytics tracking truly async/fire-and-forget
+   - Queue analytics operations to background
+   - Don't block UI updates on analytics completion
+
+3. **Add Request Debouncing**:
+   - Debounce rapid toggle operations (purchase status, skip status)
+   - Batch multiple item updates into single requests
+   - Implement request queuing with flush intervals
 
 **Code Areas**:
-- `GroceryListView.tsx` - handleItemToggle function
+- `GroceryListView.tsx` - handleItemToggle function (IMMEDIATE PRIORITY)
 - New batch endpoints: `PUT /api/lists/[id]/items/batch-update`
+- Analytics tracking refactor to background processing
 
-### 5. Optimistic UI Updates
-- **Priority**: Medium
+### 5. Optimistic UI Updates - 🚨 CRITICAL COMPONENT OF ISSUE #1 FIX
+- **Priority**: HIGH (now part of critical fix)
 - **Effort**: Medium
 - **Expected Impact**: Near-instant perceived performance
 
-**Implementation Plan**:
+**Implementation Plan** (now urgent):
 - Update UI immediately on user actions
 - Queue actual API calls in background
 - Implement rollback mechanism for failed operations
 - Add subtle loading indicators for background operations
 
 **Code Areas**:
-- `GroceryListView.tsx` - All item manipulation functions
+- `GroceryListView.tsx` - All item manipulation functions (PRIORITY #1)
 - Add optimistic state management layer
 
 ### 6. API Endpoint Consolidation
@@ -172,9 +220,24 @@ This document outlines medium and long-term performance optimizations that shoul
 
 ## Priority Order for Implementation
 
-1. **Next Sprint**: Request debouncing & optimistic UI (#4, #5)
-2. **Following Sprint**: API consolidation & pagination (#6)
-3. **Future**: Virtual scrolling & caching (#7, #8)
-4. **Long-term**: Offline support & advanced DB optimizations (#9, #10, #11)
+**🚨 IMMEDIATE (Current Sprint - perf branch)**:
+1. **Issue #1 Fix**: Optimistic UI + Analytics separation (#4, #5) - **URGENT USER EXPERIENCE FIX**
+   - Implement optimistic checkbox updates
+   - Move analytics to background/async
+   - Add subtle loading indicators
 
-This prioritization focuses on user-facing performance improvements first, followed by infrastructure optimizations that will be needed as the application scales.
+**Next Sprint**: 
+2. **Issue #2 Investigation**: API consolidation & loading performance (#6)
+   - Analyze current loading bottlenecks
+   - Implement bulk loading if not already done
+
+**Following Sprint**: 
+3. **Complete debouncing/batching**: Full request optimization (#4)
+
+**Future**: 
+4. **Scaling optimizations**: Virtual scrolling & caching (#7, #8)
+
+**Long-term**: 
+5. **Infrastructure**: Offline support & advanced DB optimizations (#9, #10, #11)
+
+This prioritization focuses on **immediate user experience fixes** first, followed by infrastructure optimizations for scaling.
