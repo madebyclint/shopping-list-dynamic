@@ -241,3 +241,39 @@ This document outlines medium and long-term performance optimizations that shoul
 5. **Infrastructure**: Offline support & advanced DB optimizations (#9, #10, #11)
 
 This prioritization focuses on **immediate user experience fixes** first, followed by infrastructure optimizations for scaling.
+
+---
+
+# Feedback Round 1 - February 2, 2026 🗣️
+
+## User Experience Feedback from Brooklyn Shopping Trip
+
+### Core Issues Identified:
+1. **Meal Planning Volume Management**: Over-planned (6 meals + 2 breakfasts) = too much to carry in Brooklyn shopping trip
+   - Need meal limit preferences (flexible allocation: 5 dinners + 1 breakfast)
+   - Shopping phase management: "first half week", "today only", save rest for later
+   - Dynamic meal removal: on-the-fly removal from both meal plan & shopping list
+
+2. **Documentation Organization**: Need master index for 25+ markdown files across root/docs folders
+
+3. **Meal Context & Recipe Integration**: 
+   - Per-meal notes that feed into AI planning context (e.g., "frozen cheese pizza + toppings")
+   - Recipe paste/link option for specific cooking methods
+   - Shopping preferences per meal
+
+4. **Post-Shopping Feedback Loop**: 
+   - Receipt analysis integration
+   - Structured feedback: "over-shopped", "too many meals", "add meal notes"
+   - Learning integration for future planning improvement
+
+5. **Smart Shopping List Audit System**:
+   - Pre-shopping intelligence: volume warnings, pantry analysis, duplicate detection
+   - Portion optimization, meal simplification suggestions  
+   - Version control: audited vs non-audited with user-friendly diff
+
+6. **AI Integration Audit**: Optimize where AI adds value vs creates performance overhead
+
+7. **Marketing Feature README**: User-facing feature showcase document
+
+### Universal Design Note 🌍
+**Critical**: Keep all features configurable and not coupled to specific user preferences. Design for multi-user, multi-location adaptability (not just Brooklyn-specific).
