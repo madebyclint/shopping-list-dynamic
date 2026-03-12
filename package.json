@@ -14,7 +14,8 @@
     "backup:db": "node scripts/backup-db.mjs",
     "restore:db": "node scripts/restore-db.mjs",
     "backup:quick": "node scripts/quick-backup-restore.mjs backup",
-    "restore:quick": "node scripts/quick-backup-restore.mjs restore"
+    "restore:quick": "node scripts/quick-backup-restore.mjs restore",
+    "menu:prompt": "node weekly-menus-manually-generated/generate-prompt.mjs"
   },
   "dependencies": {
     "@google-cloud/vision": "^4.3.2",
