@@ -3,6 +3,7 @@
 // Reads meal-history.md and prints a ready-to-paste weekly menu prompt.
 
 import { readFileSync } from 'fs';
+import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -83,3 +84,10 @@ console.log('  WEEKLY MENU PROMPT — copy everything below the line');
 console.log('='.repeat(60) + '\n');
 console.log(prompt);
 console.log('\n' + '='.repeat(60) + '\n');
+
+try {
+  execSync('pbcopy', { input: prompt });
+  console.log('✓ Prompt copied to clipboard!\n');
+} catch {
+  console.log('(pbcopy not available — copy manually above)\n');
+}
