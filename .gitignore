@@ -51,6 +51,10 @@ coverage/
 # Database backups
 backups/
 
+# Uploaded files (may contain personal data like receipts)
+uploads/
+weekly-menus-manually-generated/
+
 # Grunt intermediate storage
 .grunt
 

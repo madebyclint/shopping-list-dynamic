@@ -1206,3 +1206,271 @@ li.skipped .item-label {
 .audit-btn:hover {
   background-color: #138496;
 }
+
+/* Post-Shopping Experience Styles */
+.post-shopping-test {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.post-shopping-test h1 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 2rem;
+}
+
+.post-shopping-container {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.post-shopping-header h1 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.post-shopping-header p {
+  color: var(--text-subdued);
+  font-size: 0.9rem;
+  margin-bottom: 2rem;
+}
+
+.post-shopping-progress {
+  margin-bottom: 2rem;
+}
+
+.progress-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.progress-step {
+  display: flex;
+  align-items: center;
+}
+
+.step-indicator {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 0.875rem;
+  margin-right: 0.5rem;
+}
+
+.step-indicator.completed {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.step-indicator.active {
+  background-color: #2196F3;
+  color: white;
+}
+
+.step-indicator.pending {
+  background-color: #e0e0e0;
+  color: #666;
+}
+
+.step-connector {
+  width: 5rem;
+  height: 2px;
+  margin: 0 0.5rem;
+}
+
+.step-connector.completed {
+  background-color: #4CAF50;
+}
+
+.step-connector.pending {
+  background-color: #e0e0e0;
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+}
+
+.progress-labels span {
+  font-size: 0.75rem;
+  color: var(--text-subdued);
+}
+
+.post-shopping-content {
+  background: white;
+  border: 1px solid var(--border-subdued);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.step-content h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  margin-top: 0;
+}
+
+.step-content p {
+  color: var(--text-subdued);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.processing-indicator {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #e3f2fd;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.processing-indicator .spinner {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid #1976d2;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+.processing-indicator .message {
+  color: #1976d2;
+  font-weight: 500;
+}
+
+.processing-indicator .sub-message {
+  color: #1976d2;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.analysis-continue-btn {
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.analysis-continue-btn:hover {
+  background: #1976D2;
+}
+
+.completion-container {
+  text-align: center;
+  padding: 3rem 0;
+}
+
+.completion-icon {
+  width: 4rem;
+  height: 4rem;
+  background-color: #e8f5e8;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+}
+
+.completion-icon svg {
+  width: 2rem;
+  height: 2rem;
+  color: #4CAF50;
+}
+
+.completion-container h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.completion-container p {
+  color: var(--text-subdued);
+  margin-bottom: 1.5rem;
+}
+
+.completion-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.completion-actions button {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.insights-btn {
+  background: #2196F3;
+  color: white;
+}
+
+.insights-btn:hover {
+  background: #1976D2;
+}
+
+.error-container {
+  text-align: center;
+  padding: 2rem;
+  background-color: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.error-container h3 {
+  color: #c53030;
+  margin-bottom: 0.5rem;
+}
+
+.error-container p {
+  color: #c53030;
+  margin-bottom: 1rem;
+}
+
+.error-retry-btn {
+  background: #c53030;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.error-retry-btn:hover {
+  background: #9c1810;
+}
+
+.loading-container {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-subdued);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
