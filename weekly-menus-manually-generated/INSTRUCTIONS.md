@@ -26,6 +26,8 @@ I need a meal plan for the next week. Here is the criteria:
 5. Rainbow plate mentality if possible with always a serving of veggie or fruit and protein. Veggie proteins are ok too.
 6. If we do pork, we need to do a pork portion and a non-pork portion for a couple family members.
 7. We are a family of 4 with two teens
+8. **Tuesday must be a super fast no-cook or minimal-cook meal** — we get home at 8pm. Think hot dogs, mac and cheese, charcuterie board, quesadillas, etc.
+9. **Thursday must be a kid-friendly prep meal** — the teens make it themselves. Keep it simple with clear steps (tacos, pasta, stir fry, sheet pan, etc.)
 
 **Context to include with prompt:**
 - Paste in recent entries from `meal-history.md` to avoid repeating recent meals
@@ -45,6 +47,7 @@ I need a meal plan for the next week. Here is the criteria:
 Present meals for approval first before generating full output:
 - 5 dinners + 1 breakfast
 - Brief one-liner per meal: name, key components, estimated time
+- Label which meal is **Tuesday (fast/easy)** and which is **Thursday (kids prep)**
 
 ### Step 2 — After Approval, Generate These Sections
 
