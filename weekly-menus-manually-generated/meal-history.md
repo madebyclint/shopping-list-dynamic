@@ -6,6 +6,25 @@ Running log of weekly menus. Reference when generating new plans to avoid repeat
 
 ---
 
+## Week of March 16, 2026
+
+### Dinners
+- 🍀 Corned Beef Roast & Cabbage — potatoes, carrots, soda bread — 90 min (Instant Pot) / 2–3 hrs stovetop — St. Patrick's Day
+- 🥪 Reuben Sandwiches *(TUESDAY FAST)* — deli corned beef, Swiss, sauerkraut, rye — 10–15 min
+- Persian Kofta Bowls — ground beef or lamb, tomato-cucumber salad, yogurt-garlic sauce, pita — 30 min
+- Peruvian Lomo Saltado *(THURSDAY TEEN PREP)* — beef strips, tomatoes, red onion, soy sauce, rice — 25–30 min
+- West African Goat Peanut Stew (Maafe) — goat, peanut butter, tomatoes, spices, fufu or rice — 45 min
+
+### Breakfast
+- *(Ramadan — no breakfast meal; suhoor proteins: hard-boiled eggs, BH Beef Salami, white cheese)*
+
+### Notes
+- Jamaican Jerk Chicken Bowls held for a future week
+- Fufu powder: check Ideal Foods, otherwise Utica Ave African/Caribbean market
+- Goat meat: check Ideal Foods butcher first
+
+---
+
 ## Week of March 12, 2026
 
 ### Dinners

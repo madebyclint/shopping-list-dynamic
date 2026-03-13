@@ -24,6 +24,7 @@ I need a meal plan for the next week. Here is the criteria:
 3. Keep them budget friendly
 4. Diversify the meals (cuisine) and don't be shy about non-mainstream — think outside the box
 5. Rainbow plate mentality if possible with always a serving of veggie or fruit and protein. Veggie proteins are ok too.
+   - **Every meal must include a fresh fruit as a side** — list it in both Quick Glance and Ingredients Used. Pick fruits that pair with the cuisine where possible.
 6. If we do pork, we need to do a pork portion and a non-pork portion for a couple family members.
 7. We are a family of 4 with two teens
 8. **Tuesday must be a super fast no-cook or minimal-cook meal** — we get home at 8pm. Think hot dogs, mac and cheese, charcuterie board, quesadillas, etc.
@@ -57,8 +58,8 @@ Present meals for approval first before generating full output:
 ## Quick Glance Meals
 
 ### This Week
-○ [Meal Name] — [key sides/components] — [time] min
-○ [Meal Name] — [key sides/components] — [time] min
+- [Meal Name] — [key sides/components] — [fruit] — [time] min
+- [Meal Name] — [key sides/components] — [time] min
 ...
 
 ### For Following Week
@@ -70,19 +71,29 @@ Present meals for approval first before generating full output:
 ```
 ## Deeper View
 
-**[Meal Name]**
-
-Total time: ~X minutes
-Approx calories: ~XXX per adult serving
+**[Meal Name]** *([Day, Date])*
+Total time: ~X min · Approx calories: ~XXX per adult
 
 **Ingredients Used**
+
 - Item
 - Item
+- [Fruit] (served on the side)
 ...
 
 **Cooking Overview**
-[High-level steps in short paragraphs. Only include specific temps/times for baking.]
+
+1. Step one
+2. Step two
+[Use numbered steps for all cooking overviews. Only include specific temps/times for baking.]
 ```
+
+> **Format rules for Deeper View:**
+> - Title and day/date on the **same line**: `**Meal Name** *(Day, Date)*`
+> - Total time and calories on the **same line**, separated by ` · `
+> - Always add a blank line after `**Ingredients Used**` and `**Cooking Overview**` before the list
+> - Use numbered steps (`1.`, `2.`, etc.) for all cooking overviews
+> - Always include a fruit as a side in the ingredients list
 
 #### Section C: Shopping List
 
@@ -90,14 +101,14 @@ Approx calories: ~XXX per adult serving
 ## Shopping List — Week of [DATE] — $XXX.XX
 
 🥬 PRODUCE
-○ [Item] — [meal] — [qty] [unit] — $[unit price] — $[total]
+- [Item] — [Meal Name or pantry/weekly] — [qty] [unit] — $[unit price] — $[total]
 ...
 Category Subtotal: $XX.XX
 
 ---
 
 🥩 REFRIGERATED / PROTEIN
-○ [Item] — [meal] — [qty] [unit] — $[unit price] — $[total]
+- [Item] — [Meal Name or pantry/weekly] — [qty] [unit] — $[unit price] — $[total]
 ...
 Category Subtotal: $XX.XX
 
@@ -124,7 +135,7 @@ Category Subtotal: $XX.XX
 
 Rules:
 - Combine ingredients across meals (e.g., recipe A needs 3 eggs + recipe B needs 2 → list as 1 dozen)
-- Use ○ (open circle) for unchecked items
+- Use standard `- ` list items (no special bullet characters)
 - Include category subtotals
 - Include weekly recurring items (see below)
 
@@ -134,13 +145,13 @@ Rules:
 ## Shopping List by Trip
 
 ### Meals
-○ [items needed specifically for this week's meals]
+- [items needed specifically for this week's meals]
 
 ### Pantry / Weekly
-○ [recurring weekly items — chips, milk, cereal, eggs, fruit, etc.]
+- [recurring weekly items — chips, milk, cereal, eggs, fruit, etc.]
 
 ### Other (Non-Food)
-○ [toilet paper, paper towels, etc.]
+- [toilet paper, paper towels, etc.]
 ```
 
 ---
@@ -178,8 +189,22 @@ Add these every week under the appropriate categories:
 | Eggs | 1 | dozen | $6.50 | $6.50 |
 | Ice cream | 1 | container | ~$5.00 | ~$5.00 |
 | Trail mix | 1 | bag | ~$6.00 | ~$6.00 |
+| Mango juice | 1 | bottle/carton | ~$3.50 | ~$3.50 |
+| Condensed milk | 1 | can | ~$2.50 | ~$2.50 |
 | Toilet paper | 1 | pack | ~$8.00 | ~$8.00 |
 | Paper towels | 1 | pack | ~$5.00 | ~$5.00 |
+
+---
+
+## Markdown Formatting Notes
+
+> These rules ensure files render correctly in VS Code and GitHub markdown previews.
+
+- **Always use `- ` for list items** — never use `○` or other special characters as standalone bullet replacements; they don't render as proper list items
+- **Add a blank line after bold labels** (`**Ingredients Used**`, `**Cooking Overview**`, etc.) before any list or paragraph content that follows — without it, the list collapses into the label's paragraph
+- **Numbered lists (`1.`, `2.`, etc.)** also require a blank line before them if preceded by a bold label
+- **Italic text** using `*text*` or `*(text)*` must not have a space after the opening `*` or before the closing `*`
+- **Bold labels mid-paragraph** (e.g., `**Method:**`) are fine inline — only add a blank line if the next content is a list or new paragraph block
 
 ---
 
