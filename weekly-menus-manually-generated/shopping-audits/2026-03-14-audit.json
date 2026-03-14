@@ -17,19 +17,19 @@
     "Brooklyn Fare": 60.83,
     "1426 St Johns": 28.99
   },
-  "on_list_total_est": 215.20,
-  "extras_total_est": 120.65,
+  "on_list_total_est": 240.96,
+  "extras_total_est": 94.89,
   "extras_breakdown": {
     "Brooklyn Fare impulse": {
-      "amount": 48.34,
+      "amount": 35.45,
       "items": [
         { "name": "Hot Crunchy Cheetos", "price": 5.49 },
         { "name": "Core Power Strawberry Shake (14oz)", "price": 5.99 },
         { "name": "Maestri Bresaola", "price": 13.99 },
-        { "name": "Antepli Pistachio", "price": 12.89 },
         { "name": "Double Chocolate Chip Muffin", "price": 7.99 },
-        { "name": "Unidentified bakery item", "price": 1.99 }
-      ]
+        { "name": "Unidentified small item", "price": 1.99 }
+      ],
+      "note": "Deli corned beef ($12.89) removed from extras — confirmed on-list item. OCR had misread label."
     },
     "1426 St Johns extras": {
       "amount": 16.00,
@@ -38,16 +38,14 @@
       ]
     },
     "Ideal Foods add-ons": {
-      "amount": 56.31,
+      "amount": 43.44,
       "items": [
         { "name": "Al Fresco Tomato Basil Sausage x2", "price": 13.98 },
         { "name": "Johnsonville Turkey Sausage x2", "price": 11.98 },
         { "name": "Unsalted Pepita Seeds", "price": 4.49 },
-        { "name": "Terrafina Vital (health drink)", "price": 6.99 },
-        { "name": "Del Monte item", "price": 2.69 },
-        { "name": "Unidentified (MAR ORIENTAND)", "price": 3.19 },
-        { "name": "Unidentified (REENWOODS item)", "price": 12.99 }
-      ]
+        { "name": "Greenwoods Medjool Dates", "price": 12.99, "note": "OCR: REENWOODS *ED30" }
+      ],
+      "note": "Resolved: trail mix=Terrafina Vital, sauerkraut=Del Monte Shredded, pita=*TOUF FLAT WHITE, cereal=QUAKERLIFE MULTI. Not purchased: peanut butter, Thousand Island, Greek yogurt, ice cream."
     }
   },
   "category_spending": {
@@ -70,5 +68,5 @@
     { "item": "Cabbage green (per head)", "old_price": 3.50, "new_price": 2.09, "delta": -1.41 },
     { "item": "Cucumber (each)", "old_price": 0.67, "new_price": 1.67, "delta": 1.00 }
   ],
-  "notes": "Corned beef bought at Ideal Foods not Brooklyn Fare. Deli corned beef + Swiss not found on receipts — may have been skipped. Brooklyn Fare impulse buys were the largest single over-budget driver ($48.34). Chia seeds are a recurring pantry staple purchase, worth budgeting ~$16/mo. Fufu powder estimate needs update from $5 to $13 in shopping list template."
+  "notes": "Corned beef bought at Ideal Foods not Brooklyn Fare. Deli corned beef ($12.89) at Brooklyn Fare - OCR misread as 'ANTEPLI PISTACHIO'. Swiss cheese = one of two Great Lakes packs at Ideal. Pita = '*TOUF FLAT WHITE $3.19'. Sauerkraut = 'CEL MONTE S-REDO $2.69' (Del Monte Shredded). Trail mix = 'TERRAFINA VITAL $6.99'. Cereal = 'QUAKERLIFE MULTI $5.99'. Medjool Dates = 'REENWOODS *ED30 $12.99' (extra). Not purchased: peanut butter, Thousand Island, Greek yogurt, ice cream."
 }

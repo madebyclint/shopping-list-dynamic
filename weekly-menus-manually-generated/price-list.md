@@ -90,11 +90,13 @@
 | Arnold Hearty Bread | 1 loaf | $5.29 **†** | Ideal Foods | | Feb 2026 |
 | BH Beef Salami | 1 pack | $2.86 **†** | Brooklyn Fare | updated Mar 2026; was $3.92 at Ideal Foods (Feb) | Mar 2026 |
 | Butter, Cabot Salted | 1 pack | $7.29 **†** | Ideal Foods | updated from ~$3.00 est — significantly higher | Mar 2026 |
+| Corned Beef, deli sliced | ~1 lb | $12.89 **†** | Brooklyn Fare | for Reubens; OCR initially misread label | Mar 2026 |
 | Great Lake White Cheese | 1 pack | $3.45 **†** | Ideal Foods | avg of two packs ($3.40–$3.50); updated Mar 2026 | Mar 2026 |
 | Great Lake Yellow Cheese | 1 pack | $3.44 **†** | Ideal Foods | | Feb 2026 |
 | Irish Soda Bread, Dere Street Baked | 1 loaf | $4.99 **†** | Brooklyn Fare | regular ~$5.99; often $1 markdown | Mar 2026 |
 | Maestri Bresaola | 1 pack | $13.99 **†** | Brooklyn Fare | cured beef; specialty/extra | Mar 2026 |
 | Muenster Cheese | 1 pack | $3.76 **†** | Ideal Foods | | Feb 2026 |
+| Swiss Cheese (Great Lakes brand) | 1 pack | $3.45 **†** | Ideal Foods | Great Lakes brand; good sub for deli Swiss | Mar 2026 |
 
 ---
 
@@ -104,6 +106,7 @@
 |------|------|-------|--------|-------|--------------|
 | Campbell's Unsalted Soup | 1 can | ~$2.79 | Ideal Foods | approx | Feb 2026 |
 | Carolina Jasmine Rice | 1 bag | ~$2.79 | Ideal Foods | approx | Feb 2026 |
+| Cereal — Quaker Life (multi-pack) | 1 multi-pack | $5.99 **†** | Ideal Foods | OCR: "QUAKERLIFE MULTI"; covers ~2-box equiv | Mar 2026 |
 | Cereal — Quaker Oatmeal Squares | 1 box | $4.99 **†** | Ideal Foods | | Feb 2026 |
 | Cereal — Post Honey Bunches of Oats | 1 box | $2.99 **†** | Ideal Foods | | Feb 2026 |
 | Chips — Deep River (Zesty or Sea Salt) | 1 bag | $3.79 **†** | Ideal Foods | confirmed Mar 2026; multiple flavors | Mar 2026 |
@@ -119,8 +122,12 @@
 | Chicken of the Sea Pink Salmon | 1 can | $6.49 **†** | Brooklyn Fare | | Feb 2026 |
 | Ice cream | 1 container | ~$5.00 | — | estimate | Mar 2026 |
 | Mango Juice (Best brand) | 1 bottle | $5.99 **†** | Ideal Foods | updated from ~$3.50 est | Mar 2026 |
+| Medjool Dates (Greenwoods) | 1 package | $12.99 **†** | Ideal Foods | OCR: "REENWOODS *ED30"; extra/pantry item | Mar 2026 |
 | Pepita Seeds, unsalted | 1 bag | $4.49 **†** | Ideal Foods | | Mar 2026 |
+| Pita Bread | 1 pack | $3.19 **†** | Ideal Foods | OCR: "*TOUF FLAT WHITE" | Mar 2026 |
 | Rye Bread, Levy's Real Jewish | 1 loaf | $4.99 **†** | Ideal Foods | | Mar 2026 |
+| Sauerkraut (Del Monte Shredded) | 1 can | $2.69 **†** | Ideal Foods | OCR: "CEL MONTE S-REDO" | Mar 2026 |
+| Trail Mix (Terrafina Vital) | 1 bag | $6.99 **†** | Ideal Foods | OCR: "TERRAFINA VITAL" | Mar 2026 |
 
 ---
 

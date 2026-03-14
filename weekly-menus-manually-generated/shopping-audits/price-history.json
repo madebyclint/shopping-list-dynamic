@@ -321,16 +321,68 @@
       ]
     },
     {
-      "name": "Antepli Pistachio",
-      "unit": "1 jar/package",
+      "name": "Corned Beef, deli sliced (~1 lb)",
+      "unit": "~1 lb from deli counter",
       "vendor": "Brooklyn Fare",
-      "category": "specialty",
+      "category": "deli",
       "history": [
-        { "date": "2026-03-14", "price": 12.89, "confirmed": true, "source": "Brooklyn Fare receipt" }
+        { "date": "2026-03-14", "price": 12.89, "confirmed": true, "source": "Brooklyn Fare receipt (OCR initially misread label)" }
       ]
     },
     {
-      "name": "Core Power Protein Shake (Strawberry)",
+      "name": "Swiss Cheese, sliced (Great Lakes brand)",
+      "unit": "1 pack",
+      "vendor": "Ideal Foods",
+      "category": "deli",
+      "history": [
+        { "date": "2026-03-14", "price": 3.45, "confirmed": true, "source": "Ideal Foods receipt (one of two Great Lakes packs; Great Lakes brand makes Swiss)" }
+      ]
+    },
+    {      "name": "Pita Bread",
+      "unit": "1 pack",
+      "vendor": "Ideal Foods",
+      "category": "bakery",
+      "history": [
+        { "date": "2026-03-14", "price": 3.19, "confirmed": true, "source": "Ideal Foods receipt (OCR: '*TOUF FLAT WHITE')" }
+      ]
+    },
+    {
+      "name": "Sauerkraut (Del Monte Shredded)",
+      "unit": "1 can/bag",
+      "vendor": "Ideal Foods",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-14", "price": 2.69, "confirmed": true, "source": "Ideal Foods receipt (OCR: 'CEL MONTE S-REDO')" }
+      ]
+    },
+    {
+      "name": "Trail Mix (Terrafina Vital)",
+      "unit": "1 bag",
+      "vendor": "Ideal Foods",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-14", "price": 6.99, "confirmed": true, "source": "Ideal Foods receipt (OCR: 'TERRAFINA VITAL')" }
+      ]
+    },
+    {
+      "name": "Medjool Dates (Greenwoods)",
+      "unit": "1 package",
+      "vendor": "Ideal Foods",
+      "category": "produce",
+      "history": [
+        { "date": "2026-03-14", "price": 12.99, "confirmed": true, "source": "Ideal Foods receipt (OCR: 'REENWOODS *ED30')" }
+      ]
+    },
+    {
+      "name": "Cereal, Quaker Life (multi-pack)",
+      "unit": "1 multi-pack",
+      "vendor": "Ideal Foods",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-14", "price": 5.99, "confirmed": true, "source": "Ideal Foods receipt (OCR: 'QUAKERLIFE MULTI')" }
+      ]
+    },
+    {      "name": "Core Power Protein Shake (Strawberry)",
       "unit": "14 oz",
       "vendor": "Brooklyn Fare",
       "category": "aisles",

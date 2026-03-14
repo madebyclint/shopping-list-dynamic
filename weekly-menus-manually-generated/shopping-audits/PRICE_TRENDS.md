@@ -68,7 +68,8 @@ These had no prior confirmed price. Now in the price history.
 | Rye Bread, Levy's Real Jewish | $4.99 | Ideal Foods |
 | Irish Soda Bread, Dere Street | $4.99 (after $1 markdown) | Brooklyn Fare |
 | Maestri Bresaola | $13.99 | Brooklyn Fare |
-| Antepli Pistachio | $12.89 | Brooklyn Fare |
+| Corned Beef, deli sliced (~1 lb) | $12.89 | Brooklyn Fare |
+| Swiss Cheese (Great Lakes brand) | $3.45 | Ideal Foods |
 | Core Power Protein Shake (14oz) | $5.99 | Brooklyn Fare |
 | Mango, Mexican | $1.67 ea (3/$5) | Ideal Foods |
 | Orange, navel | $1.00 ea (5/$5) | Ideal Foods |
