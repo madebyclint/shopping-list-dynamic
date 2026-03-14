@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Price Trends — Brooklyn Market</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f0;
+      color: #1a1a1a;
+      padding: 24px;
+    }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 28px; }
+    h2 { font-size: 1.1rem; font-weight: 600; margin: 28px 0 12px; color: #333; }
+    .updated { font-size: 0.8rem; color: #999; margin-top: 2px; }
+
+    /* Summary cards */
+    .cards { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px 20px;
+      flex: 1;
+      min-width: 160px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .card-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 4px; }
+    .card-value { font-size: 1.6rem; font-weight: 700; }
+    .card-value.up { color: #dc3545; }
+    .card-value.down { color: #28a745; }
+    .card-value.neutral { color: #666; }
+
+    /* Chart areas */
+    .chart-wrap {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .chart-wrap canvas { max-height: 380px; }
+
+    /* Price history table */
+    .table-wrap {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      overflow-x: auto;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 2px solid #eee;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #888;
+    }
+    td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .badge-up { background: #fde8ea; color: #dc3545; }
+    .badge-down { background: #e8f5e9; color: #28a745; }
+    .badge-same { background: #f0f0f0; color: #888; }
+    .badge-new { background: #e8f0fe; color: #3665c9; }
+    .badge-est { font-size: 0.7rem; color: #aaa; margin-left: 4px; }
+    .price-history-dots { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .dot-entry { display: flex; flex-direction: column; align-items: center; font-size: 0.72rem; }
+    .dot-date { color: #aaa; }
+    .dot-price { font-weight: 600; }
+    .dot-unconfirmed { color: #bbb; }
+    .arrow { color: #ccc; font-size: 0.9rem; align-self: center; margin-bottom: 8px; }
+    .filter-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .filter-btn {
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1.5px solid #ddd;
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.82rem;
+      transition: all 0.15s;
+    }
+    .filter-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  </style>
+</head>
+<body>
+
+<h1>Price Trends — Brooklyn Market</h1>
+<p class="subtitle">Tracking price changes across shopping trips. Last updated: <span id="lastUpdated">—</span></p>
+
+<div id="summary-cards" class="cards"></div>
+
+<div class="chart-wrap">
+  <h2>Price Movers — % Change vs First Recorded Price</h2>
+  <canvas id="moversChart"></canvas>
+</div>
+
+<div class="chart-wrap">
+  <h2>Weekly Spend vs Budget Estimate</h2>
+  <canvas id="spendChart"></canvas>
+</div>
+
+<div class="table-wrap">
+  <h2 style="margin-top:0">All Tracked Items</h2>
+  <div class="filter-row" id="filterRow"></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Category</th>
+        <th>Vendor</th>
+        <th>Status</th>
+        <th>Price History</th>
+      </tr>
+    </thead>
+    <tbody id="priceTable"></tbody>
+  </table>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+// Load price-history.json from same directory.
+// If you open this HTML directly (file://) browsers block fetch for local JSON.
+// In that case the data is embedded below as a fallback.
+
+const PRICE_HISTORY_URL = './price-history.json';
+
+// Audit spending data (manually updated each trip)
+const AUDIT_DATA = [
+  {
+    week: "2026-03-16",
+    shopping_date: "2026-03-14",
+    list_estimate: 220.25,
+    total_spent: 335.85,
+    on_list_total_est: 215.20,
+    extras_total_est: 120.65,
+    by_store: {
+      "Ideal Foods": 246.03,
+      "Brooklyn Fare": 60.83,
+      "1426 St Johns": 28.99
+    }
+  }
+  // Add new entries here after each trip
+];
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function pct(a, b) { return ((b - a) / a * 100).toFixed(1); }
+function fmt(n) { return '$' + parseFloat(n).toFixed(2); }
+function shortDate(d) {
+  if (!d.includes('-') || d.length <= 7) return d;
+  const parts = d.split('-');
+  const months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[parseInt(parts[1])] + ' ' + parts[2];
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+async function init() {
+  let data;
+  try {
+    const res = await fetch(PRICE_HISTORY_URL);
+    data = await res.json();
+  } catch(e) {
+    document.querySelector('.subtitle').insertAdjacentHTML('afterend',
+      '<p style="color:#dc3545;margin:8px 0;font-size:0.85rem">⚠️ Could not load price-history.json via fetch (common when opening as file://). Showing embedded snapshot data. To fix: serve this folder with a local server, e.g. <code>npx serve .</code> from the shopping-audits directory.</p>');
+    // Minimal fallback — just the items with two data points
+    data = { _meta: { last_updated: "2026-03-14" }, items: FALLBACK_ITEMS };
+  }
+
+  document.getElementById('lastUpdated').textContent = data._meta?.last_updated || '—';
+
+  const items = data.items;
+  const movers = items
+    .filter(i => i.history.length >= 2)
+    .map(i => {
+      const first = i.history[0];
+      const last = i.history[i.history.length - 1];
+      return { name: i.name, first: first.price, last: last.price, change: parseFloat(pct(first.price, last.price)) };
+    })
+    .sort((a, b) => b.change - a.change);
+
+  // Summary cards
+  const increased = movers.filter(m => m.change > 0);
+  const decreased = movers.filter(m => m.change < 0);
+  const avgIncrease = increased.length ? (increased.reduce((s,m) => s + m.change, 0) / increased.length).toFixed(1) : 0;
+  const biggestUp = movers[0];
+  const biggestDown = [...movers].reverse()[0];
+
+  const cards = [
+    { label: 'Items tracked', value: items.length, cls: 'neutral' },
+    { label: 'Price increases', value: increased.length, cls: 'up' },
+    { label: 'Price decreases', value: decreased.length, cls: 'down' },
+    { label: 'Avg increase', value: avgIncrease + '%', cls: 'up' },
+    { label: 'Biggest jump', value: biggestUp ? biggestUp.name.split(' ').slice(0,2).join(' ') + ' +' + biggestUp.change + '%' : '—', cls: 'up' },
+    { label: 'Biggest drop', value: biggestDown && biggestDown.change < 0 ? biggestDown.name.split(' ').slice(0,2).join(' ') + ' ' + biggestDown.change + '%' : '—', cls: 'down' },
+  ];
+  document.getElementById('summary-cards').innerHTML = cards.map(c =>
+    `<div class="card"><div class="card-label">${c.label}</div><div class="card-value ${c.cls}">${c.value}</div></div>`
+  ).join('');
+
+  // Movers bar chart
+  const moverColors = movers.map(m => m.change > 0 ? 'rgba(220, 53, 69, 0.75)' : 'rgba(40, 167, 69, 0.75)');
+  new Chart(document.getElementById('moversChart'), {
+    type: 'bar',
+    data: {
+      labels: movers.map(m => m.name.length > 32 ? m.name.slice(0, 32) + '…' : m.name),
+      datasets: [{
+        label: '% change',
+        data: movers.map(m => m.change),
+        backgroundColor: moverColors,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const m = movers[ctx.dataIndex];
+              return ` ${fmt(m.first)} → ${fmt(m.last)}  (${m.change > 0 ? '+' : ''}${m.change}%)`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { callback: v => v + '%' },
+          grid: { color: '#f0f0f0' }
+        },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+
+  // Spend chart
+  const spendLabels = AUDIT_DATA.map(a => a.shopping_date);
+  new Chart(document.getElementById('spendChart'), {
+    type: 'bar',
+    data: {
+      labels: spendLabels,
+      datasets: [
+        {
+          label: 'List Estimate',
+          data: AUDIT_DATA.map(a => a.list_estimate),
+          backgroundColor: 'rgba(100, 149, 237, 0.6)',
+          borderRadius: 4,
+        },
+        {
+          label: 'On-List Actual',
+          data: AUDIT_DATA.map(a => a.on_list_total_est),
+          backgroundColor: 'rgba(54, 162, 235, 0.75)',
+          borderRadius: 4,
+        },
+        {
+          label: 'Extras',
+          data: AUDIT_DATA.map(a => a.extras_total_est),
+          backgroundColor: 'rgba(255, 159, 64, 0.75)',
+          borderRadius: 4,
+          stack: 'actual',
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: {
+          ticks: { callback: v => '$' + v },
+          grid: { color: '#f0f0f0' }
+        }
+      }
+    }
+  });
+
+  // Category filter buttons
+  const categories = ['all', ...new Set(items.map(i => i.category))];
+  document.getElementById('filterRow').innerHTML = categories.map(c =>
+    `<button class="filter-btn ${c === 'all' ? 'active' : ''}" data-cat="${c}">${c}</button>`
+  ).join('');
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTable(items, btn.dataset.cat);
+    });
+  });
+
+  renderTable(items, 'all');
+}
+
+function renderTable(items, category) {
+  const filtered = category === 'all' ? items : items.filter(i => i.category === category);
+  const tbody = document.getElementById('priceTable');
+  tbody.innerHTML = filtered.map(item => {
+    const h = item.history;
+    const first = h[0], last = h[h.length - 1];
+    let badge = '';
+    if (h.length === 1) {
+      badge = `<span class="badge badge-new">new</span>`;
+    } else {
+      const change = parseFloat(pct(first.price, last.price));
+      if (change > 0) badge = `<span class="badge badge-up">+${change}%</span>`;
+      else if (change < 0) badge = `<span class="badge badge-down">${change}%</span>`;
+      else badge = `<span class="badge badge-same">no change</span>`;
+    }
+    const dots = h.map((entry, idx) => {
+      const confirmed = entry.confirmed;
+      return `
+        ${idx > 0 ? '<span class="arrow">→</span>' : ''}
+        <div class="dot-entry">
+          <span class="dot-date">${shortDate(entry.date)}</span>
+          <span class="dot-price ${confirmed ? '' : 'dot-unconfirmed'}">${fmt(entry.price)}${!confirmed ? '<span class="badge-est">est</span>' : ''}</span>
+        </div>`;
+    }).join('');
+
+    return `<tr>
+      <td><strong>${item.name}</strong><br><span style="color:#999;font-size:0.78rem">${item.unit}</span></td>
+      <td><span style="font-size:0.82rem;text-transform:capitalize">${item.category}</span></td>
+      <td style="font-size:0.82rem">${item.vendor}</td>
+      <td>${badge}</td>
+      <td><div class="price-history-dots">${dots}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+// Minimal fallback data if fetch fails
+const FALLBACK_ITEMS = [
+  { name: "Almond Breeze", unit: "1 carton", vendor: "Ideal Foods", category: "refrigerated", history: [{ date: "2026-02", price: 3.59, confirmed: false }, { date: "2026-03-14", price: 5.69, confirmed: true }] },
+  { name: "Butter, Cabot Salted", unit: "1 pack", vendor: "Ideal Foods", category: "refrigerated", history: [{ date: "2026-02", price: 3.00, confirmed: false }, { date: "2026-03-14", price: 7.29, confirmed: true }] },
+  { name: "Fufu Powder", unit: "1 bag", vendor: "1426 St Johns", category: "specialty", history: [{ date: "2026-02", price: 5.00, confirmed: false }, { date: "2026-03-14", price: 12.99, confirmed: true }] },
+  { name: "Mango Juice (Best)", unit: "1 bottle", vendor: "Ideal Foods", category: "aisles", history: [{ date: "2026-02", price: 3.50, confirmed: false }, { date: "2026-03-14", price: 5.99, confirmed: true }] },
+  { name: "Condensed Milk", unit: "1 can", vendor: "Ideal Foods", category: "aisles", history: [{ date: "2026-02", price: 2.50, confirmed: false }, { date: "2026-03-14", price: 3.79, confirmed: true }] },
+  { name: "Goat Meat (2 pcs)", unit: "~2 lbs", vendor: "Ideal Foods", category: "protein", history: [{ date: "2026-02", price: 12.00, confirmed: false }, { date: "2026-03-14", price: 17.98, confirmed: true }] },
+  { name: "Strawberries", unit: "1 container", vendor: "Ideal Foods", category: "produce", history: [{ date: "2026-02", price: 5.50, confirmed: false }, { date: "2026-03-14", price: 1.67, confirmed: true }] },
+  { name: "Scallions", unit: "1 bunch", vendor: "Ideal Foods", category: "produce", history: [{ date: "2026-02", price: 2.50, confirmed: true }, { date: "2026-03-14", price: 1.50, confirmed: true }] },
+  { name: "Cucumber (each)", unit: "1 ea", vendor: "Ideal Foods", category: "produce", history: [{ date: "2026-02", price: 0.67, confirmed: true }, { date: "2026-03-14", price: 1.67, confirmed: true }] },
+  { name: "Mandarins (Halos bag)", unit: "1 bag", vendor: "Ideal Foods", category: "produce", history: [{ date: "2026-02", price: 4.99, confirmed: true }, { date: "2026-03-14", price: 7.99, confirmed: true }] },
+];
+
+init();
+</script>
+</body>
+</html>

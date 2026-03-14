@@ -8,10 +8,79 @@ Each week, a new meal plan is generated and saved to this directory:
 - `shopping-lists/YYYY-MM-DD-shopping-list.md` — Full shopping list for the week
 - `price-list.md` — Ongoing price reference, update as prices change
 - `meal-history.md` — Running log of past weekly menus (to avoid repeats)
+- `shopping-audits/YYYY-MM-DD-audit.md` — Post-shopping audit report (use the shopping date)
+- `shopping-audits/YYYY-MM-DD-audit.json` — Structured data version for graphs and tracking
+- `shopping-audits/price-history.json` — Master price tracking file, updated every trip
+- `shopping-audits/PRICE_TRENDS.md` — Human-readable price trends report (regenerate each trip)
+- `shopping-audits/price-trends.html` — Visual trend charts (open in browser; reads price-history.json)
 
 ---
 
-## The Prompt
+## Post-Shopping Audit (Do After Every Trip)
+
+After each shopping trip, do the following:
+
+### Step 1 — Provide the receipts
+
+Drop this week's receipts into `uploads/receipts/YYYY-MM-DD/`. Include:
+- PDF scans of each receipt
+- The OCR text file if your scanner generates one (e.g., `text-XXXXXXXX-1.txt`)
+- Any context for items with missing labels (handwritten notes, photos, or verbal description — e.g., "the $16 receipt is for chia seeds from 1426 St Johns")
+
+### Step 2 — Run the audit prompt
+
+Use the following prompt:
+
+---
+
+I just got back from shopping. Receipts are in `uploads/receipts/YYYY-MM-DD/`. Please:
+
+1. **Cross-reference** the OCR text file against the receipt PDFs and any verbal context I provide
+2. **Update `price-list.md`** — add new items seen on the receipts, and update prices where they've changed. Note the vendor and date.
+3. **Create a shopping audit** in `shopping-audits/YYYY-MM-DD-audit.md` with:
+   - Total spent vs shopping list estimate
+   - Breakdown by store
+   - Table of on-list items (estimated vs actual price)
+   - Table of extras — items NOT on the shopping list, with amounts
+   - Price variance summary: items that were significantly more or less than estimated
+   - Notes and observations
+4. **Create `shopping-audits/YYYY-MM-DD-audit.json`** with structured data for graph tracking:
+   - `week`, `shopping_date`, `list_estimate`, `total_spent`, `variance`
+   - `by_store` object with amount per store
+   - `on_list_total_est`, `extras_total_est`
+   - `extras_breakdown` with item-level detail and amounts
+   - `category_spending` object
+   - `price_updates` array (item, old_price, new_price, delta)
+5. **Update `shopping-audits/price-history.json`** — for every item seen on the receipts, find its entry and append a new `{ date, price, confirmed, source }` object to its `history` array. Add new items as new entries. This is how the trend charts stay current.
+6. **Note** anything that needs to be updated in future shopping list estimates (recurring item prices, planning notes, etc.)
+
+**Context for this trip:** [PASTE ANY VERBAL ITEM NOTES HERE — e.g., "the $16 and $12.99 receipts from 1426 St Johns are for chia seeds and fufu powder"]
+
+---
+
+### Audit File Naming
+
+| File | Naming | Example |
+|------|--------|---------|
+| Audit report | `shopping-audits/YYYY-MM-DD-audit.md` | `shopping-audits/2026-03-14-audit.md` |
+| Audit JSON | `shopping-audits/YYYY-MM-DD-audit.json` | `shopping-audits/2026-03-14-audit.json` |
+
+> Use the **shopping date** (day of trip), not the Monday menu date.
+
+### What to Do With the JSON Data
+
+The JSON files are designed to be visualized as charts over time. Potential graphs to build:
+- **Weekly spend vs budget estimate** (bar chart, actual vs est per week)
+- **On-list vs extras split** (stacked bar or pie per week)
+- **Spend by store** (stacked bar over time)
+- **Category spending trends** (produce, protein, aisles, extras)
+- **Price update tracker** (items that have changed price over time)
+
+These can be loaded and rendered with a simple dashboard (e.g., Chart.js or a Python notebook).
+
+---
+
+## The Meal Plan Prompt
 
 Use the following prompt to generate a new weekly meal plan:
 
@@ -181,16 +250,16 @@ Add these every week under the appropriate categories:
 
 | Item | Qty | Unit | Est. Unit Cost | Est. Total |
 |------|-----|------|----------------|------------|
-| Chips | 2 | bags | $4.50 | $9.00 |
+| Chips | 2 | bags | $3.79 | $7.58 |
 | Cereal | 2 | boxes | ~$5.00 | ~$10.00 |
-| Lactaid milk | 1 | gallon | $7.50 | $7.50 |
-| Almond milk | 1 | ½ gallon | $4.50 | $4.50 |
+| Lactaid milk | 1 | gallon | $8.99 | $8.99 |
+| Almond milk | 1 | ½ gallon | $5.69 | $5.69 |
 | Fruit (assorted) | — | assorted | — | ~$10–$15 |
 | Eggs | 1 | dozen | $6.50 | $6.50 |
 | Ice cream | 1 | container | ~$5.00 | ~$5.00 |
 | Trail mix | 1 | bag | ~$6.00 | ~$6.00 |
-| Mango juice | 1 | bottle/carton | ~$3.50 | ~$3.50 |
-| Condensed milk | 1 | can | ~$2.50 | ~$2.50 |
+| Mango juice | 1 | bottle/carton | $5.99 | $5.99 |
+| Condensed milk | 1 | can | $3.79 | $3.79 |
 | Toilet paper | 1 | pack | ~$8.00 | ~$8.00 |
 | Paper towels | 1 | pack | ~$5.00 | ~$5.00 |
 

@@ -1,0 +1,74 @@
+{
+  "week": "2026-03-16",
+  "shopping_date": "2026-03-14",
+  "menu_file": "menus/2026-03-16-menu.md",
+  "meals": [
+    "Corned Beef Roast & Cabbage",
+    "Reuben Sandwiches",
+    "Persian Kofta Bowls",
+    "Peruvian Lomo Saltado",
+    "West African Goat Peanut Stew (Maafe)"
+  ],
+  "list_estimate": 220.25,
+  "total_spent": 335.85,
+  "variance": 115.60,
+  "by_store": {
+    "Ideal Foods": 246.03,
+    "Brooklyn Fare": 60.83,
+    "1426 St Johns": 28.99
+  },
+  "on_list_total_est": 215.20,
+  "extras_total_est": 120.65,
+  "extras_breakdown": {
+    "Brooklyn Fare impulse": {
+      "amount": 48.34,
+      "items": [
+        { "name": "Hot Crunchy Cheetos", "price": 5.49 },
+        { "name": "Core Power Strawberry Shake (14oz)", "price": 5.99 },
+        { "name": "Maestri Bresaola", "price": 13.99 },
+        { "name": "Antepli Pistachio", "price": 12.89 },
+        { "name": "Double Chocolate Chip Muffin", "price": 7.99 },
+        { "name": "Unidentified bakery item", "price": 1.99 }
+      ]
+    },
+    "1426 St Johns extras": {
+      "amount": 16.00,
+      "items": [
+        { "name": "Chia Seeds", "price": 16.00, "note": "pantry staple, not on list" }
+      ]
+    },
+    "Ideal Foods add-ons": {
+      "amount": 56.31,
+      "items": [
+        { "name": "Al Fresco Tomato Basil Sausage x2", "price": 13.98 },
+        { "name": "Johnsonville Turkey Sausage x2", "price": 11.98 },
+        { "name": "Unsalted Pepita Seeds", "price": 4.49 },
+        { "name": "Terrafina Vital (health drink)", "price": 6.99 },
+        { "name": "Del Monte item", "price": 2.69 },
+        { "name": "Unidentified (MAR ORIENTAND)", "price": 3.19 },
+        { "name": "Unidentified (REENWOODS item)", "price": 12.99 }
+      ]
+    }
+  },
+  "category_spending": {
+    "produce": 42.55,
+    "protein_refrigerated": 116.75,
+    "deli_bakery": 4.99,
+    "aisles": 22.06,
+    "specialty": 12.99,
+    "extras": 120.65
+  },
+  "price_updates": [
+    { "item": "Almond Breeze", "old_price": 3.59, "new_price": 5.69, "delta": 2.10 },
+    { "item": "Butter (Cabot Salted)", "old_price": 3.00, "new_price": 7.29, "delta": 4.29 },
+    { "item": "Fufu Powder", "old_price": 5.00, "new_price": 12.99, "delta": 7.99 },
+    { "item": "Mango Juice (Best)", "old_price": 3.50, "new_price": 5.99, "delta": 2.49 },
+    { "item": "Condensed Milk (Eagle Brand)", "old_price": 2.50, "new_price": 3.79, "delta": 1.29 },
+    { "item": "Goat Meat (2 pcs)", "old_price": 12.00, "new_price": 17.98, "delta": 5.98 },
+    { "item": "Strawberries", "old_price": 5.50, "new_price": 1.67, "delta": -3.83 },
+    { "item": "Scallions", "old_price": 2.50, "new_price": 1.50, "delta": -1.00 },
+    { "item": "Cabbage green (per head)", "old_price": 3.50, "new_price": 2.09, "delta": -1.41 },
+    { "item": "Cucumber (each)", "old_price": 0.67, "new_price": 1.67, "delta": 1.00 }
+  ],
+  "notes": "Corned beef bought at Ideal Foods not Brooklyn Fare. Deli corned beef + Swiss not found on receipts — may have been skipped. Brooklyn Fare impulse buys were the largest single over-budget driver ($48.34). Chia seeds are a recurring pantry staple purchase, worth budgeting ~$16/mo. Fufu powder estimate needs update from $5 to $13 in shopping list template."
+}
