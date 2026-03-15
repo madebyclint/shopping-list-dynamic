@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brooklyn Kitchen</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Variables ─────────────────────────────────────────────────── */
+    :root {
+      --bg:           #f7f6f3;
+      --surface:      #ffffff;
+      --border:       #e8e5e0;
+      --text:         #1a1a1a;
+      --muted:        #888;
+      --accent:       #2d6a4f;
+      --accent-lt:    #e8f5ee;
+      --warn:         #e07b39;
+      --warn-lt:      #fff3eb;
+      --navy:         #1a1a2e;
+      --radius:       10px;
+      --shadow:       0 1px 4px rgba(0,0,0,0.09);
+      --nav-h:        54px;
+    }
+
+    /* ── Reset ─────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    button { cursor: pointer; }
+
+    /* ── Header / Nav ──────────────────────────────────────────────── */
+    .app-header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--navy); color: #fff;
+      padding: 0 20px; height: var(--nav-h);
+      display: flex; align-items: center; gap: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    .app-logo { font-size: 1rem; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+    .app-logo span { color: #7ac99e; }
+    .tab-nav { display: flex; gap: 2px; overflow-x: auto; flex: 1; scrollbar-width: none; }
+    .tab-nav::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      background: none; border: none;
+      color: rgba(255,255,255,0.55);
+      padding: 7px 13px; border-radius: 6px;
+      font-size: 0.84rem; font-weight: 500;
+      white-space: nowrap; transition: all 0.15s;
+    }
+    .tab-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .tab-btn.active { background: rgba(255,255,255,0.16); color: #fff; }
+
+    /* ── Warning banner ────────────────────────────────────────────── */
+    .banner {
+      display: none; background: #fff3cd;
+      border-bottom: 1px solid #ffc107;
+      padding: 10px 20px; font-size: 0.84rem; line-height: 1.5;
+    }
+    .banner.show { display: block; }
+    .banner code { background: rgba(0,0,0,0.09); padding: 1px 6px; border-radius: 4px; font-family: monospace; font-size: 0.88em; }
+
+    /* ── Main layout ──────────────────────────────────────────────── */
+    .main { max-width: 1080px; margin: 0 auto; padding: 28px 20px 80px; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .section-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; }
+    .section-sub { color: var(--muted); font-size: 0.84rem; margin-bottom: 22px; }
+
+    /* ── Stat cards ───────────────────────────────────────────────── */
+    .card-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+    .stat-card {
+      background: var(--surface); border-radius: var(--radius);
+      padding: 16px 18px; flex: 1; min-width: 150px;
+      box-shadow: var(--shadow);
+    }
+    .stat-card.warn { background: var(--warn-lt); border-left: 3px solid var(--warn); }
+    .stat-card.good { background: var(--accent-lt); border-left: 3px solid var(--accent); }
+    .stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 4px; }
+    .stat-value { font-size: 1.65rem; font-weight: 700; line-height: 1.1; }
+    .stat-sub { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+    /* ── Meal cards ───────────────────────────────────────────────── */
+    .meal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .meal-card {
+      background: var(--surface); border-radius: var(--radius);
+      padding: 16px 18px; box-shadow: var(--shadow);
+      border-top: 3px solid var(--accent); display: flex; flex-direction: column;
+      cursor: pointer; transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .meal-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.13); }
+    .meal-card:hover .meal-name { color: var(--accent); }
+    .meal-card::after { content: '→ view recipe'; font-size: 0.68rem; color: var(--accent); opacity: 0; transition: opacity 0.12s; margin-top: 6px; }
+    .meal-card:hover::after { opacity: 1; }
+    .meal-day { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 5px; }
+    .meal-emoji { font-size: 1.5rem; margin-bottom: 8px; }
+    .meal-name { font-size: 0.88rem; font-weight: 600; line-height: 1.4; flex: 1; margin-bottom: 10px; }
+    .meal-footer { display: flex; align-items: center; justify-content: space-between; }
+    .meal-time { font-size: 0.75rem; color: var(--muted); }
+    .meal-tag { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.68rem; font-weight: 700; }
+    .tag-fast    { background: var(--warn-lt); color: var(--warn); }
+    .tag-teen    { background: #e8f0fe; color: #3665c9; }
+    .tag-special { background: #fce8e8; color: #c0392b; }
+
+    /* ── Spend summary ────────────────────────────────────────────── */
+    .spend-card { background: var(--surface); border-radius: var(--radius); padding: 18px 22px; box-shadow: var(--shadow); }
+    .spend-card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; }
+    .spend-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+    .spend-row:last-child { border-bottom: none; font-weight: 700; font-size: 0.95rem; padding-top: 10px; }
+    .spend-row .val-warn { color: var(--warn); font-weight: 600; }
+    .spend-row .val-good { color: var(--accent); font-weight: 600; }
+    .store-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .store-pill { background: var(--bg); border-radius: 20px; padding: 4px 12px; font-size: 0.78rem; color: var(--text); }
+    .store-pill strong { color: var(--accent); }
+
+    /* ── Two-column layout ────────────────────────────────────────── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 22px; }
+    @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+    /* ── Chart cards ──────────────────────────────────────────────── */
+    .chart-card { background: var(--surface); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+    .chart-card h3 { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 14px; }
+    .chart-card canvas { max-height: 230px; }
+
+    /* ── Extras table ─────────────────────────────────────────────── */
+    .extras-card { background: var(--surface); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+    .extras-card > h3 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
+    .extras-group { margin-bottom: 22px; }
+    .extras-group-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 8px; }
+    .extras-item { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.86rem; }
+    .extras-item:last-child { border-bottom: none; }
+    .item-note { font-size: 0.73rem; color: var(--muted); display: block; }
+    .extras-subtotal { display: flex; justify-content: space-between; font-weight: 700; font-size: 0.88rem; padding-top: 8px; margin-top: 4px; border-top: 1.5px solid var(--border); }
+    .extras-grand { display: flex; justify-content: space-between; font-weight: 700; font-size: 1rem; padding-top: 14px; border-top: 2px solid #ddd; margin-top: 10px; }
+    .extras-grand span:last-child { color: var(--warn); }
+
+    /* ── Trends link button ───────────────────────────────────────── */
+    .trends-link-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--navy); color: #fff;
+      padding: 10px 18px; border-radius: 8px;
+      font-size: 0.85rem; font-weight: 600;
+      margin-bottom: 24px; border: none;
+    }
+    .trends-link-btn:hover { background: #2d2d48; text-decoration: none; }
+
+    /* ── Audit notes ──────────────────────────────────────────────── */
+    .audit-notes { background: var(--bg); border-radius: var(--radius); border: 1px solid var(--border); padding: 14px 18px; font-size: 0.84rem; color: var(--muted); line-height: 1.7; margin-top: 20px; }
+    .audit-notes strong { color: var(--text); }
+
+    /* ── Markdown content ─────────────────────────────────────────── */
+    .md-content { background: var(--surface); border-radius: var(--radius); padding: 26px; box-shadow: var(--shadow); }
+    .md-content h1 { font-size: 1.35rem; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid var(--border); }
+    .md-content h2 { font-size: 1.05rem; margin: 24px 0 10px; color: var(--accent); }
+    .md-content h3 { font-size: 0.95rem; font-weight: 700; margin: 20px 0 8px; }
+    .md-content h4 { font-size: 0.88rem; font-weight: 700; margin: 14px 0 6px; }
+    .md-content p { margin-bottom: 11px; }
+    .md-content ul, .md-content ol { padding-left: 22px; margin-bottom: 11px; }
+    .md-content li { margin-bottom: 4px; }
+    .md-content blockquote { border-left: 3px solid var(--border); padding: 5px 14px; color: var(--muted); margin: 12px 0; font-size: 0.86rem; }
+    .md-content hr { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+    .md-content code { background: #f0ede8; padding: 1px 5px; border-radius: 3px; font-family: monospace; font-size: 0.84em; }
+    .md-content strong { font-weight: 700; }
+    .md-content em { font-style: italic; }
+    .md-content table { width: 100%; border-collapse: collapse; font-size: 0.84rem; margin-bottom: 18px; overflow-x: auto; display: block; }
+    .md-content thead th { background: #f5f4f0; text-align: left; padding: 8px 10px; border-bottom: 2px solid var(--border); font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+    .md-content tbody td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .md-content tbody tr:last-child td { border-bottom: none; }
+    .md-content tbody tr:hover td { background: #faf9f7; }
+
+    /* ── Shopping list tab extras ─────────────────────────────────── */
+    .list-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+    .companion-btn {
+      background: var(--accent); color: #fff; border: none;
+      padding: 8px 16px; border-radius: 8px;
+      font-size: 0.82rem; font-weight: 600;
+    }
+    .companion-btn:hover { opacity: 0.9; }
+    /* Shopping companion overlay */
+    #companion-overlay {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: var(--surface); overflow-y: auto; padding: 16px;
+    }
+    #companion-overlay.show { display: block; }
+    .companion-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 2px solid var(--border); }
+    .companion-header h2 { font-size: 1.1rem; }
+    .companion-close { background: #eee; border: none; border-radius: 6px; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; }
+    .companion-store-section { margin-bottom: 28px; }
+    .companion-store-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 10px; }
+    .companion-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .companion-item:last-child { border-bottom: none; }
+    .companion-item input[type="checkbox"] { width: 22px; height: 22px; margin-top: 1px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer; }
+    .companion-item label { font-size: 1rem; line-height: 1.4; cursor: pointer; }
+    .companion-item.checked label { text-decoration: line-through; color: var(--muted); }
+
+    /* ── Price list search ────────────────────────────────────────── */
+    .search-wrap { position: relative; margin-bottom: 14px; }
+    .search-wrap input {
+      width: 100%; padding: 10px 14px 10px 36px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 0.9rem; background: var(--surface); outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-wrap::before { content: '🔍'; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; pointer-events: none; }
+    .search-no-results { padding: 20px; text-align: center; color: var(--muted); font-size: 0.88rem; display: none; }
+
+    /* ── Loading / error ──────────────────────────────────────────── */
+    .loading { display: flex; align-items: center; gap: 12px; padding: 40px; color: var(--muted); font-size: 0.9rem; }
+    .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.75s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-state { padding: 32px; text-align: center; color: var(--muted); font-size: 0.88rem; background: var(--surface); border-radius: var(--radius); }
+    .error-state code { display: block; margin-top: 8px; font-family: monospace; background: #f0ede8; padding: 6px 12px; border-radius: 4px; width: fit-content; margin: 8px auto 0; }
+
+    /* ── History: week cards ──────────────────────────────────────── */
+    .history-note { color: var(--muted); font-size: 0.84rem; margin-bottom: 20px; }
+
+    /* ── Responsive ───────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .main { padding: 18px 14px 80px; }
+      .app-header { padding: 0 14px; }
+      .stat-value { font-size: 1.4rem; }
+      .md-content { padding: 16px; }
+      .spend-card { padding: 14px 16px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<header class="app-header">
+  <div class="app-logo">🥬 <span>Brooklyn</span> Kitchen</div>
+  <nav class="tab-nav" id="tabNav">
+    <button class="tab-btn active" data-tab="home">🏠 This Week</button>
+    <button class="tab-btn" data-tab="menu">🥗 Menu</button>
+    <button class="tab-btn" data-tab="list">🛒 Shopping List</button>
+    <button class="tab-btn" data-tab="audit">📊 Audit</button>
+    <button class="tab-btn" data-tab="history">📅 History</button>
+    <button class="tab-btn" data-tab="prices">💰 Price List</button>
+  </nav>
+</header>
+
+<!-- ── Warning banner ─────────────────────────────────────────────────────── -->
+<div class="banner" id="loadBanner">
+  ⚠️ <strong>Can't load files.</strong> Open this via a local server — run
+  <code>npx serve .</code> in the <code>weekly-menus-manually-generated/</code> folder,
+  then visit <a href="http://localhost:3000" target="_blank">localhost:3000</a>.
+  (Opening as a <code>file://</code> URL blocks file loading in most browsers.)
+</div>
+
+<!-- ── Shopping Companion Overlay ────────────────────────────────────────── -->
+<div id="companion-overlay">
+  <div class="companion-header">
+    <h2>🛒 Shopping Companion</h2>
+    <button class="companion-close" id="companionClose">✕ Close</button>
+  </div>
+  <div id="companion-body"></div>
+</div>
+
+<!-- ── Main ──────────────────────────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- HOME ──────────────────────────────────────────────────────────────── -->
+  <section id="tab-home" class="page active">
+    <div id="home-week-header">
+      <div class="loading"><div class="spinner"></div> Loading…</div>
+    </div>
+    <div id="home-meals" class="meal-grid"></div>
+    <div id="home-spend"></div>
+  </section>
+
+  <!-- MENU ──────────────────────────────────────────────────────────────── -->
+  <section id="tab-menu" class="page">
+    <div id="menu-content" class="md-content">
+      <div class="loading"><div class="spinner"></div> Loading menu…</div>
+    </div>
+  </section>
+
+  <!-- SHOPPING LIST ─────────────────────────────────────────────────────── -->
+  <section id="tab-list" class="page">
+    <div class="list-toolbar">
+      <button class="companion-btn" id="companionBtn">📱 Shopping Companion</button>
+    </div>
+    <div id="list-content" class="md-content">
+      <div class="loading"><div class="spinner"></div> Loading shopping list…</div>
+    </div>
+  </section>
+
+  <!-- AUDIT ─────────────────────────────────────────────────────────────── -->
+  <section id="tab-audit" class="page">
+    <p class="section-sub" id="audit-sub"></p>
+    <a class="trends-link-btn" href="shopping-audits/price-trends.html" target="_blank">📈 Historical Price Trends →</a>
+    <div id="audit-stats" class="card-row"></div>
+    <div class="two-col">
+      <div class="chart-card"><h3>On-List vs Extras</h3><canvas id="donutChart"></canvas></div>
+      <div class="chart-card"><h3>By Store</h3><canvas id="storeChart"></canvas></div>
+    </div>
+    <div id="audit-extras" class="extras-card"></div>
+    <div id="audit-notes" class="audit-notes" style="display:none"></div>
+  </section>
+
+  <!-- HISTORY ───────────────────────────────────────────────────────────── -->
+  <section id="tab-history" class="page">
+    <div id="history-content" class="md-content">
+      <div class="loading"><div class="spinner"></div> Loading meal history…</div>
+    </div>
+  </section>
+
+  <!-- PRICE LIST ────────────────────────────────────────────────────────── -->
+  <section id="tab-prices" class="page">
+    <div class="search-wrap">
+      <input type="text" id="priceSearch" placeholder="Search items, vendors, categories…" autocomplete="off" />
+    </div>
+    <div class="search-no-results" id="searchNoResults">No matching items found.</div>
+    <div id="prices-content" class="md-content">
+      <div class="loading"><div class="spinner"></div> Loading price list…</div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let _manifest = null;
+let _audit    = null;
+let _charts   = {};     // { donut, store }
+let _chartsDrawn = false;
+let _listText = '';     // raw shopping list markdown for companion mode
+
+// ── Utilities ────────────────────────────────────────────────────────────────
+const fmt  = n => '$' + parseFloat(n).toFixed(2);
+const $    = id => document.getElementById(id);
+
+async function fetchText(path) {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${path}`);
+  return r.text();
+}
+async function fetchJSON(path) {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${path}`);
+  return r.json();
+}
+
+function renderMD(el, text) {
+  el.innerHTML = marked.parse(text);
+}
+
+function errState(el, msg) {
+  el.innerHTML = `<div class="error-state">${msg}<code>npx serve .</code></div>`;
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+$('tabNav').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  $('tab-' + btn.dataset.tab).classList.add('active');
+  // Lazy-draw audit charts when tab becomes visible
+  if (btn.dataset.tab === 'audit' && _audit && !_chartsDrawn) {
+    _chartsDrawn = true;
+    setTimeout(() => drawAuditCharts(_audit), 60);
+  }
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    _manifest = await fetchJSON('data.json');
+    _audit    = await fetchJSON(_manifest.files.audit);
+
+    renderHome(_manifest, _audit);
+    renderAuditShell(_audit);
+
+    // Non-blocking markdown loads
+    fetchText(_manifest.files.menu)
+      .then(t => { renderMD($('menu-content'), t); injectMenuAnchors(_manifest.meals); })
+      .catch(() => errState($('menu-content'), '⚠️ Could not load menu.'));
+
+    fetchText(_manifest.files.shoppingList)
+      .then(t => { _listText = t; renderMD($('list-content'), t); })
+      .catch(() => errState($('list-content'), '⚠️ Could not load shopping list.'));
+
+    fetchText('meal-history.md')
+      .then(t => renderMD($('history-content'), t))
+      .catch(() => errState($('history-content'), '⚠️ Could not load meal history.'));
+
+    fetchText('price-list.md')
+      .then(t => { renderMD($('prices-content'), t); setupPriceSearch(); })
+      .catch(() => errState($('prices-content'), '⚠️ Could not load price list.'));
+
+  } catch(err) {
+    $('loadBanner').classList.add('show');
+    console.warn('Init failed:', err);
+    ['menu-content','list-content','history-content','prices-content'].forEach(id => {
+      errState($(id), '⚠️ Could not load — serve this folder with ');
+    });
+    $('home-week-header').innerHTML = `<div class="error-state">⚠️ Could not load data. Run <code>npx serve .</code> in this folder.</div>`;
+    $('audit-extras').innerHTML = '';
+  }
+}
+
+// ── Home tab ──────────────────────────────────────────────────────────────────
+function renderHome(m, audit) {
+  $('home-week-header').innerHTML = `
+    <div class="section-title">${m.weekLabel}</div>
+    <div class="section-sub">Shopping trip: ${m.shoppingDate} · ${m.meals.length} meals</div>
+  `;
+
+  // Meal cards
+  const tagClass = { fast: 'tag-fast', teen: 'tag-teen', special: 'tag-special' };
+  $('home-meals').innerHTML = m.meals.map(meal => `
+    <div class="meal-card" data-meal-name="${meal.name.replace(/"/g, '&quot;')}">
+      <div class="meal-day">${meal.day}</div>
+      <div class="meal-emoji">${meal.emoji}</div>
+      <div class="meal-name">${meal.name}</div>
+      <div class="meal-footer">
+        <span class="meal-time">⏱ ${meal.time}</span>
+        ${meal.tag ? `<span class="meal-tag ${tagClass[meal.tagType] || ''}">${meal.tag}</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  // Click → jump to menu tab at that meal's anchor
+  $('home-meals').addEventListener('click', e => {
+    const card = e.target.closest('.meal-card[data-meal-name]');
+    if (!card) return;
+    switchToMenuMeal(card.dataset.mealName);
+  });
+
+  // Spend summary
+  const variance = audit.total_spent - audit.list_estimate;
+  const isOver   = variance >= 0;
+  const storePills = Object.entries(audit.by_store)
+    .map(([name, amt]) => `<span class="store-pill">${name} <strong>${fmt(amt)}</strong></span>`)
+    .join('');
+
+  $('home-spend').innerHTML = `
+    <div class="spend-card">
+      <h3>💳 This Week's Spending</h3>
+      <div class="spend-row"><span>Shopping list estimate</span><span>${fmt(audit.list_estimate)}</span></div>
+      <div class="spend-row"><span>On-list actual</span><span>${fmt(audit.on_list_total_est)}</span></div>
+      <div class="spend-row">
+        <span>Extras</span>
+        <span class="val-warn">${fmt(audit.extras_total_est)}</span>
+      </div>
+      <div class="spend-row">
+        <span>Total spent</span>
+        <span class="${isOver ? 'val-warn' : 'val-good'}">
+          ${fmt(audit.total_spent)}
+          <span style="font-size:0.8rem;font-weight:400"> (${isOver ? '+' : ''}${fmt(Math.abs(variance))} ${isOver ? 'over' : 'under'})</span>
+        </span>
+      </div>
+      <div class="store-pills">${storePills}</div>
+    </div>
+  `;
+}
+
+// ── Menu anchors ─────────────────────────────────────────────────────────────
+// Meal sections in the menu use **bold** paragraphs, not ## headings.
+// After rendering, find each <strong> whose text matches a meal name and add an
+// id to its parent <p> so cards can scroll to it.
+function slugify(name) {
+  // Strip emoji and punctuation, lowercase, collapse spaces to hyphens
+  return name
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-');
+}
+
+function injectMenuAnchors(meals) {
+  const content = $('menu-content');
+  const strongs = [...content.querySelectorAll('strong')];
+  meals.forEach(meal => {
+    const slug = slugify(meal.name);
+    const needle = meal.name.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').trim();
+    const match = strongs.find(el => {
+      const t = el.textContent.replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().toLowerCase();
+      return t.includes(needle) || needle.includes(t);
+    });
+    if (match) {
+      // Anchor the closest block-level parent
+      const parent = match.closest('p') || match.closest('div') || match;
+      parent.id = 'meal-' + slug;
+      parent.style.scrollMarginTop = 'calc(var(--nav-h) + 16px)';
+    }
+  });
+}
+
+function switchToMenuMeal(mealName) {
+  // Switch to menu tab
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelector('.tab-btn[data-tab="menu"]').classList.add('active');
+  $('tab-menu').classList.add('active');
+
+  const slug = slugify(mealName);
+  const target = $('meal-' + slug);
+  if (target) {
+    // Slight delay lets the tab become visible before scrolling
+    requestAnimationFrame(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
+}
+
+// ── Audit tab (shell — no charts yet) ────────────────────────────────────────
+function renderAuditShell(audit) {
+  $('audit-sub').textContent = `Shopping date: ${audit.shopping_date}  ·  Week of ${audit.week}`;
+
+  const variance = audit.total_spent - audit.list_estimate;
+  const isOver   = variance >= 0;
+  const extrasRatio = ((audit.extras_total_est / audit.total_spent) * 100).toFixed(0);
+
+  // Stat cards
+  $('audit-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Budget Estimate</div>
+      <div class="stat-value">${fmt(audit.list_estimate)}</div>
+      <div class="stat-sub">Original shopping list</div>
+    </div>
+    <div class="stat-card ${isOver ? 'warn' : 'good'}">
+      <div class="stat-label">Total Spent</div>
+      <div class="stat-value">${fmt(audit.total_spent)}</div>
+      <div class="stat-sub">${isOver ? '+' : ''}${fmt(Math.abs(variance))} ${isOver ? 'over' : 'under'} estimate</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">On-List</div>
+      <div class="stat-value">${fmt(audit.on_list_total_est)}</div>
+      <div class="stat-sub">${((audit.on_list_total_est / audit.total_spent) * 100).toFixed(0)}% of total</div>
+    </div>
+    <div class="stat-card warn">
+      <div class="stat-label">Extras</div>
+      <div class="stat-value">${fmt(audit.extras_total_est)}</div>
+      <div class="stat-sub">${extrasRatio}% of total spend</div>
+    </div>
+  `;
+
+  // Extras breakdown
+  let html = '<h3>Extra Purchases — Not on Shopping List</h3>';
+  let grandTotal = 0;
+  Object.entries(audit.extras_breakdown).forEach(([source, group]) => {
+    grandTotal += group.amount;
+    html += `<div class="extras-group">
+      <div class="extras-group-label">${source}</div>`;
+    group.items.forEach(item => {
+      html += `<div class="extras-item">
+        <span>${item.name}${item.note ? `<span class="item-note">${item.note}</span>` : ''}</span>
+        <span>${fmt(item.price)}</span>
+      </div>`;
+    });
+    if (group.note) {
+      html += `<div style="font-size:0.75rem;color:var(--muted);margin-top:6px">${group.note}</div>`;
+    }
+    html += `<div class="extras-subtotal"><span>Subtotal</span><span>${fmt(group.amount)}</span></div>
+    </div>`;
+  });
+  html += `<div class="extras-grand"><span>Total Extras</span><span>${fmt(grandTotal)}</span></div>`;
+  $('audit-extras').innerHTML = html;
+
+  // Notes
+  if (audit.notes) {
+    $('audit-notes').style.display = 'block';
+    $('audit-notes').innerHTML = '<strong>Notes:</strong> ' + audit.notes;
+  }
+}
+
+// ── Audit charts (lazy — drawn when tab first opened) ────────────────────────
+function drawAuditCharts(audit) {
+  if (_charts.donut) _charts.donut.destroy();
+  if (_charts.store) _charts.store.destroy();
+
+  _charts.donut = new Chart($('donutChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['On-List', 'Extras'],
+      datasets: [{
+        data: [audit.on_list_total_est, audit.extras_total_est],
+        backgroundColor: ['#2d6a4f', '#e07b39'],
+        borderWidth: 0,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${fmt(ctx.raw)} (${((ctx.raw / audit.total_spent) * 100).toFixed(0)}%)`
+          }
+        }
+      }
+    }
+  });
+
+  const storeLabels = Object.keys(audit.by_store);
+  const storeValues = Object.values(audit.by_store);
+  const palette = ['#2d6a4f', '#3665c9', '#9b59b6', '#e07b39', '#888'];
+
+  _charts.store = new Chart($('storeChart'), {
+    type: 'bar',
+    data: {
+      labels: storeLabels,
+      datasets: [{
+        data: storeValues,
+        backgroundColor: palette.slice(0, storeLabels.length),
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${fmt(ctx.raw)}` } } },
+      scales: {
+        x: { ticks: { callback: v => '$' + v }, grid: { color: '#f0f0f0' } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ── Price list search ─────────────────────────────────────────────────────────
+function setupPriceSearch() {
+  const input   = $('priceSearch');
+  const content = $('prices-content');
+  const noRes   = $('searchNoResults');
+
+  input.addEventListener('input', () => {
+    const q = input.value.toLowerCase().trim();
+    if (!q) {
+      content.querySelectorAll('tbody tr').forEach(r => r.style.display = '');
+      content.querySelectorAll('table').forEach(t => t.style.display = '');
+      content.querySelectorAll('h2,h3').forEach(h => h.style.display = '');
+      noRes.style.display = 'none';
+      return;
+    }
+    let anyVisible = false;
+    content.querySelectorAll('tbody tr').forEach(row => {
+      const match = row.textContent.toLowerCase().includes(q);
+      row.style.display = match ? '' : 'none';
+      if (match) anyVisible = true;
+    });
+    content.querySelectorAll('table').forEach(tbl => {
+      const vis = [...tbl.querySelectorAll('tbody tr')].some(r => r.style.display !== 'none');
+      tbl.style.display = vis ? '' : 'none';
+    });
+    noRes.style.display = anyVisible ? 'none' : 'block';
+  });
+}
+
+// ── Shopping Companion ────────────────────────────────────────────────────────
+// Parses the shopping list markdown into store sections and builds a checklist
+function buildCompanion(mdText) {
+  const overlay = $('companion-overlay');
+  const body    = $('companion-body');
+
+  // Find "Shopping List by Trip" to end of file
+  const tripMatch = mdText.match(/## Shopping List by Trip([\s\S]*)/);
+  if (!tripMatch) {
+    body.innerHTML = '<p style="color:var(--muted);padding:20px">Could not find a "## Shopping List by Trip" section in the shopping list.</p>';
+    overlay.classList.add('show');
+    return;
+  }
+
+  // Split on store-level ### headings (split on \n### to avoid losing the first char)
+  const storeBlocks = tripMatch[1].split(/\n### /).filter(s => s.trim());
+  let html = '';
+
+  storeBlocks.forEach(block => {
+    const lines = block.split('\n');
+    const storeLabel = lines[0].trim();
+    const items = lines.slice(1)
+      .filter(l => l.trim().startsWith('- ') || l.trim().startsWith('* '))
+      .map(l => l.replace(/^\s*[-*]\s+/, '').trim())
+      .filter(l => l.length > 0 && !l.trim().startsWith('*('));  // skip italic-only notes
+
+    if (items.length === 0) return;
+
+    html += `<div class="companion-store-section">
+      <div class="companion-store-label">📍 ${storeLabel}</div>`;
+    items.forEach((item, i) => {
+      const id = `ci-${storeLabel.replace(/\s/g,'')}-${i}`;
+      html += `<div class="companion-item" id="wrap-${id}">
+        <input type="checkbox" id="${id}" />
+        <label for="${id}">${item}</label>
+      </div>`;
+    });
+    html += '</div>';
+  });
+
+  body.innerHTML = html || '<p style="color:var(--muted);padding:20px">No items found.</p>';
+
+  // Toggle checked style
+  body.addEventListener('change', e => {
+    if (e.target.type !== 'checkbox') return;
+    const wrap = $('wrap-' + e.target.id);
+    wrap.classList.toggle('checked', e.target.checked);
+  });
+
+  overlay.classList.add('show');
+}
+
+$('companionBtn').addEventListener('click', () => {
+  if (_listText) buildCompanion(_listText);
+  else $('companion-overlay').classList.add('show');
+});
+$('companionClose').addEventListener('click', () => {
+  $('companion-overlay').classList.remove('show');
+});
+
+// ── Run ───────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

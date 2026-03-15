@@ -13,6 +13,27 @@ Each week, a new meal plan is generated and saved to this directory:
 - `shopping-audits/price-history.json` — Master price tracking file, updated every trip
 - `shopping-audits/PRICE_TRENDS.md` — Human-readable price trends report (regenerate each trip)
 - `shopping-audits/price-trends.html` — Visual trend charts (open in browser; reads price-history.json)
+- `index.html` — Main web dashboard (all tabs: menu, list, audit, history, price list)
+- `data.json` — Manifest pointing to the current week's files + meal summary cards. **Update this every week.**
+
+---
+
+## Viewing the Dashboard
+
+Run `npx serve .` from this folder, then open [http://localhost:3000](http://localhost:3000) in your browser.
+
+The dashboard shows 6 tabs: **This Week** (meal cards + spending summary), **Menu**, **Shopping List** (with a tap-to-check Shopping Companion mode), **Audit** (charts + extras breakdown), **Meal History**, and **Price List** (with live search).
+
+### Updating `data.json` each week
+
+When a new meal plan is generated, update `data.json` in this folder:
+1. Set `currentWeek` to the Monday date (e.g., `"2026-03-23"`)
+2. Set `weekLabel` (e.g., `"Week of March 23, 2026"`)
+3. Set `shoppingDate` (the day of the trip, e.g., `"2026-03-21"`)
+4. Update the `files` paths to point to the new menu, shopping list, and audit files
+5. Update the `meals` array with the 5 dinners for the new week (include `name`, `day`, `emoji`, `time`, `tag`, `tagType`)
+
+`tagType` values: `"fast"` (quick meals), `"teen"` (teen-prep friendly), `"special"` (holiday/occasion), `""` (none)
 
 ---
 

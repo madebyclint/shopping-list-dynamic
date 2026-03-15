@@ -1,0 +1,53 @@
+{
+  "_comment": "Update this file each week when generating a new meal plan. weekLabel uses the Monday date. shoppingDate is the day of the trip.",
+  "currentWeek": "2026-03-16",
+  "weekLabel": "Week of March 16, 2026",
+  "shoppingDate": "2026-03-14",
+  "files": {
+    "menu": "menus/2026-03-16-menu.md",
+    "shoppingList": "shopping-lists/2026-03-16-shopping-list.md",
+    "audit": "shopping-audits/2026-03-14-audit.json"
+  },
+  "meals": [
+    {
+      "name": "Corned Beef Roast & Cabbage",
+      "day": "Monday, Mar 16",
+      "emoji": "🍀",
+      "time": "90 min",
+      "tag": "ST. PATRICK'S DAY",
+      "tagType": "special"
+    },
+    {
+      "name": "Reuben Sandwiches",
+      "day": "Tuesday, Mar 17",
+      "emoji": "🥪",
+      "time": "15 min",
+      "tag": "FAST",
+      "tagType": "fast"
+    },
+    {
+      "name": "Persian Kofta Bowls",
+      "day": "Wednesday, Mar 18",
+      "emoji": "🫕",
+      "time": "30 min",
+      "tag": "",
+      "tagType": ""
+    },
+    {
+      "name": "Peruvian Lomo Saltado",
+      "day": "Thursday, Mar 19",
+      "emoji": "🥩",
+      "time": "30 min",
+      "tag": "TEEN PREP",
+      "tagType": "teen"
+    },
+    {
+      "name": "West African Goat Peanut Stew (Maafe)",
+      "day": "Friday, Mar 20",
+      "emoji": "🥘",
+      "time": "45 min",
+      "tag": "",
+      "tagType": ""
+    }
+  ]
+}
