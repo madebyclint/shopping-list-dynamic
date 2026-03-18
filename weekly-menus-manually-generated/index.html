@@ -171,29 +171,72 @@
     .md-content tbody tr:hover td { background: #faf9f7; }
 
     /* ── Shopping list tab extras ─────────────────────────────────── */
-    .list-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
-    .companion-btn {
-      background: var(--accent); color: #fff; border: none;
-      padding: 8px 16px; border-radius: 8px;
-      font-size: 0.82rem; font-weight: 600;
+
+
+    /* ── Live Checklist Overlay ──────────────────────────────────────── */
+    #checklist-overlay {
+      display: none; position: fixed; inset: 0; z-index: 210;
+      background: var(--bg); flex-direction: column; overflow: hidden;
     }
-    .companion-btn:hover { opacity: 0.9; }
-    /* Shopping companion overlay */
-    #companion-overlay {
-      display: none; position: fixed; inset: 0; z-index: 200;
-      background: var(--surface); overflow-y: auto; padding: 16px;
+    #checklist-overlay.show { display: flex; }
+    .cl-header { background: var(--navy); color: #fff; padding: 14px 16px 0; flex-shrink: 0; }
+    .cl-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .cl-title-row h2 { font-size: 1.05rem; font-weight: 700; }
+    .cl-header-btns { display: flex; gap: 8px; }
+    .cl-copy-btn, .cl-close-btn { border: none; border-radius: 6px; padding: 6px 12px; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+    .cl-copy-btn { background: var(--accent); color: #fff; }
+    .cl-copy-btn.copied { background: #1a3f30; }
+    .cl-close-btn { background: rgba(255,255,255,0.15); color: #fff; }
+    .cl-totals { display: flex; gap: 16px; margin-bottom: 10px; flex-wrap: wrap; }
+    .cl-total-chip .ct-label { display: block; font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.07em; opacity: 0.6; }
+    .cl-total-chip .ct-val { font-size: 1.05rem; font-weight: 700; }
+    .cl-total-chip .ct-val.green { color: #7ac99e; }
+    .cl-total-chip .ct-val.warn  { color: #f0a05a; }
+    .cl-progress-wrap { height: 4px; background: rgba(255,255,255,0.2); margin: 0 -16px; }
+    .cl-progress-bar  { height: 100%; background: #7ac99e; transition: width 0.3s; border-radius: 2px; }
+    .cl-body { flex: 1; overflow-y: auto; padding-bottom: 60px; }
+    .cl-store-label {
+      padding: 14px 16px 6px; font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+      background: var(--bg); position: sticky; top: 0; z-index: 2;
     }
-    #companion-overlay.show { display: block; }
-    .companion-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 2px solid var(--border); }
-    .companion-header h2 { font-size: 1.1rem; }
-    .companion-close { background: #eee; border: none; border-radius: 6px; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; }
-    .companion-store-section { margin-bottom: 28px; }
-    .companion-store-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 10px; }
-    .companion-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
-    .companion-item:last-child { border-bottom: none; }
-    .companion-item input[type="checkbox"] { width: 22px; height: 22px; margin-top: 1px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer; }
-    .companion-item label { font-size: 1rem; line-height: 1.4; cursor: pointer; }
-    .companion-item.checked label { text-decoration: line-through; color: var(--muted); }
+    .cl-item { display: flex; align-items: center; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .cl-item-toggle {
+      flex: 1; display: flex; align-items: center; gap: 12px;
+      padding: 13px 10px 13px 16px; border: none; background: none;
+      text-align: left; cursor: pointer; min-width: 0;
+    }
+    .cl-checkbox {
+      width: 24px; height: 24px; flex-shrink: 0;
+      border: 2px solid #ccc; border-radius: 6px; background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; transition: all 0.12s;
+    }
+    .cl-item[data-state="checked"] .cl-checkbox { background: var(--accent); border-color: var(--accent); }
+    .cl-item[data-state="checked"] .cl-checkbox::after { content: '✓'; font-weight: 700; color: #fff; }
+    .cl-item[data-state="skipped"] .cl-checkbox { background: #f0f0f0; border-color: #ccc; }
+    .cl-item[data-state="skipped"] .cl-checkbox::after { content: '—'; color: #aaa; font-size: 0.7rem; }
+    .cl-item-name { font-size: 0.9rem; line-height: 1.35; transition: color 0.1s; flex: 1; min-width: 0; }
+    .cl-item[data-state="checked"] .cl-item-name { text-decoration: line-through; color: var(--muted); }
+    .cl-item[data-state="skipped"] .cl-item-name { text-decoration: line-through; color: #bbb; }
+    .cl-item-price { font-size: 0.78rem; color: var(--muted); padding: 0 6px; white-space: nowrap; flex-shrink: 0; }
+    .cl-item[data-state="checked"] .cl-item-price { color: var(--accent); font-weight: 600; }
+    .cl-item[data-state="skipped"] .cl-item-price { text-decoration: line-through; color: #ccc; }
+    .cl-skip-btn { padding: 13px 14px; border: none; background: none; font-size: 0.95rem; color: #ddd; cursor: pointer; flex-shrink: 0; }
+    .cl-item[data-state="skipped"] .cl-skip-btn { color: var(--warn); }
+    .cl-skip-btn:hover { color: var(--warn); }
+    .cl-custom-section { padding: 16px; }
+    .cl-custom-section h4 { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 10px; }
+    .cl-custom-row { display: flex; gap: 8px; margin-top: 10px; }
+    .cl-custom-name-input, .cl-custom-price-input {
+      padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 0.88rem; outline: none; transition: border-color 0.15s; background: var(--surface);
+    }
+    .cl-custom-name-input:focus, .cl-custom-price-input:focus { border-color: var(--accent); }
+    .cl-custom-name-input { flex: 1; }
+    .cl-custom-price-input { width: 80px; text-align: right; }
+    .cl-add-btn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 14px; font-size: 0.88rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cl-add-btn:hover { opacity: 0.88; }
 
     /* ── Price list search ────────────────────────────────────────── */
     .search-wrap { position: relative; margin-bottom: 14px; }
@@ -269,13 +312,20 @@
   (Opening as a <code>file://</code> URL blocks file loading in most browsers.)
 </div>
 
-<!-- ── Shopping Companion Overlay ────────────────────────────────────────── -->
-<div id="companion-overlay">
-  <div class="companion-header">
-    <h2>🛒 Shopping Companion</h2>
-    <button class="companion-close" id="companionClose">✕ Close</button>
+<!-- ── Live Checklist Overlay ──────────────────────────────────────────────── -->
+<div id="checklist-overlay">
+  <div class="cl-header">
+    <div class="cl-title-row">
+      <h2>🛒 Live Checklist</h2>
+      <div class="cl-header-btns">
+        <button class="cl-copy-btn" id="cl-copy-btn">📋 Copy URL</button>
+        <button class="cl-close-btn" id="cl-close-btn">✕ Close</button>
+      </div>
+    </div>
+    <div class="cl-totals" id="cl-totals"></div>
+    <div class="cl-progress-wrap"><div class="cl-progress-bar" id="cl-progress" style="width:0%"></div></div>
   </div>
-  <div id="companion-body"></div>
+  <div class="cl-body" id="cl-body"></div>
 </div>
 
 <!-- ── Main ──────────────────────────────────────────────────────────────── -->
@@ -297,13 +347,14 @@
     </div>
   </section>
 
-  <!-- SHOPPING LIST ─────────────────────────────────────────────────────── -->
+  <!-- SHOPPING LIST -->
   <section id="tab-list" class="page">
-    <div class="list-toolbar">
-      <button class="companion-btn" id="companionBtn">📱 Shopping Companion</button>
-    </div>
-    <div id="list-content" class="md-content">
-      <div class="loading"><div class="spinner"></div> Loading shopping list…</div>
+    <div style="display:flex;align-items:center;justify-content:center;padding:60px 20px;color:var(--muted);">
+      <div style="text-align:center">
+        <div style="font-size:2.5rem;margin-bottom:16px">🛒</div>
+        <p style="font-size:0.95rem;margin-bottom:20px">Open the live checklist to shop this week’s list</p>
+        <button id="checklistBtn" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:0.95rem;font-weight:600;cursor:pointer">🛒 Open Checklist</button>
+      </div>
     </div>
   </section>
 
@@ -363,7 +414,7 @@ let _manifest = null;
 let _audit    = null;
 let _charts   = {};     // { donut, store }
 let _chartsDrawn = false;
-let _listText = '';     // raw shopping list markdown for companion mode
+let _listText = '';     // raw shopping list markdown for live checklist
 
 // ── Utilities ────────────────────────────────────────────────────────────────
 const fmt  = n => '$' + parseFloat(n).toFixed(2);
@@ -418,8 +469,18 @@ async function init() {
       .catch(() => errState($('menu-content'), '⚠️ Could not load menu.'));
 
     fetchText(_manifest.files.shoppingList)
-      .then(t => { _listText = t; renderMD($('list-content'), t); })
-      .catch(() => errState($('list-content'), '⚠️ Could not load shopping list.'));
+      .then(t => {
+        _listText = t;
+        // Auto-restore checklist if URL has saved cart state
+        if (new URLSearchParams(window.location.search).has('cart')) {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+          document.querySelector('.tab-btn[data-tab="list"]').classList.add('active');
+          $('tab-list').classList.add('active');
+          openChecklist();
+        }
+      })
+      .catch(() => console.warn('Could not load shopping list.'));
 
     fetchText('meal-history.md')
       .then(t => renderMD($('history-content'), t))
@@ -432,7 +493,7 @@ async function init() {
   } catch(err) {
     $('loadBanner').classList.add('show');
     console.warn('Init failed:', err);
-    ['menu-content','list-content','history-content','prices-content'].forEach(id => {
+    ['menu-content','history-content','prices-content'].forEach(id => {
       errState($(id), '⚠️ Could not load — serve this folder with ');
     });
     $('home-week-header').innerHTML = `<div class="error-state">⚠️ Could not load data. Run <code>npx serve .</code> in this folder.</div>`;
@@ -688,65 +749,220 @@ function setupPriceSearch() {
   });
 }
 
-// ── Shopping Companion ────────────────────────────────────────────────────────
-// Parses the shopping list markdown into store sections and builds a checklist
-function buildCompanion(mdText) {
-  const overlay = $('companion-overlay');
-  const body    = $('companion-body');
+// ── Live Checklist ────────────────────────────────────────────────────────────
+let _clItems  = [];
+let _priceMap = {};
+let _clState  = { v: 1, week: '', c: [], s: [], x: [] };
 
-  // Find "Shopping List by Trip" to end of file
-  const tripMatch = mdText.match(/## Shopping List by Trip([\s\S]*)/);
-  if (!tripMatch) {
-    body.innerHTML = '<p style="color:var(--muted);padding:20px">Could not find a "## Shopping List by Trip" section in the shopping list.</p>';
-    overlay.classList.add('show');
-    return;
+function clEncode(obj) {
+  try { return btoa(encodeURIComponent(JSON.stringify(obj))); } catch(e) { return ''; }
+}
+function clDecode(str) {
+  try { return JSON.parse(decodeURIComponent(atob(str))); } catch(e) { return null; }
+}
+function clNorm(text) {
+  return text
+    .replace(/\*?\(.*?\)\*?/g, '')
+    .replace(/\s*—.*$/, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .toLowerCase().trim().replace(/\s+/g, ' ');
+}
+function clLookupPrice(name) {
+  const words = clNorm(name).split(' ').filter(Boolean);
+  for (let len = Math.min(words.length, 4); len >= 1; len--) {
+    const prefix = words.slice(0, len).join(' ');
+    if (prefix.length < 3) continue;
+    for (const [k, p] of Object.entries(_priceMap)) {
+      if (k.split(' ').slice(0, len).join(' ') === prefix) return p;
+    }
   }
+  return null;
+}
+function clFmtP(n) { return n != null ? '$' + parseFloat(n).toFixed(2) : ''; }
 
-  // Split on store-level ### headings (split on \n### to avoid losing the first char)
-  const storeBlocks = tripMatch[1].split(/\n### /).filter(s => s.trim());
-  let html = '';
-
-  storeBlocks.forEach(block => {
+function clParseMd(md) {
+  _priceMap = {}; _clItems = [];
+  // Build price map from the detailed section (before ## Shopping List by Trip)
+  const detailed = md.split(/^## Shopping List by Trip/m)[0];
+  const re = /^[-*]\s+(.+?)\s*—.*\*\*~?\$?([\d.]+)\*\*/gm;
+  let m;
+  while ((m = re.exec(detailed)) !== null) {
+    const k = clNorm(m[1]), p = parseFloat(m[2]);
+    if (k && !isNaN(p)) _priceMap[k] = p;
+  }
+  // Parse store-grouped items from ## Shopping List by Trip
+  const tripMatch = md.match(/## Shopping List by Trip([\s\S]*)/);
+  if (!tripMatch) return;
+  tripMatch[1].split(/\n### /).filter(Boolean).forEach(block => {
     const lines = block.split('\n');
-    const storeLabel = lines[0].trim();
-    const items = lines.slice(1)
-      .filter(l => l.trim().startsWith('- ') || l.trim().startsWith('* '))
-      .map(l => l.replace(/^\s*[-*]\s+/, '').trim())
-      .filter(l => l.length > 0 && !l.trim().startsWith('*('));  // skip italic-only notes
-
-    if (items.length === 0) return;
-
-    html += `<div class="companion-store-section">
-      <div class="companion-store-label">📍 ${storeLabel}</div>`;
-    items.forEach((item, i) => {
-      const id = `ci-${storeLabel.replace(/\s/g,'')}-${i}`;
-      html += `<div class="companion-item" id="wrap-${id}">
-        <input type="checkbox" id="${id}" />
-        <label for="${id}">${item}</label>
-      </div>`;
+    const store = lines[0].trim();
+    lines.slice(1).forEach(line => {
+      const t = line.trim();
+      if (!t.startsWith('- ') && !t.startsWith('* ')) return;
+      const name = t.replace(/^[-*]\s+/, '').trim();
+      if (name.startsWith('*(')) return;
+      if (/^\*\*.*\*\*$/.test(name)) return;
+      const clean = name.replace(/\s*\*?\(.*?\)\*?/g, '').replace(/\s*—.*$/, '').trim();
+      _clItems.push({ name, price: clLookupPrice(clean), store });
     });
-    html += '</div>';
   });
-
-  body.innerHTML = html || '<p style="color:var(--muted);padding:20px">No items found.</p>';
-
-  // Toggle checked style
-  body.addEventListener('change', e => {
-    if (e.target.type !== 'checkbox') return;
-    const wrap = $('wrap-' + e.target.id);
-    wrap.classList.toggle('checked', e.target.checked);
-  });
-
-  overlay.classList.add('show');
 }
 
-$('companionBtn').addEventListener('click', () => {
-  if (_listText) buildCompanion(_listText);
-  else $('companion-overlay').classList.add('show');
-});
-$('companionClose').addEventListener('click', () => {
-  $('companion-overlay').classList.remove('show');
-});
+function clGetState(idx) {
+  return _clState.c.includes(idx) ? 'checked' : _clState.s.includes(idx) ? 'skipped' : 'unchecked';
+}
+function clRenderList() {
+  const byStore = {}, order = [];
+  _clItems.forEach((item, idx) => {
+    if (!byStore[item.store]) { byStore[item.store] = []; order.push(item.store); }
+    byStore[item.store].push({ ...item, idx });
+  });
+  let html = order.map(store => `
+    <div class="cl-store-section">
+      <div class="cl-store-label">📍 ${store}</div>
+      ${byStore[store].map(({ name, price, idx }) => `
+        <div class="cl-item" data-idx="${idx}" data-state="${clGetState(idx)}">
+          <button class="cl-item-toggle" data-idx="${idx}">
+            <span class="cl-checkbox"></span>
+            <span class="cl-item-name">${name}</span>
+          </button>
+          <span class="cl-item-price">${price ? clFmtP(price) : ''}</span>
+          <button class="cl-skip-btn" data-skip="${idx}" title="Skip">⏭</button>
+        </div>`).join('')}
+    </div>`).join('');
+  html += '<div id="cl-custom-list"></div>';
+  $('cl-body').innerHTML = html;
+  clRenderCustom();
+}
+function clRenderCustom() {
+  const el = $('cl-custom-list');
+  if (!el) return;
+  let html = '<div class="cl-custom-section"><h4>Custom / Unplanned Items</h4>';
+  _clState.x.forEach((item, i) => {
+    html += `<div class="cl-item" data-custom="${i}" data-state="${item.st === 'c' ? 'checked' : 'unchecked'}">
+      <button class="cl-item-toggle" data-custom="${i}">
+        <span class="cl-checkbox"></span>
+        <span class="cl-item-name">${item.n}</span>
+      </button>
+      <span class="cl-item-price">${item.p ? clFmtP(item.p) : ''}</span>
+      <button class="cl-skip-btn" data-del="${i}" title="Remove">✕</button>
+    </div>`;
+  });
+  html += `<div class="cl-custom-row">
+    <input class="cl-custom-name-input" id="cl-custom-name" placeholder="Add item…" autocomplete="off"/>
+    <input class="cl-custom-price-input" id="cl-custom-price" type="number" placeholder="0.00" step="0.01" min="0"/>
+    <button class="cl-add-btn" id="cl-add-btn">+ Add</button>
+  </div></div>`;
+  el.innerHTML = html;
+}
+function clUpdateTotals() {
+  let cartAmt = 0, skipAmt = 0, listAmt = 0, cartN = 0;
+  _clItems.forEach((item, idx) => {
+    const p = item.price || 0;
+    listAmt += p;
+    if (_clState.c.includes(idx)) { cartAmt += p; cartN++; }
+    else if (_clState.s.includes(idx)) { skipAmt += p; }
+  });
+  _clState.x.forEach(item => {
+    const p = item.p || 0;
+    listAmt += p;
+    if (item.st === 'c') { cartAmt += p; cartN++; }
+  });
+  const total = _clItems.length + _clState.x.length;
+  const pct   = total ? Math.round(cartN / total * 100) : 0;
+  $('cl-totals').innerHTML = `
+    <div class="cl-total-chip"><span class="ct-label">In Cart</span><span class="ct-val green">${clFmtP(cartAmt)}</span></div>
+    <div class="cl-total-chip"><span class="ct-label">Skipped</span><span class="ct-val warn">${clFmtP(skipAmt)}</span></div>
+    <div class="cl-total-chip"><span class="ct-label">Est. Total</span><span class="ct-val">${clFmtP(listAmt)}</span></div>
+    <div class="cl-total-chip" style="margin-left:auto;text-align:right"><span class="ct-label">Done</span><span class="ct-val">${cartN}/${total}</span></div>`;
+  $('cl-progress').style.width = pct + '%';
+}
+function clSync() {
+  clUpdateTotals();
+  const enc = clEncode(_clState);
+  if (enc) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('cart', enc);
+    history.replaceState(null, '', url.toString());
+  }
+}
+function clToggleCheck(idx) {
+  const ci = _clState.c.indexOf(idx), si = _clState.s.indexOf(idx);
+  if (ci !== -1) _clState.c.splice(ci, 1);
+  else { if (si !== -1) _clState.s.splice(si, 1); _clState.c.push(idx); }
+  const el = document.querySelector(`.cl-item[data-idx="${idx}"]`);
+  if (el) el.dataset.state = clGetState(idx);
+  clSync();
+}
+function clToggleSkip(idx) {
+  const ci = _clState.c.indexOf(idx), si = _clState.s.indexOf(idx);
+  if (si !== -1) _clState.s.splice(si, 1);
+  else { if (ci !== -1) _clState.c.splice(ci, 1); _clState.s.push(idx); }
+  const el = document.querySelector(`.cl-item[data-idx="${idx}"]`);
+  if (el) el.dataset.state = clGetState(idx);
+  clSync();
+}
+function clAddCustom() {
+  const n = ($('cl-custom-name')?.value || '').trim();
+  const p = parseFloat($('cl-custom-price')?.value) || null;
+  if (!n) return;
+  _clState.x.push({ n, p, st: '' });
+  clSync();
+  clRenderCustom();
+}
+function clDeleteCustom(i) {
+  _clState.x.splice(i, 1);
+  clSync();
+  clRenderCustom();
+}
+function clToggleCustom(i) {
+  _clState.x[i].st = _clState.x[i].st === 'c' ? '' : 'c';
+  const el = document.querySelector(`.cl-item[data-custom="${i}"]`);
+  if (el) el.dataset.state = _clState.x[i].st === 'c' ? 'checked' : 'unchecked';
+  clSync();
+}
+function clCopyURL() {
+  const btn = $('cl-copy-btn');
+  navigator.clipboard.writeText(window.location.href).then(() => {
+    btn.textContent = '✓ Copied!'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 Copy URL'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => prompt('Copy this URL:', window.location.href));
+}
+function openChecklist() {
+  const urlParam = new URLSearchParams(window.location.search).get('cart');
+  if (urlParam) {
+    const dec = clDecode(urlParam);
+    if (dec && dec.v === 1) _clState = dec;
+    else _clState = { v: 1, week: _manifest?.currentWeek || '', c: [], s: [], x: [] };
+  } else {
+    _clState = { v: 1, week: _manifest?.currentWeek || '', c: [], s: [], x: [] };
+  }
+  clParseMd(_listText);
+  clRenderList();
+  clUpdateTotals();
+  $('checklist-overlay').classList.add('show');
+}
+// One-time event delegation for the entire checklist overlay
+(function() {
+  const ov = $('checklist-overlay');
+  ov.addEventListener('click', e => {
+    if (e.target.closest('#cl-close-btn')) { ov.classList.remove('show'); return; }
+    if (e.target.closest('#cl-copy-btn'))  { clCopyURL(); return; }
+    const tog = e.target.closest('.cl-item-toggle[data-idx]');
+    if (tog) { clToggleCheck(parseInt(tog.dataset.idx)); return; }
+    const ctog = e.target.closest('.cl-item-toggle[data-custom]');
+    if (ctog) { clToggleCustom(parseInt(ctog.dataset.custom)); return; }
+    const skip = e.target.closest('.cl-skip-btn[data-skip]');
+    if (skip) { clToggleSkip(parseInt(skip.dataset.skip)); return; }
+    const del = e.target.closest('[data-del]');
+    if (del) { clDeleteCustom(parseInt(del.dataset.del)); return; }
+    if (e.target.closest('#cl-add-btn')) { clAddCustom(); return; }
+  });
+  ov.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.id === 'cl-custom-name') clAddCustom();
+  });
+})();
+$('checklistBtn').addEventListener('click', openChecklist);
 
 // ── Archive tab ──────────────────────────────────────────────────────────────
 let _archiveLoaded = false;
