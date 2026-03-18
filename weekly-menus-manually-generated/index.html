@@ -217,6 +217,9 @@
     .cl-item[data-state="skipped"] .cl-checkbox { background: #f0f0f0; border-color: #ccc; }
     .cl-item[data-state="skipped"] .cl-checkbox::after { content: '—'; color: #aaa; font-size: 0.7rem; }
     .cl-item-name { font-size: 0.9rem; line-height: 1.35; transition: color 0.1s; flex: 1; min-width: 0; }
+    .cl-item-meal { display: block; font-size: 0.71rem; color: var(--muted); margin-top: 2px; font-style: italic; }
+    .cl-item[data-state="checked"] .cl-item-meal,
+    .cl-item[data-state="skipped"] .cl-item-meal { text-decoration: none; color: #bbb; }
     .cl-item[data-state="checked"] .cl-item-name { text-decoration: line-through; color: var(--muted); }
     .cl-item[data-state="skipped"] .cl-item-name { text-decoration: line-through; color: #bbb; }
     .cl-item-price { font-size: 0.78rem; color: var(--muted); padding: 0 6px; white-space: nowrap; flex-shrink: 0; }
@@ -782,13 +785,18 @@ function clFmtP(n) { return n != null ? '$' + parseFloat(n).toFixed(2) : ''; }
 
 function clParseMd(md) {
   _priceMap = {}; _clItems = [];
-  // Build price map from the detailed section (before ## Shopping List by Trip)
+  const _mealMap = {};
+  // Build price+meal map from the detailed section (before ## Shopping List by Trip)
   const detailed = md.split(/^## Shopping List by Trip/m)[0];
-  const re = /^[-*]\s+(.+?)\s*—.*\*\*~?\$?([\d.]+)\*\*/gm;
+  const re = /^[-*]\s+(.+?)\s*—\s*([^—]+?)\s*—.*\*\*~?\$?([\d.]+)\*\*/gm;
   let m;
   while ((m = re.exec(detailed)) !== null) {
-    const k = clNorm(m[1]), p = parseFloat(m[2]);
-    if (k && !isNaN(p)) _priceMap[k] = p;
+    const k = clNorm(m[1]), p = parseFloat(m[3]);
+    const meal = m[2].trim();
+    if (k) {
+      if (!isNaN(p)) _priceMap[k] = p;
+      _mealMap[k] = meal;
+    }
   }
   // Parse store-grouped items from ## Shopping List by Trip
   const tripMatch = md.match(/## Shopping List by Trip([\s\S]*)/);
@@ -803,7 +811,8 @@ function clParseMd(md) {
       if (name.startsWith('*(')) return;
       if (/^\*\*.*\*\*$/.test(name)) return;
       const clean = name.replace(/\s*\*?\(.*?\)\*?/g, '').replace(/\s*—.*$/, '').trim();
-      _clItems.push({ name, price: clLookupPrice(clean), store });
+      const normClean = clNorm(clean);
+      _clItems.push({ name, price: clLookupPrice(clean), meal: _mealMap[normClean] || '', store });
     });
   });
 }
@@ -820,11 +829,11 @@ function clRenderList() {
   let html = order.map(store => `
     <div class="cl-store-section">
       <div class="cl-store-label">📍 ${store}</div>
-      ${byStore[store].map(({ name, price, idx }) => `
+      ${byStore[store].map(({ name, price, meal, idx }) => `
         <div class="cl-item" data-idx="${idx}" data-state="${clGetState(idx)}">
           <button class="cl-item-toggle" data-idx="${idx}">
             <span class="cl-checkbox"></span>
-            <span class="cl-item-name">${name}</span>
+            <span class="cl-item-name">${name}${meal ? `<span class="cl-item-meal">${meal}</span>` : ''}</span>
           </button>
           <span class="cl-item-price">${price ? clFmtP(price) : ''}</span>
           <button class="cl-skip-btn" data-skip="${idx}" title="Skip">⏭</button>
