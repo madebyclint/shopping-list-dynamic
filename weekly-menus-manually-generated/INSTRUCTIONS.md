@@ -13,8 +13,9 @@ Each week, a new meal plan is generated and saved to this directory:
 - `shopping-audits/price-history.json` — Master price tracking file, updated every trip
 - `shopping-audits/PRICE_TRENDS.md` — Human-readable price trends report (regenerate each trip)
 - `shopping-audits/price-trends.html` — Visual trend charts (open in browser; reads price-history.json)
-- `index.html` — Main web dashboard (all tabs: menu, list, audit, history, price list)
+- `index.html` — Main web dashboard (all tabs: menu, list, audit, history, archive, price list)
 - `data.json` — Manifest pointing to the current week's files + meal summary cards. **Update this every week.**
+- `menus/index.json` — Archive manifest listing all past menus. **Add an entry every week.**
 
 ---
 
@@ -34,6 +35,16 @@ When a new meal plan is generated, update `data.json` in this folder:
 5. Update the `meals` array with the 5 dinners for the new week (include `name`, `day`, `emoji`, `time`, `tag`, `tagType`)
 
 `tagType` values: `"fast"` (quick meals), `"teen"` (teen-prep friendly), `"special"` (holiday/occasion), `""` (none)
+
+### Updating `menus/index.json` each week (Archive)
+
+Each week, prepend a new entry to the `menus` array in `menus/index.json`:
+
+```json
+{ "filename": "YYYY-MM-DD-menu.md", "date": "YYYY-MM-DD", "label": "Week of Month D, YYYY" }
+```
+
+The **📚 Archive** tab in `index.html` reads this file to build the week list. The list is reversed at runtime so the newest entry always appears at the top — just add new entries to the top of the array to keep the file in chronological order.
 
 ---
 

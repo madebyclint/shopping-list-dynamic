@@ -216,7 +216,24 @@
 
     /* ── History: week cards ──────────────────────────────────────── */
     .history-note { color: var(--muted); font-size: 0.84rem; margin-bottom: 20px; }
-
+    /* ── Archive tab ─────────────────────────────────────────────────────── */
+    .archive-layout { display: grid; grid-template-columns: 220px 1fr; gap: 20px; align-items: start; }
+    @media (max-width: 640px) { .archive-layout { grid-template-columns: 1fr; } }
+    .archive-list { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; position: sticky; top: calc(var(--nav-h) + 12px); }
+    .archive-list-header { padding: 12px 14px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); border-bottom: 1px solid var(--border); }
+    .archive-week-btn {
+      display: block; width: 100%; text-align: left;
+      padding: 11px 14px; border: none; background: none;
+      border-left: 3px solid transparent;
+      font-size: 0.86rem; color: var(--text);
+      cursor: pointer; transition: background 0.12s;
+      line-height: 1.35;
+    }
+    .archive-week-btn:hover { background: var(--bg); }
+    .archive-week-btn.active { background: var(--accent-lt); border-left-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .archive-week-btn .aw-date { font-size: 0.72rem; color: var(--muted); display: block; margin-top: 2px; }
+    .archive-week-btn.active .aw-date { color: var(--accent); opacity: 0.7; }
+    .archive-panel { min-height: 200px; }
     /* ── Responsive ───────────────────────────────────────────────── */
     @media (max-width: 600px) {
       .main { padding: 18px 14px 80px; }
@@ -240,6 +257,7 @@
     <button class="tab-btn" data-tab="audit">📊 Audit</button>
     <button class="tab-btn" data-tab="history">📅 History</button>
     <button class="tab-btn" data-tab="prices">💰 Price List</button>
+    <button class="tab-btn" data-tab="archive">📚 Archive</button>
   </nav>
 </header>
 
@@ -306,6 +324,23 @@
   <section id="tab-history" class="page">
     <div id="history-content" class="md-content">
       <div class="loading"><div class="spinner"></div> Loading meal history…</div>
+    </div>
+  </section>
+
+  <!-- ARCHIVE ───────────────────────────────────────────────────────────── -->
+  <section id="tab-archive" class="page">
+    <div class="archive-layout">
+      <div>
+        <div class="archive-list" id="archive-list">
+          <div class="archive-list-header">Past Menus</div>
+          <div class="loading"><div class="spinner"></div> Loading…</div>
+        </div>
+      </div>
+      <div class="archive-panel">
+        <div id="archive-content" class="md-content">
+          <div style="padding:40px;text-align:center;color:var(--muted);font-size:0.9rem">← Select a week to read the menu</div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -711,6 +746,56 @@ $('companionBtn').addEventListener('click', () => {
 });
 $('companionClose').addEventListener('click', () => {
   $('companion-overlay').classList.remove('show');
+});
+
+// ── Archive tab ──────────────────────────────────────────────────────────────
+let _archiveLoaded = false;
+
+async function loadArchive() {
+  if (_archiveLoaded) return;
+  _archiveLoaded = true;
+  const list = $('archive-list');
+  try {
+    const data = await fetchJSON('menus/index.json');
+    const menus = (data.menus || []).slice().reverse(); // newest first
+    if (menus.length === 0) {
+      list.innerHTML = '<div class="archive-list-header">Past Menus</div><div style="padding:16px;color:var(--muted);font-size:0.84rem">No menus yet.</div>';
+      return;
+    }
+    list.innerHTML = '<div class="archive-list-header">Past Menus</div>' +
+      menus.map(m => `
+        <button class="archive-week-btn" data-file="${m.filename}" data-label="${m.label}">
+          ${m.label}
+          <span class="aw-date">${m.date}</span>
+        </button>`
+      ).join('');
+    list.addEventListener('click', async e => {
+      const btn = e.target.closest('.archive-week-btn');
+      if (!btn) return;
+      list.querySelectorAll('.archive-week-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const content = $('archive-content');
+      content.innerHTML = '<div class="loading"><div class="spinner"></div> Loading…</div>';
+      try {
+        const text = await fetchText('menus/' + btn.dataset.file);
+        renderMD(content, text);
+      } catch {
+        errState(content, '⚠️ Could not load menu file.');
+      }
+    });
+    // Auto-open the first (most recent)
+    list.querySelector('.archive-week-btn').click();
+  } catch {
+    list.innerHTML = '<div class="archive-list-header">Past Menus</div>' +
+      '<div class="error-state" style="margin:12px">⚠️ Could not load archive index.<code>npx serve .</code></div>';
+  }
+}
+
+// Extend tab switcher to lazy-load archive
+const _origTabNav = $('tabNav').onclick;
+$('tabNav').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn');
+  if (btn && btn.dataset.tab === 'archive') loadArchive();
 });
 
 // ── Run ───────────────────────────────────────────────────────────────────────
