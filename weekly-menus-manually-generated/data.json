@@ -1,51 +1,59 @@
 {
   "_comment": "Update this file each week when generating a new meal plan. weekLabel uses the Monday date. shoppingDate is the day of the trip.",
-  "currentWeek": "2026-03-16",
-  "weekLabel": "Week of March 16, 2026",
-  "shoppingDate": "2026-03-14",
+  "currentWeek": "2026-03-21",
+  "weekLabel": "Sat Mar 21 - Fri Mar 27, 2026",
+  "shoppingDate": "2026-03-21",
   "files": {
-    "menu": "menus/2026-03-16-menu.md",
-    "shoppingList": "shopping-lists/2026-03-16-shopping-list.md",
-    "audit": "shopping-audits/2026-03-14-audit.json"
+    "menu": "menus/2026-03-23-menu.md",
+    "shoppingList": "shopping-lists/2026-03-23-shopping-list.md",
+    "audit": "shopping-audits/2026-03-21-audit.json"
   },
   "meals": [
     {
-      "name": "Corned Beef Roast & Cabbage",
-      "day": "Monday, Mar 16",
-      "emoji": "🍀",
-      "time": "90 min",
-      "tag": "ST. PATRICK'S DAY",
+      "name": "Peruvian Lomo Saltado",
+      "day": "Saturday, Mar 21",
+      "emoji": "🫕",
+      "time": "30 min",
+      "tag": "CARRYOVER",
       "tagType": "special"
     },
     {
-      "name": "Reuben Sandwiches",
-      "day": "Tuesday, Mar 17",
-      "emoji": "🥪",
-      "time": "15 min",
+      "name": "West African Goat Peanut Stew (Maafe)",
+      "day": "Sunday, Mar 22",
+      "emoji": "🥘",
+      "time": "45 min",
+      "tag": "CARRYOVER",
+      "tagType": "special"
+    },
+    {
+      "name": "Salmon Lox Bagel Sandwiches",
+      "day": "Tuesday, Mar 24",
+      "emoji": "🥯",
+      "time": "10 min",
       "tag": "FAST",
       "tagType": "fast"
     },
     {
-      "name": "Persian Kofta Bowls",
-      "day": "Wednesday, Mar 18",
-      "emoji": "🫕",
-      "time": "30 min",
+      "name": "Simple Maggi Beef Ribs",
+      "day": "Wednesday, Mar 25",
+      "emoji": "🍖",
+      "time": "50 min",
       "tag": "",
       "tagType": ""
     },
     {
-      "name": "Peruvian Lomo Saltado",
-      "day": "Thursday, Mar 19",
-      "emoji": "🥩",
-      "time": "30 min",
+      "name": "Grilled Cheese & Tomato Soup",
+      "day": "Thursday, Mar 26",
+      "emoji": "🧀",
+      "time": "25 min",
       "tag": "TEEN PREP",
       "tagType": "teen"
     },
     {
-      "name": "West African Goat Peanut Stew (Maafe)",
-      "day": "Friday, Mar 20",
-      "emoji": "🥘",
-      "time": "45 min",
+      "name": "Air-Fryer Corned Beef Brisket",
+      "day": "Friday, Mar 27",
+      "emoji": "🥩",
+      "time": "3 hrs",
       "tag": "",
       "tagType": ""
     }

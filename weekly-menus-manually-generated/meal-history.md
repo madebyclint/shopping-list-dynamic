@@ -6,6 +6,26 @@ Running log of weekly menus. Reference when generating new plans to avoid repeat
 
 ---
 
+## Sat Mar 21 - Fri Mar 27, 2026
+
+### Dinners
+- 🫕 Peruvian Lomo Saltado *(SATURDAY CARRYOVER)* — beef strips, tomatoes, red onion, soy sauce, rice — mango — 30 min
+- 🥘 West African Goat Peanut Stew (Maafe) *(SUNDAY CARRYOVER)* — goat, peanut butter, tomatoes, spices, fufu or rice — pineapple — 45 min
+- 🥯 Salmon Lox Bagel Sandwiches *(TUESDAY FAST)* — smoked salmon, cream cheese, capers, dill, everything bagel — 10 min
+- 🍖 Simple Maggi Beef Ribs *(all beef)* — beef ribs, broccoli, rice — pineapple — 45–50 min
+- 🧀 Grilled Cheese & Tomato Soup *(THURSDAY TEEN PREP)* — muenster grilled cheese, 2 cans tomato soup — 20 min
+- 🥩 Air-Fryer Corned Beef Brisket — 375F method (no dry rub), leftover cabbage + roasted carrot salad — ~35 min
+
+### Notes
+- First post-Ramadan week (Eid al-Fitr ~March 20, 2026), using Sat-Fri flow
+- Milk swap this week: Almond Breeze 1 gallon + Lactaid ½ gallon (was reversed)
+- Maggi ribs are all-beef per Julian's preference
+- No breakfast item this cycle
+- Peruvian Lomo and Maafe are carryover meals with no new grocery items
+- Jamaican Jerk Chicken Bowls and Air-Fried Chicken punted — carry to future week
+
+---
+
 ## Week of March 16, 2026
 
 ### Dinners

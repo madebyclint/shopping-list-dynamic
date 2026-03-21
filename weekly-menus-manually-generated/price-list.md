@@ -64,7 +64,8 @@
 
 | Item | Unit | Price | Vendor | Notes | Last Updated |
 |------|------|-------|--------|-------|--------------|
-| Almond Breeze (original) | 1 carton | $5.69 **†** | Ideal Foods | updated from ~$3.59 (Feb); confirm size | Mar 2026 |
+| Almond Breeze (original) | ½ gallon | $5.69 **†** | Ideal Foods | confirmed Mar 2026; switching to 1 gal/week — price unconfirmed | Mar 2026 |
+| Almond Breeze (original) | 1 gallon | ~$10.00 | Ideal Foods | estimated; switching to full gallon per week as of Mar 23 — confirm on next trip | Mar 2026 |
 | Beef, eye round steak | 1 pack | ~$7.19 **†** | Ideal Foods | avg of two packs ($7.10–$7.28) | Feb 2026 |
 | Beef, round stir fry | 1 pack | ~$6.70 **†** | Brooklyn Fare | after markdown; reg ~$8.38 | Feb 2026 |
 | Butterball turkey | 1 pack | ~$4.47 | Ideal Foods | approx; likely ground or parts | Feb 2026 |
@@ -73,6 +74,7 @@
 | Goodeshall's Beef | 1 pack | $8.99 **†** | Ideal Foods | | Feb 2026 |
 | Jimmy Dean Turkey Sausage | 1 pack | $7.39 **†** | Ideal Foods | | Feb 2026 |
 | Lactaid Whole Milk | 1 gallon | $8.99 **†** | Ideal Foods | updated from prior $7.50 est | Feb 2026 |
+| Lactaid Whole Milk | ½ gallon | ~$5.50 | Ideal Foods | estimated; switching to ½ gal/week as of Mar 23 — confirm on next trip | Mar 2026 |
 | Salmon fillets | 1 lb | ~$14.00 | — | estimate | Mar 2026 |
 | Steelhead Trout Filet (farm) | 1 pack | $7.57 **†** | Brooklyn Fare | good salmon substitute | Feb 2026 |
 | Tofu, extra firm (Nasoya) | 1 block | $3.99 **†** | Ideal Foods | updated from prior $3.00 est | Feb 2026 |

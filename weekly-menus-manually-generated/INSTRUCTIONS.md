@@ -284,8 +284,8 @@ Add these every week under the appropriate categories:
 |------|-----|------|----------------|------------|
 | Chips | 2 | bags | $3.79 | $7.58 |
 | Cereal | 2 | boxes | ~$5.00 | ~$10.00 |
-| Lactaid milk | 1 | gallon | $8.99 | $8.99 |
-| Almond milk | 1 | ½ gallon | $5.69 | $5.69 |
+| Lactaid milk | 1 | ½ gallon | ~$5.50 | ~$5.50 |
+| Almond milk | 1 | gallon | ~$10.00 | ~$10.00 |
 | Fruit (assorted) | — | assorted | — | ~$10–$15 |
 | Eggs | 1 | dozen | $6.50 | $6.50 |
 | Ice cream | 1 | container | ~$5.00 | ~$5.00 |

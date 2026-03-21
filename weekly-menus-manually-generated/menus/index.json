@@ -2,6 +2,11 @@
   "_comment": "Add an entry here each week when a new menu file is dropped into this folder.",
   "menus": [
     {
+      "filename": "2026-03-23-menu.md",
+      "date": "2026-03-23",
+      "label": "Week of March 23, 2026"
+    },
+    {
       "filename": "2026-03-16-menu.md",
       "date": "2026-03-16",
       "label": "Week of March 16, 2026"
