@@ -462,10 +462,14 @@ $('tabNav').addEventListener('click', e => {
 async function init() {
   try {
     _manifest = await fetchJSON('data.json');
-    _audit    = await fetchJSON(_manifest.files.audit);
+
+    // Audit is optional — shopping may not have happened yet
+    if (_manifest.files && _manifest.files.audit) {
+      _audit = await fetchJSON(_manifest.files.audit).catch(() => null);
+    }
 
     renderHome(_manifest, _audit);
-    renderAuditShell(_audit);
+    if (_audit) renderAuditShell(_audit);
 
     // Non-blocking markdown loads
     fetchText(_manifest.files.menu)
@@ -534,6 +538,10 @@ function renderHome(m, audit) {
   });
 
   // Spend summary
+  if (!audit) {
+    $('home-spend').innerHTML = `<div class="spend-card"><h3>💳 This Week's Spending</h3><p style="color:var(--muted);text-align:center;padding:1rem">Audit not yet available — check back after the shopping trip.</p></div>`;
+    return;
+  }
   const variance = audit.total_spent - audit.list_estimate;
   const isOver   = variance >= 0;
   const storePills = Object.entries(audit.by_store)
