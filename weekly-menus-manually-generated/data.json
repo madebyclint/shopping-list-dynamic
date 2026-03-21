@@ -26,6 +26,14 @@
       "tagType": "special"
     },
     {
+      "name": "Air-Fryer Corned Beef Brisket",
+      "day": "Monday, Mar 23",
+      "emoji": "🥩",
+      "time": "35 min",
+      "tag": "",
+      "tagType": ""
+    },
+    {
       "name": "Salmon Lox Bagel Sandwiches",
       "day": "Tuesday, Mar 24",
       "emoji": "🥯",
@@ -50,12 +58,12 @@
       "tagType": "teen"
     },
     {
-      "name": "Air-Fryer Corned Beef Brisket",
+      "name": "Leftover Night",
       "day": "Friday, Mar 27",
-      "emoji": "🥩",
-      "time": "3 hrs",
-      "tag": "",
-      "tagType": ""
+      "emoji": "🍱",
+      "time": "10 min",
+      "tag": "LEFTOVERS",
+      "tagType": "special"
     }
   ]
 }
