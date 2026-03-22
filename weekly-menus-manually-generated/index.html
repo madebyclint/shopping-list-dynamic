@@ -229,6 +229,12 @@
     .cl-skip-btn { padding: 13px 14px; border: none; background: none; font-size: 0.95rem; color: #ddd; cursor: pointer; flex-shrink: 0; }
     .cl-item[data-state="skipped"] .cl-skip-btn { color: var(--warn); }
     .cl-skip-btn:hover { color: var(--warn); }
+    .cl-subgroup-label {
+      padding: 8px 16px 4px; font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--accent); background: var(--accent-lt);
+      border-left: 3px solid var(--accent);
+    }
     .cl-custom-section { padding: 16px; }
     .cl-custom-section h4 { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 10px; }
     .cl-custom-row { display: flex; gap: 8px; margin-top: 10px; }
@@ -813,15 +819,21 @@ function clParseMd(md) {
   tripMatch[1].split(/\n### /).filter(Boolean).forEach(block => {
     const lines = block.split('\n');
     const store = lines[0].trim();
+    let subgroup = '';
     lines.slice(1).forEach(line => {
       const t = line.trim();
+      // Detect **Category** or **— Category —** subgroup headers
+      const sgMatch = t.match(/^\*\*(?:—\s*)?([^*]+?)(?:\s*—)?\*\*$/);
+      if (sgMatch && !t.startsWith('- ') && !t.startsWith('* ')) {
+        subgroup = sgMatch[1].trim();
+        return;
+      }
       if (!t.startsWith('- ') && !t.startsWith('* ')) return;
       const name = t.replace(/^[-*]\s+/, '').trim();
       if (name.startsWith('*(')) return;
-      if (/^\*\*.*\*\*$/.test(name)) return;
       const clean = name.replace(/\s*\*?\(.*?\)\*?/g, '').replace(/\s*—.*$/, '').trim();
       const normClean = clNorm(clean);
-      _clItems.push({ name, price: clLookupPrice(clean), meal: _mealMap[normClean] || '', store });
+      _clItems.push({ name, price: clLookupPrice(clean), meal: _mealMap[normClean] || '', store, subgroup });
     });
   });
 }
@@ -835,10 +847,16 @@ function clRenderList() {
     if (!byStore[item.store]) { byStore[item.store] = []; order.push(item.store); }
     byStore[item.store].push({ ...item, idx });
   });
-  let html = order.map(store => `
-    <div class="cl-store-section">
-      <div class="cl-store-label">📍 ${store}</div>
-      ${byStore[store].map(({ name, price, meal, idx }) => `
+  let html = order.map(store => {
+    const items = byStore[store];
+    let lastSubgroup = null;
+    const rows = items.map(({ name, price, meal, subgroup, idx }) => {
+      let out = '';
+      if (subgroup && subgroup !== lastSubgroup) {
+        out += `<div class="cl-subgroup-label">${subgroup}</div>`;
+        lastSubgroup = subgroup;
+      }
+      out += `
         <div class="cl-item" data-idx="${idx}" data-state="${clGetState(idx)}">
           <button class="cl-item-toggle" data-idx="${idx}">
             <span class="cl-checkbox"></span>
@@ -846,8 +864,15 @@ function clRenderList() {
           </button>
           <span class="cl-item-price">${price ? clFmtP(price) : ''}</span>
           <button class="cl-skip-btn" data-skip="${idx}" title="Skip">⏭</button>
-        </div>`).join('')}
-    </div>`).join('');
+        </div>`;
+      return out;
+    }).join('');
+    return `
+    <div class="cl-store-section">
+      <div class="cl-store-label">📍 ${store}</div>
+      ${rows}
+    </div>`;
+  }).join('');
   html += '<div id="cl-custom-list"></div>';
   $('cl-body').innerHTML = html;
   clRenderCustom();

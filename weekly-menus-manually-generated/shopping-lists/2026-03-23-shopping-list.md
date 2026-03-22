@@ -6,13 +6,18 @@
 
 🥬 **PRODUCE**
 
+**— Vegetables —**
 - Tomatoes, slicing (~2 lbs) — Lox Bagels — 2 lbs — $1.49/lb — **$2.98**
 - Red onion (1 medium) — Lox Bagels — 1 ea — ~$1.50 ea — **$1.50**
 - Cucumber (3-pack) — Lox Bagels — 3 for $5.00 — **$5.00**
 - Broccoli (1 head) — Simple Maggi Beef Ribs — 1 ea — ~$3.00 — **$3.00**
 - Carrots, Cal Organic (1 bag) — Air-Fryer Corned Beef Brisket — 1 bag — $1.99 — **$1.99**
+
+**— Herbs —**
 - Dill, fresh (1 bunch) — Lox Bagels — 1 bunch — $3.49 — **$3.49**
   *(Brooklyn Fare — check markdown rack)*
+
+**— Fruit —**
 - Fruit, assorted (weekly) — pantry/weekly — assorted — — **~$12.00**
   *(include bananas for everyday, oranges or mandarins for Tuesday)*
 - Pineapple (1) — Simple Maggi Beef Ribs side — 1 ea — $3.99 — **$3.99**
@@ -21,48 +26,93 @@ Produce Subtotal: **~$33.96**
 
 ---
 
-🥩 **REFRIGERATED / PROTEIN**
+🥩 **PROTEINS**
 
+**— Seafood —**
 - Smoked salmon / lox (~12–16 oz total) — Lox Bagels — 1–2 packs — ~$10.00 — **~$10.00**
   *(Brooklyn Fare preferred)*
-- Cream cheese, plain (8 oz whipped) — Lox Bagels — 1 ea — ~$3.50 — **$3.50**
+
+**— Beef —**
 - Beef short ribs, bone-in (~3 lbs) — Simple Maggi Beef Ribs — 3 lbs — ~$7/lb — **~$21.00**
   *(all-beef, bone-in; ask butcher at Ideal Foods)*
 - Corned beef brisket, flat cut (~3 lbs) — Air-Fryer Corned Beef Brisket — 3 lbs — ~$8.60/lb — **~$25.80**
   *(refrigerated meat section — comes with spice packet)*
+
+Proteins Subtotal: **~$56.80**
+
+---
+
+🧀 **DAIRY & REFRIGERATED**
+
+**— Cheese —**
+- Cream cheese, plain (8 oz whipped) — Lox Bagels — 1 ea — ~$3.50 — **$3.50**
 - Muenster cheese, sliced (1 pack) — Grilled Cheese — 1 pack — $3.76 — **$3.76**
-- Waffles, frozen (1 box) — breakfast/weekly — 1 box — ~$4.00 — **$4.00**
+
+**— Eggs —**
 - Eggs (1 dozen) — pantry/weekly — 1 dozen — ~$6.50 — **$6.50**
+
+**— Milk & Non-Dairy —**
 - Lactaid Whole Milk (½ gallon) — pantry/weekly — 1 carton — ~$5.50 — **~$5.50**
   *(switching from 1 gallon — confirm price when there)*
 - Almond Breeze original (1 gallon) — pantry/weekly — 1 jug — ~$10.00 — **~$10.00**
   *(switching from ½ gallon — confirm price when there; may need 2× ½ gal if 1 gal unavailable)*
+
+**— Juice & Beverages —**
 - Mango juice (1 bottle) — pantry/weekly — 1 ea — $5.99 — **$5.99**
 
-Refrigerated/Protein Subtotal: **~$96.05**
+Dairy & Refrigerated Subtotal: **~$35.25**
 
 ---
 
-🥖 **DELI / BAKERY**
+❄️ **FROZEN**
 
+**— Breakfast —**
+- Waffles, frozen (1 box) — breakfast/weekly — 1 box — ~$4.00 — **$4.00**
+
+Frozen Subtotal: **~$4.00**
+
+---
+
+🥖 **BAKERY**
+
+**— Bagels & Rolls —**
 - Bagels (1 pack, 6 ct — everything or assorted) — Lox Bagels — 1 pack — ~$5.50 — **$5.50**
   *(Brooklyn Fare preferred)*
 
-Deli/Bakery Subtotal: **~$5.50**
+Bakery Subtotal: **~$5.50**
+
+---
+
+🥪 **DELI**
+
+*(nothing this week)*
+
+Deli Subtotal: **$0**
 
 ---
 
 🛒 **AISLES**
 
+**— Canned & Jarred —**
 - Campbell's Tomato Soup (2 cans) — Grilled Cheese & Soup — 2 cans — $2.79 ea — **$5.58**
 - Capers (1 small jar) — Lox Bagels — 1 jar — ~$3.50 — **$3.50**
-- White vinegar (1 bottle) — pantry item — 1 ea — ~$2.50 — **$2.50**
-- Chips (2 bags) — pantry/weekly — 2 bags — $3.79 ea — **$7.58**
-- Cereal (2 boxes) — pantry/weekly — 2 boxes — ~$5.00 ea — **~$10.00**
-- Decaf coffee (1 lb bag) — pantry/weekly — 1 bag — ~$16.00 — **~$16.00**
-- Trail mix (1 bag) — pantry/weekly — 1 bag — $6.99 — **$6.99**
 - Condensed milk (1 can) — pantry/weekly — 1 can — $3.79 — **$3.79**
+
+**— Condiments —**
+- White vinegar (1 bottle) — pantry item — 1 ea — ~$2.50 — **$2.50**
+
+**— Bread & Grains —**
 - Bread, sandwich white (1 loaf) — Grilled Cheese / general — 1 loaf — ~$4.50 — **$4.50**
+
+**— Snacks —**
+- Chips (2 bags) — pantry/weekly — 2 bags — $3.79 ea — **$7.58**
+- Trail mix (1 bag) — pantry/weekly — 1 bag — $6.99 — **$6.99**
+
+**— Cereal & Breakfast —**
+- Cereal (2 boxes) — pantry/weekly — 2 boxes — ~$5.00 ea — **~$10.00**
+
+**— Beverages —**
+- Decaf coffee (1 lb bag) — pantry/weekly — 1 bag — ~$16.00 — **~$16.00**
 
 Aisles Subtotal: **~$60.44**
 
@@ -116,18 +166,22 @@ Other Subtotal: **~$63.48**
 - Pineapple (1)
 - Fruit, assorted (mandarins, oranges, weekly)
 
-**Protein / Refrigerated**
-- Cream cheese (8 oz whipped)
+**Proteins**
 - Beef short ribs, bone-in (~3 lbs) *(ask butcher)*
 - Corned beef brisket, flat cut (~3 lbs) *(refrigerated meat section with spice packet)*
+
+**Dairy & Refrigerated**
+- Cream cheese (8 oz whipped)
 - Muenster cheese, sliced (1 pack)
-- Waffles, frozen (1 box)
 - Eggs (1 dozen)
 - Lactaid Whole Milk (½ gallon) *(new size — was 1 gallon)*
 - Almond Breeze original (1 gallon) *(new size — was ½ gallon; buy 2× ½ gal if 1 gal unavailable)*
 - Mango juice (1 bottle)
 
-**Deli / Bakery**
+**Frozen**
+- Waffles, frozen (1 box)
+
+**Bakery / Deli**
 *(none needed here if bagels already bought at Brooklyn Fare)*
 
 **Aisles**
