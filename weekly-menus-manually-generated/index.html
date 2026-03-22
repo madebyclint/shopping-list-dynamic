@@ -42,7 +42,17 @@
     }
     .app-logo { font-size: 1rem; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
     .app-logo span { color: #7ac99e; }
-    .tab-nav { display: flex; gap: 2px; overflow-x: auto; flex: 1; scrollbar-width: none; }
+    .tab-nav-wrap {
+      position: relative; flex: 1; overflow: hidden; min-width: 0;
+    }
+    .tab-nav-wrap::after {
+      content: ''; position: absolute; right: 0; top: 0; bottom: 0;
+      width: 52px;
+      background: linear-gradient(to right, transparent, var(--navy));
+      pointer-events: none; transition: opacity 0.2s;
+    }
+    .tab-nav-wrap.at-end::after { opacity: 0; }
+    .tab-nav { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
     .tab-nav::-webkit-scrollbar { display: none; }
     .tab-btn {
       background: none; border: none;
@@ -328,6 +338,7 @@
 <!-- ── Header ──────────────────────────────────────────────────────────────── -->
 <header class="app-header">
   <div class="app-logo">🥬 <span>Brooklyn</span> Kitchen</div>
+  <div class="tab-nav-wrap" id="tabNavWrap">
   <nav class="tab-nav" id="tabNav">
     <button class="tab-btn active" data-tab="home">🏠 This Week</button>
     <button class="tab-btn" data-tab="menu">🥗 Menu</button>
@@ -337,6 +348,7 @@
     <button class="tab-btn" data-tab="prices">💰 Price List</button>
     <button class="tab-btn" data-tab="archive">📚 Archive</button>
   </nav>
+  </div>
 </header>
 
 <!-- ── Warning banner ─────────────────────────────────────────────────────── -->
@@ -483,6 +495,17 @@ function renderMD(el, text) {
 function errState(el, msg) {
   el.innerHTML = `<div class="error-state">${msg}<code>npx serve .</code></div>`;
 }
+
+// ── Tab nav scroll-fade indicator ───────────────────────────────────────────
+const _tabNavWrap = $('tabNavWrap');
+const _tabNavEl   = $('tabNav');
+function _updateNavFade() {
+  const atEnd = _tabNavEl.scrollLeft + _tabNavEl.clientWidth >= _tabNavEl.scrollWidth - 4;
+  _tabNavWrap.classList.toggle('at-end', atEnd);
+}
+_tabNavEl.addEventListener('scroll', _updateNavFade, { passive: true });
+window.addEventListener('resize', _updateNavFade);
+_updateNavFade();
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 $('tabNav').addEventListener('click', e => {
