@@ -229,6 +229,14 @@
     .cl-skip-btn { padding: 13px 14px; border: none; background: none; font-size: 0.95rem; color: #ddd; cursor: pointer; flex-shrink: 0; }
     .cl-item[data-state="skipped"] .cl-skip-btn { color: var(--warn); }
     .cl-skip-btn:hover { color: var(--warn); }
+    .cl-sort-row { display: flex; gap: 6px; margin-bottom: 10px; }
+    .cl-sort-btn {
+      background: rgba(255,255,255,0.12); border: none; border-radius: 20px;
+      color: rgba(255,255,255,0.65); font-size: 0.75rem; font-weight: 600;
+      padding: 4px 12px; cursor: pointer; transition: all 0.15s; letter-spacing: 0.03em;
+    }
+    .cl-sort-btn.active { background: #fff; color: var(--navy); }
+    .cl-sort-btn:hover:not(.active) { background: rgba(255,255,255,0.22); color: #fff; }
     .cl-subgroup-label {
       padding: 8px 16px 4px; font-size: 0.68rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.08em;
@@ -331,6 +339,10 @@
         <button class="cl-copy-btn" id="cl-copy-btn">📋 Copy URL</button>
         <button class="cl-close-btn" id="cl-close-btn">✕ Close</button>
       </div>
+    </div>
+    <div class="cl-sort-row">
+      <button class="cl-sort-btn active" data-sort="store">📍 By Store</button>
+      <button class="cl-sort-btn" data-sort="meal">🍽 By Meal</button>
     </div>
     <div class="cl-totals" id="cl-totals"></div>
     <div class="cl-progress-wrap"><div class="cl-progress-bar" id="cl-progress" style="width:0%"></div></div>
@@ -771,6 +783,7 @@ function setupPriceSearch() {
 let _clItems  = [];
 let _priceMap = {};
 let _clState  = { v: 1, week: '', c: [], s: [], x: [] };
+let _clSort   = 'store'; // 'store' | 'meal'
 
 function clEncode(obj) {
   try { return btoa(encodeURIComponent(JSON.stringify(obj))); } catch(e) { return ''; }
@@ -784,6 +797,18 @@ function clNorm(text) {
     .replace(/\s*—.*$/, '')
     .replace(/[^a-z0-9\s]/g, ' ')
     .toLowerCase().trim().replace(/\s+/g, ' ');
+}
+function clNormMeal(meal) {
+  // If item spans multiple meals (e.g. "Persian Kofta Bowls / Lomo Saltado"), take first
+  meal = meal.split(/\s*\/\s*/)[0];
+  // Strip trailing single-word fillers after " & " (e.g. "Grilled Cheese & Soup")
+  meal = meal.replace(/\s*&\s+(\S+)\s*$/, (match, w) => {
+    const fillers = ['soup','side','sides','extra','extras','sauce','dessert','drink','snack','topping','toppings'];
+    return fillers.includes(w.toLowerCase()) ? '' : match;
+  });
+  // Strip trailing adjectival suffixes (e.g. "Simple Maggi Beef Ribs side")
+  meal = meal.replace(/\s+(side|sides|extra|extras|addition|topping|toppings)\s*$/i, '');
+  return meal.trim();
 }
 function clLookupPrice(name) {
   const words = clNorm(name).split(' ').filter(Boolean);
@@ -810,7 +835,7 @@ function clParseMd(md) {
     const meal = m[2].trim();
     if (k) {
       if (!isNaN(p)) _priceMap[k] = p;
-      _mealMap[k] = meal;
+      _mealMap[k] = clNormMeal(meal);
     }
   }
   // Parse store-grouped items from ## Shopping List by Trip
@@ -841,6 +866,17 @@ function clParseMd(md) {
 function clGetState(idx) {
   return _clState.c.includes(idx) ? 'checked' : _clState.s.includes(idx) ? 'skipped' : 'unchecked';
 }
+function clItemRow({ name, price, meal, idx }, showMeal) {
+  return `
+    <div class="cl-item" data-idx="${idx}" data-state="${clGetState(idx)}">
+      <button class="cl-item-toggle" data-idx="${idx}">
+        <span class="cl-checkbox"></span>
+        <span class="cl-item-name">${name}${showMeal && meal ? `<span class="cl-item-meal">${meal}</span>` : ''}</span>
+      </button>
+      <span class="cl-item-price">${price ? clFmtP(price) : ''}</span>
+      <button class="cl-skip-btn" data-skip="${idx}" title="Skip">⏭</button>
+    </div>`;
+}
 function clRenderList() {
   const byStore = {}, order = [];
   _clItems.forEach((item, idx) => {
@@ -850,21 +886,13 @@ function clRenderList() {
   let html = order.map(store => {
     const items = byStore[store];
     let lastSubgroup = null;
-    const rows = items.map(({ name, price, meal, subgroup, idx }) => {
+    const rows = items.map(item => {
       let out = '';
-      if (subgroup && subgroup !== lastSubgroup) {
-        out += `<div class="cl-subgroup-label">${subgroup}</div>`;
-        lastSubgroup = subgroup;
+      if (item.subgroup && item.subgroup !== lastSubgroup) {
+        out += `<div class="cl-subgroup-label">${item.subgroup}</div>`;
+        lastSubgroup = item.subgroup;
       }
-      out += `
-        <div class="cl-item" data-idx="${idx}" data-state="${clGetState(idx)}">
-          <button class="cl-item-toggle" data-idx="${idx}">
-            <span class="cl-checkbox"></span>
-            <span class="cl-item-name">${name}${meal ? `<span class="cl-item-meal">${meal}</span>` : ''}</span>
-          </button>
-          <span class="cl-item-price">${price ? clFmtP(price) : ''}</span>
-          <button class="cl-skip-btn" data-skip="${idx}" title="Skip">⏭</button>
-        </div>`;
+      out += clItemRow(item, false);
       return out;
     }).join('');
     return `
@@ -876,6 +904,25 @@ function clRenderList() {
   html += '<div id="cl-custom-list"></div>';
   $('cl-body').innerHTML = html;
   clRenderCustom();
+}
+function clRenderByMeal() {
+  const byMeal = {}, order = [];
+  _clItems.forEach((item, idx) => {
+    const key = item.meal || 'General / Pantry';
+    if (!byMeal[key]) { byMeal[key] = []; order.push(key); }
+    byMeal[key].push({ ...item, idx });
+  });
+  let html = order.map(meal => `
+    <div class="cl-store-section">
+      <div class="cl-store-label">🍽 ${meal}</div>
+      ${byMeal[meal].map(item => clItemRow(item, false)).join('')}
+    </div>`).join('');
+  html += '<div id="cl-custom-list"></div>';
+  $('cl-body').innerHTML = html;
+  clRenderCustom();
+}
+function clRender() {
+  if (_clSort === 'meal') clRenderByMeal(); else clRenderList();
 }
 function clRenderCustom() {
   const el = $('cl-custom-list');
@@ -980,8 +1027,10 @@ function openChecklist() {
   } else {
     _clState = { v: 1, week: _manifest?.currentWeek || '', c: [], s: [], x: [] };
   }
+  _clSort = 'store';
+  document.querySelectorAll('.cl-sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === 'store'));
   clParseMd(_listText);
-  clRenderList();
+  clRender();
   clUpdateTotals();
   $('checklist-overlay').classList.add('show');
 }
@@ -991,6 +1040,13 @@ function openChecklist() {
   ov.addEventListener('click', e => {
     if (e.target.closest('#cl-close-btn')) { ov.classList.remove('show'); return; }
     if (e.target.closest('#cl-copy-btn'))  { clCopyURL(); return; }
+    const sortBtn = e.target.closest('.cl-sort-btn[data-sort]');
+    if (sortBtn) {
+      _clSort = sortBtn.dataset.sort;
+      document.querySelectorAll('.cl-sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === _clSort));
+      clRender();
+      return;
+    }
     const tog = e.target.closest('.cl-item-toggle[data-idx]');
     if (tog) { clToggleCheck(parseInt(tog.dataset.idx)); return; }
     const ctog = e.target.closest('.cl-item-toggle[data-custom]');
