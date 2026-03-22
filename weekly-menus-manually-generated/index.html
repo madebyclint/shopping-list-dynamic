@@ -237,6 +237,23 @@
     }
     .cl-sort-btn.active { background: #fff; color: var(--navy); }
     .cl-sort-btn:hover:not(.active) { background: rgba(255,255,255,0.22); color: #fff; }
+    .cl-search-row { padding: 0 0 10px; }
+    .cl-search-wrap { position: relative; }
+    .cl-search-wrap input {
+      width: 100%; padding: 8px 34px 8px 34px;
+      border: none; border-radius: 8px;
+      font-size: 0.9rem; background: rgba(255,255,255,0.13); color: #fff;
+      outline: none; transition: background 0.15s;
+    }
+    .cl-search-wrap input::placeholder { color: rgba(255,255,255,0.45); }
+    .cl-search-wrap input:focus { background: rgba(255,255,255,0.22); }
+    .cl-search-wrap::before { content: '🔍'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.82rem; pointer-events: none; }
+    .cl-search-clear {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: rgba(255,255,255,0.55); font-size: 1rem;
+      cursor: pointer; padding: 0 4px; display: none;
+    }
+    .cl-search-clear.show { display: block; }
     .cl-subgroup-label {
       padding: 8px 16px 4px; font-size: 0.68rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.08em;
@@ -343,6 +360,12 @@
     <div class="cl-sort-row">
       <button class="cl-sort-btn active" data-sort="store">📍 By Store</button>
       <button class="cl-sort-btn" data-sort="meal">🍽 By Meal</button>
+    </div>
+    <div class="cl-search-row">
+      <div class="cl-search-wrap">
+        <input type="text" id="cl-search" placeholder="Search items…" autocomplete="off" />
+        <button class="cl-search-clear" id="cl-search-clear" title="Clear">✕</button>
+      </div>
     </div>
     <div class="cl-totals" id="cl-totals"></div>
     <div class="cl-progress-wrap"><div class="cl-progress-bar" id="cl-progress" style="width:0%"></div></div>
@@ -923,6 +946,36 @@ function clRenderByMeal() {
 }
 function clRender() {
   if (_clSort === 'meal') clRenderByMeal(); else clRenderList();
+  clApplySearch();
+}
+function clApplySearch() {
+  const q = ($('cl-search')?.value || '').toLowerCase().trim();
+  if (!q) {
+    document.querySelectorAll('#cl-body .cl-item[data-idx]').forEach(el => el.style.display = '');
+    document.querySelectorAll('#cl-body .cl-store-section').forEach(sec => sec.style.display = '');
+    document.querySelectorAll('#cl-body .cl-subgroup-label').forEach(el => el.style.display = '');
+    return;
+  }
+  document.querySelectorAll('#cl-body .cl-store-section').forEach(sec => {
+    let anyVisible = false;
+    sec.querySelectorAll('.cl-item[data-idx]').forEach(el => {
+      const text = el.querySelector('.cl-item-name')?.textContent.toLowerCase() || '';
+      const match = text.includes(q);
+      el.style.display = match ? '' : 'none';
+      if (match) anyVisible = true;
+    });
+    sec.style.display = anyVisible ? '' : 'none';
+    // Hide subgroup labels with no visible items after them
+    sec.querySelectorAll('.cl-subgroup-label').forEach(label => {
+      let sib = label.nextElementSibling;
+      let hasVisible = false;
+      while (sib && !sib.classList.contains('cl-subgroup-label') && !sib.classList.contains('cl-store-label')) {
+        if (sib.classList.contains('cl-item') && sib.style.display !== 'none') hasVisible = true;
+        sib = sib.nextElementSibling;
+      }
+      label.style.display = hasVisible ? '' : 'none';
+    });
+  });
 }
 function clRenderCustom() {
   const el = $('cl-custom-list');
@@ -1029,6 +1082,8 @@ function openChecklist() {
   }
   _clSort = 'store';
   document.querySelectorAll('.cl-sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === 'store'));
+  const si = $('cl-search');
+  if (si) { si.value = ''; $('cl-search-clear').classList.remove('show'); }
   clParseMd(_listText);
   clRender();
   clUpdateTotals();
@@ -1040,6 +1095,9 @@ function openChecklist() {
   ov.addEventListener('click', e => {
     if (e.target.closest('#cl-close-btn')) { ov.classList.remove('show'); return; }
     if (e.target.closest('#cl-copy-btn'))  { clCopyURL(); return; }
+    if (e.target.closest('#cl-search-clear')) {
+      $('cl-search').value = ''; $('cl-search-clear').classList.remove('show'); clApplySearch(); return;
+    }
     const sortBtn = e.target.closest('.cl-sort-btn[data-sort]');
     if (sortBtn) {
       _clSort = sortBtn.dataset.sort;
@@ -1059,6 +1117,12 @@ function openChecklist() {
   });
   ov.addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.target.id === 'cl-custom-name') clAddCustom();
+  });
+  ov.addEventListener('input', e => {
+    if (e.target.id === 'cl-search') {
+      $('cl-search-clear').classList.toggle('show', e.target.value.length > 0);
+      clApplySearch();
+    }
   });
 })();
 $('checklistBtn').addEventListener('click', openChecklist);
