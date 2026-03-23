@@ -1,7 +1,7 @@
 {
   "_meta": {
     "description": "Master price history file. Each item has a history array of {date, price, confirmed, source} observations. Add a new entry each shopping trip. confirmed=true means price came directly off a receipt. Use YYYY-MM-DD for receipt dates, YYYY-MM for estimate-only months.",
-    "last_updated": "2026-03-14",
+    "last_updated": "2026-03-21",
     "currency": "USD",
     "location": "Brooklyn, NY — small independent markets"
   },
@@ -23,7 +23,8 @@
       "category": "produce",
       "history": [
         { "date": "2026-02", "price": 1.29, "confirmed": true, "source": "receipt" },
-        { "date": "2026-03-14", "price": 0.99, "confirmed": true, "source": "Ideal Foods receipt" }
+        { "date": "2026-03-14", "price": 0.99, "confirmed": true, "source": "Ideal Foods receipt" },
+        { "date": "2026-03-21", "price": 0.69, "confirmed": true, "source": "Ideal Foods receipt (2.46 lb @ $0.69/lb = $1.70)" }
       ]
     },
     {
@@ -72,7 +73,8 @@
       "category": "aisles",
       "history": [
         { "date": "2026-02", "price": 2.50, "confirmed": false, "source": "estimate" },
-        { "date": "2026-03-14", "price": 3.79, "confirmed": true, "source": "Ideal Foods receipt" }
+        { "date": "2026-03-14", "price": 3.79, "confirmed": true, "source": "Ideal Foods receipt" },
+        { "date": "2026-03-21", "price": 3.79, "confirmed": true, "source": "Ideal Foods receipt (OCR: EAGLESWT CONDENS)" }
       ]
     },
     {
@@ -155,6 +157,15 @@
       ]
     },
     {
+      "name": "Mango Juice (Simply brand)",
+      "unit": "1 bottle",
+      "vendor": "Ideal Foods",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-21", "price": 3.89, "confirmed": true, "source": "Ideal Foods receipt (OCR: SIMPLY MANGO JUI) — cheaper alternative to Best brand" }
+      ]
+    },
+    {
       "name": "Scallions",
       "unit": "1 bunch",
       "vendor": "Ideal Foods",
@@ -171,7 +182,8 @@
       "category": "produce",
       "history": [
         { "date": "2026-02", "price": 5.50, "confirmed": false, "source": "estimate" },
-        { "date": "2026-03-14", "price": 1.67, "confirmed": true, "source": "Ideal Foods receipt (3/$5 deal)" }
+        { "date": "2026-03-14", "price": 1.67, "confirmed": true, "source": "Ideal Foods receipt (3/$5.00 deal)" },
+        { "date": "2026-03-21", "price": 2.64, "confirmed": true, "source": "Ideal Foods receipt (1.56 lb @ $1.69/lb — 3/$5 deal not available)" }
       ]
     },
     {
@@ -189,7 +201,8 @@
       "vendor": "Ideal Foods",
       "category": "protein",
       "history": [
-        { "date": "2026-03-14", "price": 8.60, "confirmed": true, "source": "Ideal Foods receipt (~$25.89 / ~3 lbs)" }
+        { "date": "2026-03-14", "price": 8.60, "confirmed": true, "source": "Ideal Foods receipt (~$25.89 / ~3 lbs)" },
+        { "date": "2026-03-21", "price": 8.71, "confirmed": true, "source": "Ideal Foods receipt ($26.13 for ~3 lbs)" }
       ]
     },
     {
@@ -208,7 +221,8 @@
       "category": "aisles",
       "history": [
         { "date": "2026-02", "price": 3.79, "confirmed": true, "source": "receipt" },
-        { "date": "2026-03-14", "price": 3.79, "confirmed": true, "source": "Ideal Foods receipt" }
+        { "date": "2026-03-14", "price": 3.79, "confirmed": true, "source": "Ideal Foods receipt" },
+        { "date": "2026-03-21", "price": 3.79, "confirmed": true, "source": "Ideal Foods receipt (Deep River Zesty + 2nd bag)" }
       ]
     },
     {
@@ -226,7 +240,8 @@
       "vendor": "Ideal Foods",
       "category": "produce",
       "history": [
-        { "date": "2026-03-14", "price": 3.99, "confirmed": true, "source": "Ideal Foods receipt" }
+        { "date": "2026-03-14", "price": 3.99, "confirmed": true, "source": "Ideal Foods receipt" },
+        { "date": "2026-03-21", "price": 3.79, "confirmed": true, "source": "Ideal Foods receipt (OCR: FINEAPPLE $3.79)" }
       ]
     },
     {
@@ -245,7 +260,8 @@
       "vendor": "Ideal Foods",
       "category": "household",
       "history": [
-        { "date": "2026-02", "price": 10.49, "confirmed": true, "source": "receipt" }
+        { "date": "2026-02", "price": 10.49, "confirmed": true, "source": "receipt" },
+        { "date": "2026-03-21", "price": 10.49, "confirmed": true, "source": "Ideal Foods receipt" }
       ]
     },
     {
@@ -290,7 +306,9 @@
       "vendor": "Ideal Foods",
       "category": "produce",
       "history": [
-        { "date": "2026-03-14", "price": 1.67, "confirmed": true, "source": "Ideal Foods receipt (3/$5)" }
+        { "date": "2026-03-14", "price": 1.67, "confirmed": true, "source": "Ideal Foods receipt (3/$5)" },
+        { "date": "2026-03-21", "price": 1.67, "confirmed": true, "source": "Ideal Foods receipt (3/$5.00 deal)" },
+        { "date": "2026-03-22", "price": 1.50, "confirmed": true, "source": "Ideal Foods receipt (3 @ 4/$5.00 = $1.25 ea; OCR shows $4.50 for 3)" }
       ]
     },
     {
@@ -388,6 +406,240 @@
       "category": "aisles",
       "history": [
         { "date": "2026-03-14", "price": 5.99, "confirmed": true, "source": "Brooklyn Fare receipt" }
+      ]
+    },
+    {
+      "name": "Peet's Coffee Major Dickason's",
+      "unit": "1 lb bag",
+      "vendor": "Brooklyn Fare",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-21", "price": 18.99, "confirmed": true, "source": "Brooklyn Fare receipt (OCR: PEETS COFFEE MAJOR DICKA)" }
+      ]
+    },
+    {
+      "name": "Acme Smoked Nova Salmon",
+      "unit": "1 pack",
+      "vendor": "Brooklyn Fare",
+      "category": "seafood",
+      "history": [
+        { "date": "2026-03-21", "price": 8.99, "confirmed": true, "source": "Brooklyn Fare receipt (after $3.30 markdown; reg ~$12.29)" }
+      ]
+    },
+    {
+      "name": "Thomas Everything Bagels",
+      "unit": "6-count pack",
+      "vendor": "Brooklyn Fare",
+      "category": "bakery",
+      "history": [
+        { "date": "2026-03-21", "price": 5.49, "confirmed": true, "source": "Brooklyn Fare receipt" }
+      ]
+    },
+    {
+      "name": "GT Raw Synergy Kombucha (Mango)",
+      "unit": "1 bottle",
+      "vendor": "Brooklyn Fare",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-21", "price": 4.00, "confirmed": true, "source": "Brooklyn Fare receipt (2/$8 after $1.99 markdown; +$0.05 deposit)" }
+      ]
+    },
+    {
+      "name": "Berttini Gourmet Beef Dumplings",
+      "unit": "1 pack",
+      "vendor": "Brooklyn Fare",
+      "category": "frozen",
+      "history": [
+        { "date": "2026-03-21", "price": 6.49, "confirmed": true, "source": "Brooklyn Fare receipt" }
+      ]
+    },
+    {
+      "name": "Bing Gre Sliced Cabbage (pre-sliced)",
+      "unit": "1 pack",
+      "vendor": "Brooklyn Fare",
+      "category": "produce",
+      "history": [
+        { "date": "2026-03-21", "price": 7.29, "confirmed": true, "source": "Brooklyn Fare receipt" }
+      ]
+    },
+    {
+      "name": "Arnold Organic Bread",
+      "unit": "1 loaf",
+      "vendor": "Ideal Foods",
+      "category": "bakery",
+      "history": [
+        { "date": "2026-03-21", "price": 6.49, "confirmed": true, "source": "Ideal Foods receipt (OCR: ARNOLD ORGAVIC B)" }
+      ]
+    },
+    {
+      "name": "Cream Cheese, Philadelphia Whipped (large)",
+      "unit": "1 container",
+      "vendor": "Ideal Foods",
+      "category": "dairy",
+      "history": [
+        { "date": "2026-03-21", "price": 9.99, "confirmed": true, "source": "Ideal Foods receipt (OCR: FHILA CR CH WHIP) — larger than 8 oz tub; check size" }
+      ]
+    },
+    {
+      "name": "Muenster Cheese (Tropical brand)",
+      "unit": "1 pack",
+      "vendor": "Ideal Foods",
+      "category": "dairy",
+      "history": [
+        { "date": "2026-03-21", "price": 8.49, "confirmed": true, "source": "Ideal Foods receipt (OCR: TROPICAL MUENSTE)" }
+      ]
+    },
+    {
+      "name": "Lactaid Whole Milk (½ gallon)",
+      "unit": "½ gallon",
+      "vendor": "Ideal Foods",
+      "category": "dairy",
+      "history": [
+        { "date": "2026-03-21", "price": 6.19, "confirmed": true, "source": "Ideal Foods receipt (OCR: LACTAID 100% WHO)" }
+      ]
+    },
+    {
+      "name": "Kellogg's Special K Cereal",
+      "unit": "1 box",
+      "vendor": "Ideal Foods",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-21", "price": 6.79, "confirmed": true, "source": "Ideal Foods receipt (OCR: KELLOGG SPK CRL)" }
+      ]
+    },
+    {
+      "name": "Bounty Paper Towels (select-a-size, by weight)",
+      "unit": "1 pack (by weight)",
+      "vendor": "Ideal Foods",
+      "category": "household",
+      "history": [
+        { "date": "2026-03-21", "price": 2.85, "confirmed": true, "source": "Ideal Foods receipt (1.43 lb @ $1.99/lb — likely select-a-size mini roll pack)" }
+      ]
+    },
+    {
+      "name": "Heinz Distilled White Vinegar (large)",
+      "unit": "1 gallon",
+      "vendor": "Ideal Foods",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-21", "price": 8.69, "confirmed": true, "source": "Ideal Foods receipt (OCR: HEINZ DSTLD WHT)" }
+      ]
+    },
+    {
+      "name": "Broccoli Crowns (bag)",
+      "unit": "1 bag/pack",
+      "vendor": "Ideal Foods",
+      "category": "produce",
+      "history": [
+        { "date": "2026-03-21", "price": 7.99, "confirmed": true, "source": "Ideal Foods receipt (OCR: EROCCOLI CROWNS $7.99) — large bag/pack of crowns" }
+      ]
+    },
+    {
+      "name": "Mezza Capers (by weight)",
+      "unit": "per lb",
+      "vendor": "Ideal Foods",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-21", "price": 2.49, "confirmed": true, "source": "Ideal Foods receipt (0.54 lb @ $2.49/lb = $1.34)" }
+      ]
+    },
+    {
+      "name": "Beef Short Ribs, bone-in",
+      "unit": "1 pack",
+      "vendor": "Ideal Foods",
+      "category": "protein",
+      "history": [
+        { "date": "2026-03-21", "price": 7.79, "confirmed": true, "source": "Ideal Foods receipt (OCR: FF BEEF SRO RIBS / FR BEEF SRO RIBS — multiple packs; $7.79 for one pack)" }
+      ]
+    },
+    {
+      "name": "Campbell's Healthy Request Tomato Soup",
+      "unit": "1 can",
+      "vendor": "Ideal Foods",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-21", "price": 2.79, "confirmed": true, "source": "Ideal Foods receipt (OCR: CAMP HLIY REQ TO × 2)" }
+      ]
+    },
+    {
+      "name": "Sunshine Organic Raisins",
+      "unit": "1 bag",
+      "vendor": "Ideal Foods",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-21", "price": 6.99, "confirmed": true, "source": "Ideal Foods receipt (OCR: SUNSHINE OR RAI)" }
+      ]
+    },
+    {
+      "name": "Premier Protein Shake",
+      "unit": "1 container/pack",
+      "vendor": "Ideal Foods",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-21", "price": 5.99, "confirmed": true, "source": "Ideal Foods receipt (OCR: FREMIER PROTEIN)" }
+      ]
+    },
+    {
+      "name": "LV Crushed Tomatoes",
+      "unit": "1 can",
+      "vendor": "Ideal Foods",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-22", "price": 3.49, "confirmed": true, "source": "Ideal Foods receipt (OCR: LV CRUSHED TOM)" }
+      ]
+    },
+    {
+      "name": "Tuttorosso Tomatoes (canned)",
+      "unit": "1 can",
+      "vendor": "Ideal Foods",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-22", "price": 1.39, "confirmed": true, "source": "Ideal Foods receipt (OCR: TUTTOROSSO TOMAT)" }
+      ]
+    },
+    {
+      "name": "La Flor Smoked Paprika",
+      "unit": "1 jar/tin",
+      "vendor": "Ideal Foods",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-22", "price": 3.39, "confirmed": true, "source": "Ideal Foods receipt (OCR: LA FLOR SMOKED P)" }
+      ]
+    },
+    {
+      "name": "Cholula Hot Sauce",
+      "unit": "1 bottle",
+      "vendor": "Ideal Foods",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-22", "price": 4.49, "confirmed": true, "source": "Ideal Foods receipt (OCR: CHOLULA HOT SC S)" }
+      ]
+    },
+    {
+      "name": "National Spice Blend",
+      "unit": "1 jar",
+      "vendor": "Ideal Foods",
+      "category": "aisles",
+      "history": [
+        { "date": "2026-03-22", "price": 4.99, "confirmed": true, "source": "Ideal Foods receipt (OCR: NATIONAL SPICE B)" }
+      ]
+    },
+    {
+      "name": "Greenwood Omega-3 supplement",
+      "unit": "1 package",
+      "vendor": "Ideal Foods",
+      "category": "supplement",
+      "history": [
+        { "date": "2026-03-22", "price": 9.99, "confirmed": true, "source": "Ideal Foods receipt (OCR: CREENWOOD EVERGY)" }
+      ]
+    },
+    {
+      "name": "Protein Powder (1426 St Johns)",
+      "unit": "1 container",
+      "vendor": "1426 St Johns",
+      "category": "supplement",
+      "history": [
+        { "date": "2026-03-21", "price": 42.99, "confirmed": true, "source": "1426 St Johns credit card receipt (Visa tap $42.99)" }
       ]
     }
   ]

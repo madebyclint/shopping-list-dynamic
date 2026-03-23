@@ -1,0 +1,79 @@
+{
+  "week": "2026-03-23",
+  "shopping_date": "2026-03-21",
+  "menu_file": "menus/2026-03-23-menu.md",
+  "meals": [
+    "Lox Bagels (Sunday brunch carryover)",
+    "Grilled Cheese & Tomato Soup",
+    "Simple Maggi Beef Short Ribs",
+    "Air-Fryer Corned Beef Brisket",
+    "Lomo Saltado (carryover)"
+  ],
+  "list_estimate": 259.43,
+  "total_spent": 362.61,
+  "variance": 103.18,
+  "by_store": {
+    "Ideal Foods (3/21)": 209.05,
+    "Ideal Foods (3/22)": 32.24,
+    "Brooklyn Fare": 78.33,
+    "1426 St Johns": 42.99
+  },
+  "on_list_total_est": 245.91,
+  "extras_total_est": 89.72,
+  "extras_breakdown": {
+    "Brooklyn Fare impulse": {
+      "amount": 44.50,
+      "items": [
+        { "name": "GT Raw Synergy Tea Mango (2/$8, after markdown)", "price": 4.05, "note": "+$0.05 bottle deposit" },
+        { "name": "Bing Gre Sliced Cabbage", "price": 7.29, "note": "not on list; possibly for carryover meals" },
+        { "name": "Seafood (unidentified) × 2", "price": 23.98, "note": "$11.99 each; mystery seafood packs at BF — additional lox or fresh fish" },
+        { "name": "Berttini Gourmet Beef Dumplings", "price": 6.49, "note": "frozen food impulse" },
+        { "name": "Cheetos Flamin Hot Crunchy", "price": 2.69, "note": "snack impulse" }
+      ],
+      "note": "Acme Nova Salmon ($8.99), Thomas Everything Bagels ($5.49), Peets Coffee ($18.99) are on-list items; excluded from extras."
+    },
+    "Ideal Foods impulse (3/21)": {
+      "amount": 12.98,
+      "items": [
+        { "name": "Premier Protein shake", "price": 5.99, "note": "supplement extra" },
+        { "name": "Sunshine Organic Raisins", "price": 6.99, "note": "pantry extra" }
+      ]
+    },
+    "Ideal Foods top-up (3/22)": {
+      "amount": 32.24,
+      "items": [
+        { "name": "LV Crushed Tomatoes", "price": 3.49, "note": "pantry restocking" },
+        { "name": "Greenwood Omega-3 supplement", "price": 9.99, "note": "supplement" },
+        { "name": "National Spice Blend", "price": 4.99, "note": "pantry spice" },
+        { "name": "La Flor Smoked Paprika", "price": 3.39, "note": "pantry spice" },
+        { "name": "Tuttorosso Tomatoes (canned)", "price": 1.39, "note": "pantry restocking" },
+        { "name": "Cholula Hot Sauce", "price": 4.49, "note": "condiment extra" },
+        { "name": "Mango Mexican × 3", "price": 4.50, "note": "produce add-on; 3 more mangos bought day after main shop" }
+      ],
+      "note": "Entire 3/22 trip was pantry top-up / restocking; nothing on the week's shopping list."
+    }
+  },
+  "category_spending": {
+    "produce": 46.73,
+    "protein_seafood": 66.48,
+    "dairy_refrigerated": 41.86,
+    "bakery_bread": 11.98,
+    "aisles": 75.87,
+    "household": 56.33,
+    "extras": 89.72
+  },
+  "price_updates": [
+    { "item": "Mango Juice — Simply brand (new find)", "old_price": 5.99, "new_price": 3.89, "delta": -2.10, "note": "Simply brand at $3.89 vs Best brand at $5.99 — same category, cheaper option; use Simply going forward" },
+    { "item": "Peet's Coffee Major Dickason's 1 lb", "old_price": 16.00, "new_price": 18.99, "delta": 2.99, "note": "first confirmed price; was estimate" },
+    { "item": "Cream Cheese, Philadelphia Whipped (large)", "old_price": 3.50, "new_price": 9.99, "delta": 6.49, "note": "large container — not the 8 oz tub; verify size next trip" },
+    { "item": "Muenster Cheese (Tropical brand)", "old_price": 3.76, "new_price": 8.49, "delta": 4.73, "note": "Tropical brand is higher-end than Great Lakes ($3.76)" },
+    { "item": "Banana, yellow", "old_price": 0.99, "new_price": 0.69, "delta": -0.30, "note": "price drop at Ideal — update price list" },
+    { "item": "Lactaid Whole Milk (½ gallon)", "old_price": 5.50, "new_price": 6.19, "delta": 0.69, "note": "first confirmed ½ gal price; was estimate $5.50" },
+    { "item": "Strawberries (by weight)", "old_price": 1.67, "new_price": 1.69, "delta": 0.02, "note": "$1.69/lb by weight; 3/$5 deal no longer available this week" },
+    { "item": "Dill bunch (Ideal)", "old_price": 3.49, "new_price": 4.99, "delta": 1.50, "note": "Bought at Ideal not BF; BF is still ~$3.49" },
+    { "item": "Heinz Distilled White Vinegar (large)", "old_price": 2.50, "new_price": 8.69, "delta": 6.19, "note": "large 1-gal bottle; will last months; amortize over ~4 weeks = ~$2.17/wk" },
+    { "item": "Mezza Capers (by weight)", "old_price": 3.50, "new_price": 1.34, "delta": -2.16, "note": "sold by weight at $2.49/lb; 0.54 lb = $1.34; significant savings vs jarred" },
+    { "item": "Arnold Organic Bread", "old_price": 4.50, "new_price": 6.49, "delta": 1.99, "note": "premium organic loaf; was est for plain white bread" },
+    { "item": "Acme Smoked Nova Salmon", "old_price": 12.29, "new_price": 8.99, "delta": -3.30, "note": "markdown deal at BF; regular price ~$12.29" }
+  ]
+}
