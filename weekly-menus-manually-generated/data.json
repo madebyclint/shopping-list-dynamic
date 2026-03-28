@@ -1,68 +1,44 @@
 {
   "_comment": "Update this file each week when generating a new meal plan. weekLabel uses the Monday date. shoppingDate is the day of the trip.",
-  "currentWeek": "2026-03-21",
-  "weekLabel": "Sat Mar 21 - Fri Mar 27, 2026",
-  "shoppingDate": "2026-03-21",
+  "currentWeek": "2026-03-29",
+  "weekLabel": "Sun Mar 29 - Fri Apr 4, 2026",
+  "shoppingDate": "2026-03-29",
   "files": {
-    "menu": "menus/2026-03-23-menu.md",
-    "shoppingList": "shopping-lists/2026-03-23-shopping-list.md",
-    "audit": "shopping-audits/2026-03-21-audit.json"
+    "menu": "menus/2026-03-29-menu.md",
+    "shoppingList": "shopping-lists/2026-03-29-shopping-list.md",
+    "audit": "shopping-audits/2026-03-29-audit.json"
   },
   "meals": [
     {
-      "name": "Peruvian Lomo Saltado",
-      "day": "Saturday, Mar 21",
-      "emoji": "🫕",
-      "time": "30 min",
-      "tag": "CARRYOVER",
-      "tagType": "special"
-    },
-    {
-      "name": "West African Goat Peanut Stew (Maafe)",
-      "day": "Sunday, Mar 22",
-      "emoji": "🥘",
-      "time": "45 min",
-      "tag": "CARRYOVER",
-      "tagType": "special"
-    },
-    {
-      "name": "Air-Fryer Corned Beef Brisket",
-      "day": "Monday, Mar 23",
+      "name": "Seared Steak with Pearl Couscous & Roasted Broccoli",
+      "day": "Sunday, Mar 29",
       "emoji": "🥩",
-      "time": "35 min",
-      "tag": "",
-      "tagType": ""
+      "time": "40 min",
+      "tag": "BIRTHDAY",
+      "tagType": "special"
     },
     {
-      "name": "Salmon Lox Bagel Sandwiches",
-      "day": "Tuesday, Mar 24",
-      "emoji": "🥯",
-      "time": "10 min",
+      "name": "Going Out",
+      "day": "Monday, Mar 30",
+      "emoji": "🚫",
+      "time": "—",
+      "tag": "NO COOK",
+      "tagType": "special"
+    },
+    {
+      "name": "Meatball Ramen with Frozen Mixed Veg",
+      "day": "Tuesday, Mar 31",
+      "emoji": "🍜",
+      "time": "20 min",
       "tag": "FAST",
       "tagType": "fast"
     },
     {
-      "name": "Simple Maggi Beef Ribs",
-      "day": "Wednesday, Mar 25",
-      "emoji": "🍖",
-      "time": "50 min",
-      "tag": "",
-      "tagType": ""
-    },
-    {
-      "name": "Grilled Cheese & Tomato Soup",
-      "day": "Thursday, Mar 26",
-      "emoji": "🧀",
-      "time": "25 min",
-      "tag": "TEEN PREP",
-      "tagType": "teen"
-    },
-    {
-      "name": "Leftover Night",
-      "day": "Friday, Mar 27",
-      "emoji": "🍱",
-      "time": "10 min",
-      "tag": "LEFTOVERS",
+      "name": "Spaghetti & Impossible Meatballs",
+      "day": "Wednesday, Apr 1",
+      "emoji": "🍝",
+      "time": "30 min",
+      "tag": "FRIENDS ARRIVE",
       "tagType": "special"
     }
   ]

@@ -121,3 +121,64 @@ Aisles Subtotal: **~$65.56**
 | **TOTAL** | **~$205** |
 
 > Protein total includes steak (birthday), frozen meatballs for two meals, turkey sausage, and sausage patties. Without turkey sausage: **~$188**.
+
+---
+
+## Shopping List by Trip
+
+### Whole Foods / Target
+*(Impossible meatballs — do this stop first or in advance)*
+- Impossible Meatballs, frozen (2 packs) *(Impossible or Gardein brand)*
+
+---
+
+### Brooklyn Fare
+*(Quality steak + bagels — birthday dinner)*
+- NY strip or ribeye steaks (~2 lbs, ~4 steaks) *(get something nice; check markdown rack)*
+- Bagels (1 pack, 6 ct — everything or assorted)
+
+---
+
+### Ideal Foods
+*(Main weekly shop)*
+
+**Produce**
+- Broccoli (1 large head)
+- Scallions (1 bunch)
+- Carrots, Cal Organic (1 bag)
+- Oranges, navel (5–7) *(5/$5.00 deal)*
+- Bananas (2 bunches)
+- Fruit, assorted (weekly)
+
+**Proteins**
+- Frozen beef meatballs (1 bag, ~24 ct) *(freezer section)*
+- Eggs (2 dozen)
+- Jimmy Dean Turkey Sausage (1 pack)
+
+**Dairy & Refrigerated**
+- Strawberry cream cheese (1 tub)
+- Almond Breeze original (1 gallon)
+- Lactaid Whole Milk (½ gallon)
+- Sausage patties (1 pack)
+
+**Frozen**
+- Mixed vegetables (1 bag, ~12 oz) *(peas/carrots/corn blend)*
+
+**Bakery**
+- English muffins (1 pack)
+- Bread, sandwich (1 loaf)
+
+**Aisles**
+- Spaghetti pasta (2 boxes)
+- Pearl couscous (1 box)
+- Ramen noodle packs (4 individual packs)
+- Marinara sauce (2 jars, ~24 oz each)
+- Dried chickpeas (1 bag, 1 lb)
+- Canned tuna (3 cans)
+- Nutella (1 jar, 13 oz)
+- Peanut butter, organic creamy (1 jar)
+- Chips (2 bags)
+- Trail mix (1 bag)
+- Cereal (2 boxes)
+- Mango juice (1 bottle)
+- Seltzer water (1 case / 12-pack)
