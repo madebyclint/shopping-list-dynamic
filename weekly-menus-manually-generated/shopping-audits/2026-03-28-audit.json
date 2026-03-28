@@ -1,0 +1,69 @@
+{
+  "week": "2026-03-29",
+  "shopping_date": "2026-03-28",
+  "menu_file": "menus/2026-03-29-menu.md",
+  "meals": [
+    "Seared Steak with Pearl Couscous & Roasted Broccoli (Birthday)",
+    "Going Out (Monday)",
+    "Meatball Ramen with Frozen Mixed Veg (Tuesday)",
+    "Spaghetti & Impossible/Beyond Meatballs (Wednesday — Vegetarian, feeds 7)"
+  ],
+  "list_estimate": 205.00,
+  "total_spent": 270.94,
+  "variance": 65.94,
+  "by_store": {
+    "Ideal Foods (3/28)": 270.94
+  },
+  "on_list_total_est": 213.00,
+  "extras_total_est": 61.79,
+  "missing_items": [
+    { "name": "Eggs (2 dozen)", "est": 13.00, "note": "Not on receipt — check pantry" },
+    { "name": "Frozen mixed vegetables (1 bag)", "est": 4.00, "note": "Need for Tuesday ramen" },
+    { "name": "Bagels (6-ct)", "est": 5.50, "note": "Skipped this trip" },
+    { "name": "Cereal (2nd box)", "est": 5.00, "note": "Only 1 box bought" },
+    { "name": "2nd bunch of bananas", "est": 1.70, "note": "Only 1 bunch purchased" }
+  ],
+  "extras_breakdown": {
+    "Ideal Foods impulse": {
+      "amount": 61.79,
+      "items": [
+        { "name": "Black Grapes (2.57 lb @ $3.49/lb)", "price": 8.97, "note": "Borderline — counted as assorted fruit; on list" },
+        { "name": "SM Simply Draught Chocolate", "price": 0.39, "note": "Small impulse drink/snack" },
+        { "name": "Sunshine Organic Raisins", "price": 6.99, "note": "Recurring extra — 2nd week in a row" },
+        { "name": "Jimmy Dean Turkey Sausage (2nd pack)", "price": 7.39, "note": "1 pack on list; 2nd is extra" },
+        { "name": "Al Fresco Tomato Basil Sausage (2nd pack)", "price": 6.99, "note": "1 pack on list as sausage patties; 2nd is extra" },
+        { "name": "Philadelphia Cream Cheese, plain", "price": 3.50, "note": "Extra — plain not on list; strawberry bites were" },
+        { "name": "Thomas High Protein (×2 packs)", "price": 11.98, "note": "$5.99 each — Thomas High Protein bagels or muffins; extras" },
+        { "name": "Goodeshalls Beef", "price": 8.99, "note": "Extra protein impulse" },
+        { "name": "EE Japanese Style noodles", "price": 2.59, "note": "Noodle impulse" },
+        { "name": "+Cuse Foods Tofu", "price": 3.99, "note": "Likely for vegetarian guests Wed — reasonable buy" }
+      ]
+    }
+  },
+  "category_spending": {
+    "produce": 30.50,
+    "protein": 70.72,
+    "dairy_refrigerated": 13.69,
+    "frozen": 0,
+    "bakery": 7.99,
+    "aisles": 81.52,
+    "extras": 61.79
+  },
+  "price_updates": [
+    { "item": "Rao's Tomato Basil Sauce", "old_price": 3.99, "new_price": 8.50, "delta": 4.51, "note": "Was estimated at store-brand price; Rao's premium brand ~$8.50/jar at Ideal" },
+    { "item": "Barilla Whole Grain Pasta (box)", "old_price": 1.49, "new_price": 4.50, "delta": 3.01, "note": "Whole grain premium vs plain pasta; 2/$9 deal" },
+    { "item": "Fico Select Pearl Couscous", "old_price": 3.99, "new_price": 7.99, "delta": 4.00, "note": "Premium brand; significantly over generic estimate" },
+    { "item": "Broccoli Crowns (by weight)", "old_price_flat": 7.99, "new_price": 3.99, "unit": "per lb", "note": "Switched from flat bag price to by-weight this trip; 2.19 lb @ $3.99/lb = $8.74" },
+    { "item": "Beef Rib Steak (Ideal Foods)", "old_price": null, "new_price": 9.59, "delta": null, "note": "First confirmed price at Ideal; bought instead of Brooklyn Fare NY strip" },
+    { "item": "Lactaid Whole Milk (½ gallon)", "old_price": 6.19, "new_price": 4.00, "delta": -2.19, "note": "⚠️ Significantly cheaper than last week — possibly promotional; verify next trip" },
+    { "item": "Almond Breeze Organic (gallon)", "old_price": 10.00, "new_price": 8.19, "delta": -1.81, "note": "Organic variety at $8.19 — less than non-organic estimate" },
+    { "item": "Orange, navel (by weight)", "old_price": 1.00, "new_price": 1.99, "unit": "per lb", "note": "Sold by weight this trip ($1.99/lb); 5/$5 deal not available; ~3.51 lb = $6.99" },
+    { "item": "Banana, yellow (per lb)", "old_price": 0.69, "new_price": 0.99, "delta": 0.30, "note": "Price bounced back up from last week's $0.69/lb" },
+    { "item": "Genova Tuna in Olive Oil (can)", "old_price": 1.50, "new_price": 2.99, "delta": 1.49, "note": "Was significantly underestimated on list; $2.99/can confirmed" },
+    { "item": "Smucker's Natural Peanut Butter", "old_price": 6.00, "new_price": 4.79, "delta": -1.21, "note": "Under estimate; Smucker's Natural" },
+    { "item": "Thomas English Muffins", "old_price": 4.00, "new_price": 3.00, "delta": -1.00, "note": "Under estimate at $3.00" },
+    { "item": "Maruchan Chili Ramen (individual pack)", "old_price": 1.00, "new_price": 0.45, "delta": -0.55, "note": "4 × $0.45 = $1.80 on receipt; possible clearance pricing" },
+    { "item": "Kellogg's Special K cereal", "old_price": 6.79, "new_price": 6.89, "delta": 0.10, "note": "Slight increase from $6.79 (Mar 21)" },
+    { "item": "Hals NY Seltzer (12-pack)", "old_price": 5.00, "new_price": 5.99, "delta": 0.99, "note": "First confirmed price; $5.99 + $0.40 bottle deposit = $6.39 total" }
+  ]
+}
