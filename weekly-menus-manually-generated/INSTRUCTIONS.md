@@ -240,6 +240,17 @@ Rules:
 - Include category subtotals
 - Include weekly recurring items (see below)
 
+#### Shopping List Audit (Required Before Finalizing)
+
+After drafting the shopping list, do a line-by-line pass through every meal's **Ingredients Used** section and verify each item is accounted for. For every ingredient:
+
+- **On the list** → no action needed
+- **Pantry staple** (see Pantry Staples section) → confirm it's absent from list, no action
+- **Optional ingredient** (labeled "optional", "if desired", "pantry or pick up", etc.) → make an explicit decision: add it to the list, or note it as skipped. Do not silently omit it.
+- **Missing and not a pantry staple** → add it
+
+This audit catches items like fresh herbs, lemons, parmesan, or garnishes that are listed in the menu recipe but not carried over to the shopping list.
+
 #### Section D: Shopping by Trip
 
 ```

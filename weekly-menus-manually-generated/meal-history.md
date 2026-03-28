@@ -6,6 +6,28 @@ Running log of weekly menus. Reference when generating new plans to avoid repeat
 
 ---
 
+## Sun Mar 29 - Fri Apr 4, 2026
+
+### Dinners
+- 🥩 Seared Steak with Pearl Couscous & Roasted Broccoli *(SUNDAY — 🎂 Birthday)* — NY strip or ribeye, pearl couscous, roasted broccoli — 35–40 min
+- 🚫 Going Out *(MONDAY — No cook)*
+- 🍜 Meatball Ramen with Frozen Mixed Veg *(TUESDAY FAST)* — ramen broth, frozen beef meatballs, mixed veg, scallions — 20 min
+- 🍝 Spaghetti & Impossible Meatballs *(WEDNESDAY — Friends arrive, Vegetarian, serves 7)* — spaghetti, marinara, Impossible meatballs — oranges on side — 30 min
+
+### Breakfast
+- Strawberry cream cheese + bagels (requested item)
+- Nutella (requested item)
+
+### Notes
+- Vegetarian family of 3 arriving Wednesday — all Wednesday meals are meat-free
+- Birthday dinner Sunday: go to Brooklyn Fare for quality steak
+- Impossible meatballs: check Whole Foods or Target for availability
+- Dried chickpeas added for guest-week snacking (roasted)
+- Thursday–Friday meals TBD with guests in house
+- Jerk Chicken Bowls punted again — hold for non-guest week
+
+---
+
 ## Sat Mar 21 - Fri Mar 27, 2026
 
 ### Dinners
