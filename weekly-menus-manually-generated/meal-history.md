@@ -6,6 +6,25 @@ Running log of weekly menus. Reference when generating new plans to avoid repeat
 
 ---
 
+## Sun Apr 12 - Fri Apr 18, 2026
+
+### Dinners
+- 🥪 Simple Francesinha *(SUNDAY — Special)* — thick bread, deli ham, beef hot dogs, Swiss cheese, beer-tomato sauce, oven fries — 45 min
+- 🍲 Opor Ayam Putih (Chicken Braised in Coconut Milk & Spices) *(MONDAY)* — whole chicken, spiced coconut broth, galangal, lemongrass, fried shallots, rice — 1.5 hr (recipe: *Mortar & Pestle* p. 56)
+- 🍖 Simple Maggi Beef Ribs *(TUESDAY)* — all-beef ribs braised with Maggi, broccoli, rice, pineapple — 50 min
+- 🇨🇷 Costa Rica Casado with Salsa Lizano *(WEDNESDAY)* — rice, black beans, fried plantains, chicken, Salsa Lizano — 35 min *(simplified — no slaw)*
+- 🍱 Japanese Teriyaki Chicken Bowls *(THURSDAY TEEN PREP)* — chicken thighs, teriyaki glaze, broccoli, rice — 25 min
+- 🍱 Leftover Night *(FRIDAY)*
+
+### Notes
+- Francesinha: user-requested; simple 2-meat version (ham + beef hot dogs/kielbasa)
+- First time making Opor Ayam Putih (Patricia Tanumihardja recipe) — Instant Pot adaptation
+- Maggi Beef Ribs are all-beef per Julian's preference (also made week of Mar 21)
+- Costa Rica Casado moved to Wednesday (simplified, no slaw); Gochujang Chicken replaced by Teriyaki Bowls on Thursday (last made Feb 19)
+- Salsa Lizano: track down at 1426 St Johns / Utica Ave or order online
+
+---
+
 ## Sun Mar 29 - Fri Apr 4, 2026
 
 ### Dinners

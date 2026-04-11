@@ -182,7 +182,40 @@
     .md-content tbody tr:hover td { background: #faf9f7; }
 
     /* ── Shopping list tab extras ─────────────────────────────────── */
+    .list-tab-toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px 8px; gap:8px; }
+    .list-tab-toolbar h2 { font-size:1.05rem; font-weight:700; color:var(--navy); margin:0; }
+    .list-toolbar-btns { display:flex; gap:8px; }
+    .list-btn { border:none; border-radius:8px; padding:9px 16px; font-size:0.88rem; font-weight:600; cursor:pointer; white-space:nowrap; }
+    .list-btn-checklist { background:var(--accent); color:#fff; }
+    .list-btn-xray { background:var(--navy); color:#fff; }
+    #list-md-content { padding:0 16px 80px; transition: filter 0.25s, opacity 0.25s; }
+    #list-md-content.xray-dimmed { filter: blur(1.5px); opacity:0.38; pointer-events:none; }
 
+    /* ── X-Ray Drawer ─────────────────────────────────────────────────── */
+    #xray-drawer {
+      position:fixed; top:var(--nav-h); right:0; bottom:0; z-index:150; width:400px;
+      background:var(--bg); border-left:1px solid var(--border); overflow-y:auto;
+      transform: translateX(110%); transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+    }
+    #xray-drawer.open { transform: translateX(0); }
+    .xray-header { background:var(--navy); color:#fff; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:1; }
+    .xray-header h3 { margin:0; font-size:1rem; font-weight:700; }
+    .xray-close-btn { background:rgba(255,255,255,0.15); color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:0.85rem; cursor:pointer; }
+    .xray-summary { display:flex; gap:10px; flex-wrap:wrap; padding:10px 16px; border-bottom:1px solid var(--border); }
+    .xray-chip { font-size:0.82rem; font-weight:600; padding:4px 10px; border-radius:12px; background:var(--surface); }
+    .xray-chip.ok { color:#2a7a2a; }
+    .xray-chip.warn { color:#b44a00; }
+    .xray-chip.pantry { color:var(--muted); }
+    .xray-body { padding:12px 16px 80px; }
+    .xray-meal-card { background:var(--surface); border-radius:10px; padding:12px 14px; margin-bottom:12px; }
+    .xray-meal-title { font-size:0.95rem; font-weight:700; color:var(--navy); margin-bottom:8px; }
+    .xray-section-label { font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted); margin:6px 0 4px; }
+    .xray-item { font-size:0.85rem; padding:3px 0; display:flex; align-items:baseline; gap:6px; }
+    .xray-icon { font-size:0.8rem; flex-shrink:0; }
+    @media (max-width:640px) {
+      #xray-drawer { width:100vw; top:auto; height:65vh; transform:translateY(110%); }
+      #xray-drawer.open { transform:translateY(0); }
+    }
 
     /* ── Live Checklist Overlay ──────────────────────────────────────── */
     #checklist-overlay {
@@ -406,14 +439,29 @@
 
   <!-- SHOPPING LIST -->
   <section id="tab-list" class="page">
-    <div style="display:flex;align-items:center;justify-content:center;padding:60px 20px;color:var(--muted);">
-      <div style="text-align:center">
-        <div style="font-size:2.5rem;margin-bottom:16px">🛒</div>
-        <p style="font-size:0.95rem;margin-bottom:20px">Open the live checklist to shop this week’s list</p>
-        <button id="checklistBtn" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:0.95rem;font-weight:600;cursor:pointer">🛒 Open Checklist</button>
+    <div class="list-tab-toolbar">
+      <h2>&#x1F6D2; This Week's List</h2>
+      <div class="list-toolbar-btns">
+        <button class="list-btn list-btn-xray" id="xrayBtn">&#x1F52C; X-Ray</button>
+        <button class="list-btn list-btn-checklist" id="checklistBtn">&#x1F6D2; Checklist</button>
       </div>
     </div>
+    <div id="list-md-content" class="md-content">
+      <div style="text-align:center;padding:40px 20px;color:var(--muted);">Loading...</div>
+    </div>
   </section>
+
+  <!-- X-Ray Drawer (outside tab-list so it overlays on top) -->
+  <div id="xray-drawer">
+    <div class="xray-header">
+      <h3>&#x1F52C; Ingredient X-Ray</h3>
+      <button class="xray-close-btn" id="xrayCloseBtn">&#x2715; Close</button>
+    </div>
+    <div class="xray-summary" id="xray-summary"></div>
+    <div class="xray-body" id="xray-body">
+      <div style="padding:20px;color:var(--muted);font-size:0.88rem;">Loading ingredients...</div>
+    </div>
+  </div>
 
   <!-- AUDIT ─────────────────────────────────────────────────────────────── -->
   <section id="tab-audit" class="page">
@@ -543,6 +591,7 @@ async function init() {
     fetchText(_manifest.files.shoppingList)
       .then(t => {
         _listText = t;
+        renderMD($('list-md-content'), t);
         // Auto-restore checklist if URL has saved cart state
         if (new URLSearchParams(window.location.search).has('cart')) {
           document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1149,6 +1198,76 @@ function openChecklist() {
   });
 })();
 $('checklistBtn').addEventListener('click', openChecklist);
+
+// ── X-Ray feature ────────────────────────────────────────────────────────────
+let _xrayData = null;
+
+$('xrayBtn').addEventListener('click', openXray);
+$('xrayCloseBtn').addEventListener('click', closeXray);
+
+function openXray() {
+  $('xray-drawer').classList.add('open');
+  $('list-md-content').classList.add('xray-dimmed');
+  if (_xrayData) { renderXray(_xrayData); return; }
+  fetchJSON('meals-ingredients.json')
+    .then(data => { _xrayData = data; renderXray(data); })
+    .catch(() => {
+      $('xray-body').innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.88rem">&#x26A0;&#xFE0F; Could not load meals-ingredients.json</div>';
+    });
+}
+
+function closeXray() {
+  $('xray-drawer').classList.remove('open');
+  $('list-md-content').classList.remove('xray-dimmed');
+}
+
+function xrayCheck(item, listText) {
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  const skip = new Set(['with','from','each','some','the','and','for','cup','cups','tbsp','tsp','pkg','can','pack','slice','sliced','bunch','bag','jar']);
+  const tokens = norm(item).split(' ').filter(t => t.length >= 4 && !skip.has(t));
+  const haystack = norm(listText);
+  return tokens.length > 0 && tokens.some(t => haystack.includes(t));
+}
+
+function renderXray(data) {
+  const listText = _listText || '';
+  let totalFound = 0, totalMissing = 0, totalPantry = 0;
+  let html = '';
+
+  (data.meals || []).forEach(meal => {
+    const found = [], missing = [];
+    (meal.buy_these || []).forEach(item => {
+      if (xrayCheck(item, listText)) found.push(item);
+      else missing.push(item);
+    });
+    const pantry = meal.pantry || [];
+    totalFound += found.length;
+    totalMissing += missing.length;
+    totalPantry += pantry.length;
+
+    html += `<div class="xray-meal-card">
+      <div class="xray-meal-title">${meal.emoji || ''} ${meal.name} <span style="opacity:0.6;font-weight:400">&#x2014; ${meal.day}</span></div>`;
+    if (found.length) {
+      html += `<div class="xray-section-label">&#x2705; On the list (${found.length})</div>`;
+      found.forEach(i => html += `<div class="xray-item"><span class="xray-icon">&#x2705;</span>${i}</div>`);
+    }
+    if (missing.length) {
+      html += `<div class="xray-section-label" style="color:var(--warn)">&#x26A0;&#xFE0F; Verify / missing (${missing.length})</div>`;
+      missing.forEach(i => html += `<div class="xray-item" style="color:var(--warn)"><span class="xray-icon">&#x26A0;&#xFE0F;</span>${i}</div>`);
+    }
+    if (pantry.length) {
+      html += `<div class="xray-section-label">Pantry &#x2014; not checked (${pantry.length})</div>`;
+      pantry.forEach(i => html += `<div class="xray-item" style="color:var(--muted)"><span class="xray-icon">&#x1F3E0;</span>${i}</div>`);
+    }
+    html += '</div>';
+  });
+
+  $('xray-body').innerHTML = html;
+  $('xray-summary').innerHTML = `
+    <span class="xray-chip ok">&#x2705; ${totalFound} found</span>
+    ${totalMissing ? `<span class="xray-chip warn">&#x26A0;&#xFE0F; ${totalMissing} to verify</span>` : ''}
+    <span class="xray-chip pantry">&#x1F3E0; ${totalPantry} pantry items</span>`;
+}
 
 // ── Archive tab ──────────────────────────────────────────────────────────────
 let _archiveLoaded = false;

@@ -1,45 +1,53 @@
 {
   "_comment": "Update this file each week when generating a new meal plan. weekLabel uses the Monday date. shoppingDate is the day of the trip.",
-  "currentWeek": "2026-03-29",
-  "weekLabel": "Sun Mar 29 - Fri Apr 4, 2026",
-  "shoppingDate": "2026-03-29",
+  "currentWeek": "2026-04-12",
+  "weekLabel": "Sun Apr 12 - Fri Apr 18, 2026",
+  "shoppingDate": "2026-04-12",
   "files": {
-    "menu": "menus/2026-03-29-menu.md",
-    "shoppingList": "shopping-lists/2026-03-29-shopping-list.md",
-    "audit": "shopping-audits/2026-03-29-audit.json"
+    "menu": "menus/2026-04-12-menu.md",
+    "shoppingList": "shopping-lists/2026-04-12-shopping-list.md",
+    "audit": "shopping-audits/2026-04-12-audit.json"
   },
   "meals": [
     {
-      "name": "Seared Steak with Pearl Couscous & Roasted Broccoli",
-      "day": "Sunday, Mar 29",
-      "emoji": "🥩",
-      "time": "40 min",
-      "tag": "BIRTHDAY",
+      "name": "Simple Francesinha",
+      "day": "Sunday, Apr 12",
+      "emoji": "🥪",
+      "time": "45 min",
+      "tag": "SPECIAL",
       "tagType": "special"
     },
     {
-      "name": "Going Out",
-      "day": "Monday, Mar 30",
-      "emoji": "🚫",
-      "time": "—",
-      "tag": "NO COOK",
-      "tagType": "special"
+      "name": "Opor Ayam Putih (Chicken Braised in Coconut Milk & Spices)",
+      "day": "Monday, Apr 13",
+      "emoji": "🍲",
+      "time": "~50 min (Instant Pot)",
+      "tag": "",
+      "tagType": ""
     },
     {
-      "name": "Meatball Ramen with Frozen Mixed Veg",
-      "day": "Tuesday, Mar 31",
-      "emoji": "🍜",
-      "time": "20 min",
-      "tag": "FAST",
-      "tagType": "fast"
+      "name": "Simple Maggi Beef Ribs",
+      "day": "Tuesday, Apr 14",
+      "emoji": "🍖",
+      "time": "50 min",
+      "tag": "",
+      "tagType": ""
     },
     {
-      "name": "Spaghetti & Impossible Meatballs",
-      "day": "Wednesday, Apr 1",
-      "emoji": "🍝",
-      "time": "30 min",
-      "tag": "FRIENDS ARRIVE",
-      "tagType": "special"
+      "name": "Costa Rica Casado with Salsa Lizano",
+      "day": "Wednesday, Apr 15",
+      "emoji": "🇨🇷",
+      "time": "35 min",
+      "tag": "",
+      "tagType": ""
+    },
+    {
+      "name": "Japanese Teriyaki Chicken Bowls",
+      "day": "Thursday, Apr 16",
+      "emoji": "🍱",
+      "time": "25 min",
+      "tag": "TEEN PREP",
+      "tagType": "teen"
     }
   ]
 }
