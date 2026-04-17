@@ -1,0 +1,26 @@
+{
+  "week": "2026-04-12",
+  "shopping_date": "2026-04-17",
+  "menu_file": "menus/2026-04-12-menu.md",
+  "meals": [
+    "Simple Francesinha (Sunday)",
+    "Opor Ayam Putih (Monday)",
+    "Simple Maggi Beef Ribs (Tuesday)",
+    "Costa Rica Casado with Salsa Lizano (Wednesday)",
+    "Japanese Teriyaki Chicken Bowls (Thursday — teen prep)",
+    "Leftover Night (Friday)"
+  ],
+  "list_estimate": 200.39,
+  "total_spent": 247.40,
+  "variance": 47.01,
+  "by_store": {
+    "Ideal Food Basket (4/17 — tx1)": 14.21,
+    "Ideal Food Basket (4/17 — tx2)": 233.19
+  },
+  "on_list_total_est": null,
+  "extras_total_est": null,
+  "note": "No itemization this trip — total only. Two transactions at Ideal Food Basket.",
+  "extras_breakdown": {},
+  "category_spending": {},
+  "price_updates": []
+}
