@@ -1278,7 +1278,7 @@ async function loadArchive() {
   const list = $('archive-list');
   try {
     const data = await fetchJSON('menus/index.json');
-    const menus = (data.menus || []).slice().reverse(); // newest first
+    const menus = (data.menus || []).slice(); // newest first (index.json is already ordered newest→oldest)
     if (menus.length === 0) {
       list.innerHTML = '<div class="archive-list-header">Past Menus</div><div style="padding:16px;color:var(--muted);font-size:0.84rem">No menus yet.</div>';
       return;
