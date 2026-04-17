@@ -1,6 +1,122 @@
 {
   "_comment": "Per-meal ingredient coverage for the X-Ray panel. Update each week alongside the menu. buy_these = items that MUST appear on the shopping list. pantry = assumed at home, not checked.",
-  "week": "2026-04-12",
+  "week": "2026-04-19",
+  "meals": [
+    {
+      "name": "Ethiopian Beef Tibs",
+      "day": "Sunday",
+      "emoji": "🥩",
+      "buy_these": [
+        "Beef, sirloin or eye round",
+        "Yellow onions",
+        "Jalapeños",
+        "Tomatoes, plum",
+        "Fresh rosemary",
+        "Berbere spice blend",
+        "Oranges"
+      ],
+      "pantry": [
+        "Garlic",
+        "Butter",
+        "Vegetable oil",
+        "Salt",
+        "Black pepper",
+        "Jasmine rice"
+      ]
+    },
+    {
+      "name": "Mexican Ceviche Tostadas",
+      "day": "Monday",
+      "emoji": "🌮",
+      "buy_these": [
+        "Shrimp, medium",
+        "Limes",
+        "Red onion",
+        "Jalapeños",
+        "Tomatoes, plum",
+        "Cucumber",
+        "Avocados",
+        "Cilantro",
+        "Tostada shells",
+        "Mango"
+      ],
+      "pantry": [
+        "Salt",
+        "Cholula",
+        "Hot sauce"
+      ]
+    },
+    {
+      "name": "Mac & Cheese",
+      "day": "Tuesday",
+      "emoji": "🧀",
+      "buy_these": [
+        "Elbow macaroni",
+        "Sharp cheddar, shredded",
+        "Bananas"
+      ],
+      "pantry": [
+        "Lactaid Whole Milk",
+        "Butter",
+        "All-purpose flour",
+        "Salt",
+        "Black pepper",
+        "Dry mustard",
+        "Paprika"
+      ]
+    },
+    {
+      "name": "Nigerian Jollof Rice with Chicken",
+      "day": "Wednesday",
+      "emoji": "🍗",
+      "buy_these": [
+        "Chicken thighs, bone-in",
+        "Long-grain rice",
+        "Plum tomatoes",
+        "Red bell pepper",
+        "Scotch bonnet",
+        "Yellow onions",
+        "Pineapple"
+      ],
+      "pantry": [
+        "Tomato paste",
+        "Chicken bouillon",
+        "Vegetable oil",
+        "Garlic powder",
+        "Onion powder",
+        "Curry powder",
+        "Salt",
+        "Black pepper",
+        "Mixed frozen veg"
+      ]
+    },
+    {
+      "name": "Beef & Veggie Sheet Pan Burritos",
+      "day": "Thursday",
+      "emoji": "🌯",
+      "buy_these": [
+        "Ground beef, 85/15",
+        "Green bell pepper",
+        "Red bell pepper",
+        "Yellow onions",
+        "Black beans, canned",
+        "Shredded Mexican cheese blend",
+        "Flour tortillas",
+        "Oranges"
+      ],
+      "pantry": [
+        "Olive oil",
+        "Cumin",
+        "Garlic powder",
+        "Chili powder",
+        "Salt",
+        "Black pepper",
+        "Salsa",
+        "Sour cream"
+      ]
+    }
+  ]
+}
   "meals": [
     {
       "name": "Simple Francesinha",

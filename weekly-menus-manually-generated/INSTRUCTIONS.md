@@ -142,7 +142,7 @@ I need a meal plan for the next week. Here is the criteria:
    - **Every meal must include a fresh fruit as a side** — list it in both Quick Glance and Ingredients Used. Pick fruits that pair with the cuisine where possible.
 6. If we do pork, we need to do a pork portion and a non-pork portion for a couple family members.
 7. We are a family of 4 with two teens
-8. **Tuesday must be a super fast no-cook or minimal-cook meal** — we get home at 8pm. Think hot dogs, mac and cheese, charcuterie board, quesadillas, etc.
+8. **Tuesday must be a super fast meal (≤20 min)** — we get home at 8pm. Think mac and cheese, hot dogs, quesadillas, charcuterie board, ramen, grilled cheese, etc. No-cook is fine but not required — speed is the priority.
 9. **Thursday must be a kid-friendly prep meal** — the teens make it themselves. Keep it simple with clear steps (tacos, pasta, stir fry, sheet pan, etc.)
 
 **Context to include with prompt:**
@@ -153,6 +153,11 @@ I need a meal plan for the next week. Here is the criteria:
 - We are in Brooklyn buying at small markets, so costs are higher than typical
 - See Pantry Staples section below — do not add those to shopping list
 - See Weekly Recurring Items section below — always include those in shopping list
+
+**Partial meal requests:**
+- The user may provide 1–3 meal suggestions to anchor the week. **Always fill in the remaining meals** to reach 5 dinners + 1 breakfast — never produce a partial plan.
+- User-provided meals must be placed on the correct day (Tuesday = fast, Thursday = teen-prep) when the meal type fits, otherwise place on the most logical day.
+- Fill-in meals must follow all the same rules: cuisine diversity, rainbow plate, no repeats from last 4–6 weeks.
 
 ---
 
