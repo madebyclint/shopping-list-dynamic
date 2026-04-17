@@ -51,18 +51,14 @@
       "day": "Tuesday",
       "emoji": "🧀",
       "buy_these": [
-        "Elbow macaroni",
-        "Sharp cheddar, shredded",
+        "Boxed mac & cheese (2 boxes)",
+        "Frozen peas",
         "Bananas"
       ],
       "pantry": [
-        "Lactaid Whole Milk",
         "Butter",
-        "All-purpose flour",
-        "Salt",
-        "Black pepper",
-        "Dry mustard",
-        "Paprika"
+        "Lactaid Whole Milk",
+        "Salt"
       ]
     },
     {
@@ -91,7 +87,7 @@
       ]
     },
     {
-      "name": "Beef & Veggie Sheet Pan Burritos",
+      "name": "Beef & Veggie Burrito Bowls",
       "day": "Thursday",
       "emoji": "🌯",
       "buy_these": [
@@ -101,7 +97,7 @@
         "Yellow onions",
         "Black beans, canned",
         "Shredded Mexican cheese blend",
-        "Flour tortillas",
+        "Long-grain rice",
         "Oranges"
       ],
       "pantry": [
@@ -113,110 +109,6 @@
         "Black pepper",
         "Salsa",
         "Sour cream"
-      ]
-    }
-  ]
-}
-  "meals": [
-    {
-      "name": "Simple Francesinha",
-      "day": "Sunday",
-      "emoji": "🥪",
-      "buy_these": [
-        "Thick white bread",
-        "Deli turkey",
-        "Beef hot dogs",
-        "Swiss cheese",
-        "Campbell's tomato soup",
-        "Beer",
-        "Frozen fries"
-      ],
-      "pantry": [
-        "Worcestershire sauce",
-        "Hot sauce",
-        "Cholula",
-        "Butter",
-        "Salt",
-        "Black pepper"
-      ]
-    },
-    {
-      "name": "Opor Ayam Putih",
-      "day": "Monday",
-      "emoji": "🍲",
-      "buy_these": [
-        "Whole chicken",
-        "Macadamia nuts",
-        "Coriander seeds",
-        "Asian shallots",
-        "Makrut lime leaves",
-        "Galangal",
-        "Lemongrass",
-        "Coconut milk",
-        "Fried shallots",
-        "Jasmine rice"
-      ],
-      "pantry": [
-        "Garlic",
-        "Ground cumin",
-        "Black pepper",
-        "Vegetable oil",
-        "Salt",
-        "Sugar"
-      ]
-    },
-    {
-      "name": "Simple Maggi Beef Ribs",
-      "day": "Tuesday",
-      "emoji": "🍖",
-      "buy_these": [
-        "Beef short ribs",
-        "Kale",
-        "Pineapple"
-      ],
-      "pantry": [
-        "Maggi seasoning sauce",
-        "Olive oil",
-        "Salt"
-      ]
-    },
-    {
-      "name": "Costa Rica Casado",
-      "day": "Wednesday",
-      "emoji": "🇨🇷",
-      "buy_these": [
-        "Chicken thighs",
-        "Black beans",
-        "Plantains",
-        "Salsa Lizano",
-        "Jasmine rice"
-      ],
-      "pantry": [
-        "Garlic",
-        "Olive oil",
-        "Cumin",
-        "Salt",
-        "Black pepper",
-        "Vegetable oil"
-      ]
-    },
-    {
-      "name": "Japanese Teriyaki Chicken Bowls",
-      "day": "Thursday",
-      "emoji": "🍱",
-      "buy_these": [
-        "Chicken thighs",
-        "Broccoli"
-      ],
-      "pantry": [
-        "Soy sauce",
-        "Honey",
-        "Garlic",
-        "Sesame oil",
-        "Rice vinegar",
-        "Cornstarch",
-        "Jasmine rice",
-        "Scallions"
       ]
     }
   ]

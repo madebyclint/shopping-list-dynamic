@@ -290,6 +290,7 @@ This audit catches items like fresh herbs, lemons, parmesan, or garnishes that a
 ## Pantry Staples (Always On Hand — Do Not Add to Shopping List)
 
 - Olive oil, vegetable oil, canola oil
+- Butter
 - Soy sauce, fish sauce, rice vinegar, sesame oil
 - Chicken broth, vegetable broth
 - Salt, black pepper, red pepper flakes
