@@ -34,18 +34,18 @@
       "tagType": "fast"
     },
     {
-      "name": "Nigerian Jollof Rice with Chicken",
+      "name": "Maggi Beef Ribs",
       "day": "Wednesday, Apr 22",
-      "emoji": "🍗",
-      "time": "45 min",
-      "tag": "",
-      "tagType": ""
+      "emoji": "🥩",
+      "time": "75 min",
+      "tag": "KIDS NIGHT",
+      "tagType": "kids"
     },
     {
-      "name": "Beef & Veggie Burrito Bowls",
+      "name": "Al Pastor Street Tacos",
       "day": "Thursday, Apr 24",
-      "emoji": "🌯",
-      "time": "30 min",
+      "emoji": "🌮",
+      "time": "25 min",
       "tag": "TEEN PREP",
       "tagType": "teen"
     }

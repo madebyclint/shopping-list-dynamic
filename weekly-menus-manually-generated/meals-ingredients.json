@@ -62,53 +62,43 @@
       ]
     },
     {
-      "name": "Nigerian Jollof Rice with Chicken",
+      "name": "Maggi Beef Ribs",
       "day": "Wednesday",
-      "emoji": "🍗",
+      "emoji": "🥩",
       "buy_these": [
-        "Chicken thighs, bone-in",
-        "Long-grain rice",
-        "Plum tomatoes",
-        "Red bell pepper",
-        "Scotch bonnet",
+        "Beef ribs",
         "Yellow onions",
-        "Pineapple"
-      ],
-      "pantry": [
-        "Tomato paste",
-        "Chicken bouillon",
-        "Vegetable oil",
-        "Garlic powder",
-        "Onion powder",
-        "Curry powder",
-        "Salt",
-        "Black pepper",
-        "Mixed frozen veg"
-      ]
-    },
-    {
-      "name": "Beef & Veggie Burrito Bowls",
-      "day": "Thursday",
-      "emoji": "🌯",
-      "buy_these": [
-        "Ground beef, 85/15",
-        "Green bell pepper",
-        "Red bell pepper",
-        "Yellow onions",
-        "Black beans, canned",
-        "Shredded Mexican cheese blend",
-        "Long-grain rice",
+        "Maggi seasoning sauce",
+        "Kimchi",
         "Oranges"
       ],
       "pantry": [
-        "Olive oil",
-        "Cumin",
-        "Garlic powder",
-        "Chili powder",
         "Salt",
         "Black pepper",
+        "Jasmine rice"
+      ]
+    },
+    {
+      "name": "Al Pastor Street Tacos",
+      "day": "Thursday",
+      "emoji": "🌮",
+      "buy_these": [
+        "Ground beef, 85/15",
+        "Corn tortillas",
+        "Pineapple",
+        "Cilantro",
+        "Yellow onions"
+      ],
+      "pantry": [
+        "Achiote paste or powder",
+        "Cumin",
+        "Chili powder",
+        "Garlic powder",
+        "Apple cider vinegar",
         "Salsa",
-        "Sour cream"
+        "Salt",
+        "Black pepper",
+        "Vegetable oil"
       ]
     }
   ]
