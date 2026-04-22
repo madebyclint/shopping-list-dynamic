@@ -1,7 +1,138 @@
 {
   "_comment": "Per-meal ingredient coverage for the X-Ray panel. Update each week alongside the menu. buy_these = items that MUST appear on the shopping list. pantry = assumed at home, not checked.",
-  "week": "2026-04-19",
+  "week": "2026-04-26",
   "meals": [
+    {
+      "name": "Arroz Caldo",
+      "day": "Sunday Brunch",
+      "emoji": "🍚",
+      "buy_these": [
+        "Rotisserie chicken",
+        "Sushi rice",
+        "Fresh ginger",
+        "Green onions",
+        "Better Than Bouillon",
+        "Fried garlic",
+        "Peanuts, roasted",
+        "Kecap manis",
+        "Salt & vinegar chips"
+      ],
+      "pantry": [
+        "Vegetable oil",
+        "Fish sauce"
+      ]
+    },
+    {
+      "name": "Filipino Pinakbet with Beef",
+      "day": "Sunday",
+      "emoji": "🍆",
+      "buy_these": [
+        "Beef stew chunks",
+        "Eggplant",
+        "Chayote",
+        "Butternut squash",
+        "Okra",
+        "Green beans",
+        "Tomatoes, plum",
+        "Yellow onions",
+        "Oranges"
+      ],
+      "pantry": [
+        "Fish sauce",
+        "Garlic",
+        "Ginger",
+        "Vegetable oil",
+        "Salt",
+        "Black pepper",
+        "Jasmine rice"
+      ]
+    },
+    {
+      "name": "Chickpea Sopa de Lima",
+      "day": "Monday",
+      "emoji": "🍋",
+      "buy_these": [
+        "Tomatoes, plum",
+        "Yellow onions",
+        "Jalapeños",
+        "Limes",
+        "Cilantro",
+        "Tortilla chips",
+        "Pineapple"
+      ],
+      "pantry": [
+        "Canned chickpeas",
+        "Chicken broth",
+        "Cumin",
+        "Garlic",
+        "Vegetable oil",
+        "Salt"
+      ]
+    },
+    {
+      "name": "Hamburgers with Watermelon",
+      "day": "Tuesday",
+      "emoji": "🍔",
+      "buy_these": [
+        "Pre-made beef burger patties",
+        "Burger buns",
+        "Shredded cheddar",
+        "Salad mix or head of lettuce",
+        "Tomatoes, plum",
+        "Watermelon"
+      ],
+      "pantry": [
+        "Ketchup",
+        "Mustard",
+        "Salt",
+        "Black pepper",
+        "Vegetable oil"
+      ]
+    },
+    {
+      "name": "Cheesy Turkey Pasta Skillet",
+      "day": "Wednesday",
+      "emoji": "🦃",
+      "buy_these": [
+        "Ground turkey",
+        "Pasta shells",
+        "Shredded cheddar",
+        "Yellow onions",
+        "Salad mix or head of lettuce",
+        "Apples"
+      ],
+      "pantry": [
+        "Canned diced tomatoes",
+        "Beef broth",
+        "Garlic",
+        "Paprika",
+        "Dried oregano",
+        "Salt",
+        "Black pepper",
+        "Vegetable oil"
+      ]
+    },
+    {
+      "name": "Esquites with Beef Hot Dogs",
+      "day": "Thursday",
+      "emoji": "🌽",
+      "buy_these": [
+        "Uncured beef hot dogs",
+        "Corn, canned",
+        "Mayo",
+        "Limes",
+        "Cotija cheese",
+        "Cilantro",
+        "Mango"
+      ],
+      "pantry": [
+        "Chili powder",
+        "Butter",
+        "Salt"
+      ]
+    }
+  ]
+}
     {
       "name": "Ethiopian Beef Tibs",
       "day": "Sunday",

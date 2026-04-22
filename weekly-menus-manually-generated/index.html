@@ -374,6 +374,7 @@
   <div class="tab-nav-wrap" id="tabNavWrap">
   <nav class="tab-nav" id="tabNav">
     <button class="tab-btn active" data-tab="home">🏠 This Week</button>
+    <button class="tab-btn" data-tab="next">📅 Next Week</button>
     <button class="tab-btn" data-tab="menu">🥗 Menu</button>
     <button class="tab-btn" data-tab="list">🛒 Shopping List</button>
     <button class="tab-btn" data-tab="audit">📊 Audit</button>
@@ -428,6 +429,13 @@
     </div>
     <div id="home-meals" class="meal-grid"></div>
     <div id="home-spend"></div>
+  </section>
+
+  <!-- NEXT WEEK ─────────────────────────────────────────────────────────── -->
+  <section id="tab-next" class="page">
+    <div id="next-week-content">
+      <div class="loading"><div class="spinner"></div> Loading…</div>
+    </div>
   </section>
 
   <!-- MENU ──────────────────────────────────────────────────────────────── -->
@@ -581,6 +589,7 @@ async function init() {
     }
 
     renderHome(_manifest, _audit);
+    renderNextWeek(_manifest);
     if (_audit) renderAuditShell(_audit);
 
     // Non-blocking markdown loads
@@ -620,6 +629,43 @@ async function init() {
     $('home-week-header').innerHTML = `<div class="error-state">⚠️ Could not load data. Run <code>npx serve .</code> in this folder.</div>`;
     $('audit-extras').innerHTML = '';
   }
+}
+
+// ── Next Week tab ─────────────────────────────────────────────────────────────
+function renderNextWeek(m) {
+  const el = $('next-week-content');
+  const nw = m.nextWeek;
+  if (!nw || !nw.weekLabel || !nw.meals || nw.meals.length === 0) {
+    el.innerHTML = `
+      <div style="padding:48px 24px;text-align:center;color:var(--muted);">
+        <div style="font-size:2.5rem;margin-bottom:16px">📅</div>
+        <div style="font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:8px">Next week hasn't been planned yet.</div>
+        <div style="font-size:0.88rem;line-height:1.6">Generate next week's menu and update <code>nextWeek</code> in <code>data.json</code>.</div>
+      </div>`;
+    return;
+  }
+  const tagClass = { fast: 'tag-fast', teen: 'tag-teen', special: 'tag-special' };
+  const listLink = nw.files && nw.files.shoppingList
+    ? `<a href="${nw.files.shoppingList}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;padding:9px 18px;border-radius:8px;font-size:0.86rem;font-weight:600;text-decoration:none;margin-bottom:20px">🛒 View Shopping List &rarr;</a>`
+    : `<div style="display:inline-flex;align-items:center;gap:8px;background:#ccc;color:#fff;padding:9px 18px;border-radius:8px;font-size:0.86rem;font-weight:600;margin-bottom:20px;cursor:default">🛒 Shopping List (not yet created)</div>`;
+  const menuLink = nw.files && nw.files.menu
+    ? `<a href="${nw.files.menu}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:#fff;padding:9px 18px;border-radius:8px;font-size:0.86rem;font-weight:600;text-decoration:none;margin-bottom:20px;margin-left:8px">🥗 Full Menu &rarr;</a>`
+    : '';
+  el.innerHTML = `
+    <div class="section-title">${nw.weekLabel}</div>
+    <div class="section-sub" style="margin-bottom:18px">Shopping trip: ${nw.shoppingDate || 'TBD'} &middot; ${nw.meals.length} meals planned</div>
+    <div style="margin-bottom:20px">${listLink}${menuLink}</div>
+    <div class="meal-grid">${nw.meals.map(meal => `
+      <div class="meal-card">
+        <div class="meal-day">${meal.day}</div>
+        <div class="meal-emoji">${meal.emoji}</div>
+        <div class="meal-name">${meal.name}</div>
+        <div class="meal-footer">
+          <span class="meal-time">⏱ ${meal.time}</span>
+          ${meal.tag ? `<span class="meal-tag ${tagClass[meal.tagType] || ''}">${meal.tag}</span>` : ''}
+        </div>
+      </div>`).join('')}
+    </div>`;
 }
 
 // ── Home tab ──────────────────────────────────────────────────────────────────

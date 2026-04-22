@@ -6,6 +6,34 @@ Running log of weekly menus. Reference when generating new plans to avoid repeat
 
 ---
 
+## Sun Apr 26 - Fri May 1, 2026
+
+### Dinners
+
+- 🍆 Filipino Pinakbet with Beef *(SUNDAY)* — beef chunks, eggplant, chayote, butternut squash, okra, green beans, fish sauce, over rice — 40 min
+- 🍋 Chickpea Sopa de Lima *(MONDAY)* — Yucatecan lime soup with chickpeas, charred tomato-lime broth, tortilla strips — 35 min
+- 🍔 Hamburgers with Watermelon *(TUESDAY FAST)* — pre-made beef patties, cheddar, LTO on toasted buns; watermelon — 15 min
+- 🦃 Cheesy Turkey Pasta Skillet *(WEDNESDAY)* — ground turkey, pasta shells, canned tomatoes, beef broth, shredded cheddar; garden salad — 30 min
+- 🌽 Esquites with Beef Hot Dogs *(THURSDAY TEEN PREP)* — charred corn with mayo, lime, cotija; sliced uncured beef hot dogs — 25 min
+
+### Brunch
+
+- 🍚 Arroz Caldo *(SUNDAY — with 3 guests, 7 total)* — rotisserie chicken, sushi rice cooked risotto-style, lots of ginger, fried garlic, scallions; peanuts, kecap manis, salt & vinegar chips — 30 min
+
+### Breakfast
+
+- 🍞 French Toast with Strawberries — thick bread, egg batter, cinnamon; fresh strawberries — 15 min
+
+### Notes
+
+- Arroz Caldo: cheat version with rotisserie chicken; sushi rice cooked risotto-style; 7 people (3 guests); fish sauce sub for bagoong
+- Pinakbet: beef chunks + fish sauce (sub for bagoong); chayote instead of bitter melon; butternut squash
+- Hamburgers: pre-made patties for Tuesday fast meal speed
+- Turkey Pasta: ground turkey Hamburger Helper-style one-pan skillet
+- Esquites: uncured beef hot dogs for easy teen prep
+
+---
+
 ## Sun Apr 12 - Fri Apr 18, 2026
 
 ### Dinners

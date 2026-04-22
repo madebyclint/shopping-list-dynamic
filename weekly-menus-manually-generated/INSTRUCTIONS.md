@@ -47,8 +47,31 @@ When a new meal plan is generated, update `data.json` in this folder:
 3. Set `shoppingDate` (the day of the trip, e.g., `"2026-03-21"`)
 4. Update the `files` paths to point to the new menu, shopping list, and audit files
 5. Update the `meals` array with the 5 dinners for the new week (include `name`, `day`, `emoji`, `time`, `tag`, `tagType`)
+6. **Move the old `currentWeek` data to `nextWeek`** — see below
 
 `tagType` values: `"fast"` (quick meals), `"teen"` (teen-prep friendly), `"special"` (holiday/occasion), `""` (none)
+
+### Populating `nextWeek` in `data.json` (Planning Ahead Tab)
+
+`data.json` has a `nextWeek` block that powers the **📅 Next Week** dashboard tab. Populate it as soon as next week's menu is generated — even before the shopping list is finalized.
+
+```json
+"nextWeek": {
+  "weekLabel": "Sun May 3 - Fri May 8, 2026",
+  "shoppingDate": "2026-05-03",
+  "files": {
+    "menu": "menus/2026-05-03-menu.md",
+    "shoppingList": "shopping-lists/2026-05-03-shopping-list.md"
+  },
+  "meals": [
+    { "name": "Meal Name", "day": "Sunday, May 3", "emoji": "🍽", "time": "30 min", "tag": "", "tagType": "" }
+  ]
+}
+```
+
+- The tab shows meal cards + a direct link to next week's shopping list (or a greyed-out placeholder if the list doesn't exist yet)
+- Leave `shoppingList` as `""` if the list hasn't been created yet — the button will show as inactive
+- When the week rolls over: promote `nextWeek` → `currentWeek`, clear `nextWeek`, and fill it with the following week's data if planned
 
 ### Updating `menus/index.json` each week (Archive)
 
@@ -59,6 +82,16 @@ Each week, prepend a new entry to the `menus` array in `menus/index.json`:
 ```
 
 The **📚 Archive** tab in `index.html` reads this file to build the week list. The list is reversed at runtime so the newest entry always appears at the top — just add new entries to the top of the array to keep the file in chronological order.
+
+### Updating `meals-ingredients.json` each week (X-Ray)
+
+The **🔬 X-Ray** panel on the Shopping List tab reads `meals-ingredients.json`. **Update it every single week alongside the menu** — if it's stale, the X-Ray will flag false warnings against the old week's ingredients.
+
+For each meal, provide:
+- `buy_these` — every ingredient that must appear on the shopping list (produce, protein, dairy, specialty items, garnishes, fruit sides)
+- `pantry` — items assumed to be at home (oil, salt, garlic, broth, pantry spices, etc.)
+
+Do not include pantry staples in `buy_these` — they will always show as "missing" since they're never on the shopping list.
 
 ---
 
@@ -258,6 +291,8 @@ Rules:
 - Use standard `- ` list items (no special bullet characters)
 - Include category subtotals
 - Include weekly recurring items (see below)
+- **Every line item must include the meal it is for** — use `— [Meal Name]` after the quantity. If an item serves multiple meals, list them all (e.g., `— Pinakbet + Sopa de Lima`). Weekly staples without a meal use `— weekly`. Never leave a bare item with no meal context — this is critical during grocery shopping.
+- **Never list chips generically as "Chips (N bags)"** — always specify the type (tortilla, salt & vinegar, kettle, etc.) on each line. If a chip type serves a specific meal (e.g., tortilla chips crushed into soup, salt & vinegar as a dish garnish), note the meal. If it's pure snacking, note `— snacking`.
 
 #### Shopping List Audit (Required Before Finalizing)
 
@@ -284,6 +319,8 @@ This audit catches items like fresh herbs, lemons, parmesan, or garnishes that a
 ### Other (Non-Food)
 - [toilet paper, paper towels, etc.]
 ```
+
+> **Critical rule for Section D:** Every item in the by-trip checklist must include the meal name it is for — `[Item] — [Meal Name]`. This is the list used during actual grocery shopping. "Corn, canned" with no context is useless at the store — "Corn, canned (3 cans) — Esquites" is not. Never emit a bare item. If it spans meals, list them. If it is a staple/snack with no meal, write `— weekly` or `— snacking`.
 
 ---
 
@@ -313,7 +350,7 @@ Add these every week under the appropriate categories:
 
 | Item | Qty | Unit | Est. Unit Cost | Est. Total |
 |------|-----|------|----------------|------------|
-| Chips | 2 | bags | $3.79 | $7.58 |
+| Chips | 2 | bags | $3.79 ea | $7.58 | **Always specify type per bag** (e.g., tortilla, salt & vinegar, kettle). Note which meal each bag serves if applicable. Never list as bare "Chips". |
 | Cereal | 2 | boxes | ~$5.00 | ~$10.00 |
 | Lactaid milk | 1 | ½ gallon | ~$5.50 | ~$5.50 |
 | Almond milk | 1 | gallon | ~$10.00 | ~$10.00 |
