@@ -20,10 +20,6 @@ Running log of weekly menus. Reference when generating new plans to avoid repeat
 
 - 🍚 Arroz Caldo *(SUNDAY — with 3 guests, 7 total)* — rotisserie chicken, sushi rice cooked risotto-style, lots of ginger, fried garlic, scallions; peanuts, kecap manis, salt & vinegar chips — 30 min
 
-### Breakfast
-
-- 🍞 French Toast with Strawberries — thick bread, egg batter, cinnamon; fresh strawberries — 15 min
-
 ### Notes
 
 - Arroz Caldo: cheat version with rotisserie chicken; sushi rice cooked risotto-style; 7 people (3 guests); fish sauce sub for bagoong

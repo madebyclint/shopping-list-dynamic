@@ -1,4 +1,4 @@
-# Shopping List — Sun Apr 26 – Fri May 1, 2026 — ~$245
+# Shopping List — Sun Apr 26 – Fri May 1, 2026 — ~$219
 
 > **Notes:** Rotisserie chicken for Sunday Arroz Caldo brunch — grab from Ideal Foods hot bar or any supermarket. Beef stew chunks for Pinakbet — ask the butcher at Ideal Foods, or buy eye round and cube at home; Brooklyn Fare is also an option. Cotija cheese — check the dairy/cheese section at Ideal Foods; crumbled feta is a fine substitute if unavailable. Kecap manis (Indonesian sweet soy) — check 1426 St Johns or Brooklyn Fare Asian section first; skip if unavailable. Fried garlic — look in the Asian/condiment aisle at Ideal Foods. Wet wipes — New Ronson Drug or Ideal Foods household aisle.
 
@@ -29,10 +29,9 @@
 - Oranges (5) — Pinakbet side — 5/$5.00 — **$5.00**
 - Mango (2) — Esquites side — ~$1.67 ea — **~$3.34**
 - Apples (5) — Turkey Pasta side — ~$1.99/lb — **~$2.49**
-- Strawberries (1 container) — French Toast breakfast — ~$2.64 — **~$2.64**
 - Bananas (2 bunches) — weekly fruit — ~$1.70 ea — **~$3.40**
 
-Produce Subtotal: **~$63.47**
+Produce Subtotal: **~$60.83**
 
 ---
 
@@ -63,10 +62,9 @@ Dairy & Refrigerated Subtotal: **~$9.98**
 🛒 **PANTRY & DRY GOODS**
 
 - Burger buns (1 pack, 4–6 ct) — Hamburgers — ~$3.99 — **~$3.99**
-- Arnold Hearty Bread (1 loaf) — French Toast + household — $5.29 — **$5.29**
+- Arnold Hearty Bread (1 loaf) — household — $5.29 — **$5.29**
 - Corn, canned (3 cans, 15 oz) — Esquites — 2/$3.00 + $1.50 — **~$4.50**
 - Mayo (1 jar) — Esquites — ~$3.99 — **~$3.99** *(check pantry first)*
-- Powdered sugar (1 bag) — French Toast — ~$2.99 — **~$2.99** *(check pantry first)*
 - Pasta shells (1 lb) — Turkey Pasta Skillet — ~$2.49 — **~$2.49** *(pantry staple — buy if running low)*
 - Sushi rice (1 bag) — Arroz Caldo brunch — ~$3.99 — **~$3.99**
 - Better Than Bouillon, beef or chicken (1 jar) — Arroz Caldo brunch — ~$6.99 — **~$6.99** *(check pantry first)*
@@ -74,7 +72,7 @@ Dairy & Refrigerated Subtotal: **~$9.98**
 - Peanuts, roasted (1 bag) — Arroz Caldo garnish — ~$3.99 — **~$3.99**
 - Kecap manis / sweet soy sauce (1 bottle) — Arroz Caldo garnish — ~$3.99 — **~$3.99** *(1426 St Johns or Brooklyn Fare; skip if unavailable)*
 
-Pantry & Dry Goods Subtotal: **~$45.20**
+Pantry & Dry Goods Subtotal: **~$42.21**
 
 ---
 
@@ -82,10 +80,8 @@ Pantry & Dry Goods Subtotal: **~$45.20**
 
 - Wet wipes (1 pack) — ~$5.99 — **~$5.99**
   *(New Ronson Drug or Ideal Foods household aisle)*
-- Paper towels (1 pack) — ~$5.99 — **~$5.99**
-- Toilet paper (1 pack) — ~$10.49 — **~$10.49**
 
-Household Subtotal: **~$22.47**
+Household Subtotal: **~$5.99**
 
 ---
 
@@ -100,23 +96,22 @@ Household Subtotal: **~$22.47**
 - Ice cream (1 container) — ~$5.00 — **~$5.00**
 - Trail mix (1 bag) — ~$6.99 — **~$6.99**
 - Mango juice (1 bottle) — $3.89 — **$3.89**
-- Condensed milk (1 can) — $3.79 — **$3.79**
 
-Weekly Staples Subtotal: **~$59.94**
+Weekly Staples Subtotal: **~$56.15**
 
 ---
 
-## 💰 Estimated Total: **~$245**
+## 💰 Estimated Total: **~$219**
 
 | Category | Est. Total |
 |----------|-----------|
-| Produce | ~$63.47 |
+| Produce | ~$60.83 |
 | Proteins | ~$43.96 |
 | Dairy & Refrigerated | ~$9.98 |
-| Pantry & Dry Goods | ~$45.20 |
-| Household | ~$22.47 |
-| Weekly Staples | ~$59.94 |
-| **TOTAL** | **~$245.02** |
+| Pantry & Dry Goods | ~$42.21 |
+| Household | ~$5.99 |
+| Weekly Staples | ~$56.15 |
+| **TOTAL** | **~$219.12** |
 
 ---
 
@@ -141,7 +136,6 @@ Weekly Staples Subtotal: **~$59.94**
 - Oranges (5) — Pinakbet side
 - Mango (2) — Esquites side
 - Apples (5) — Turkey Pasta side
-- Strawberries (1 container) — French Toast breakfast
 - Bananas (2 bunches) — weekly
 - Green onions (3 bunches) — Arroz Caldo brunch
 - Fresh ginger (large piece, ~6 oz) — Arroz Caldo brunch (need a lot)
@@ -159,10 +153,9 @@ Weekly Staples Subtotal: **~$59.94**
 
 **— Aisles —**
 - Burger buns (1 pack) — Hamburgers
-- Arnold Hearty Bread (1 loaf) — French Toast + household
+- Arnold Hearty Bread (1 loaf) — household
 - Corn, canned (3 cans) — Esquites
 - Mayo (1 jar) — Esquites; check pantry first
-- Powdered sugar (1 bag) — French Toast; check pantry first
 - Pasta shells (1 lb) — Turkey Pasta Skillet; check pantry first
 - Sushi rice (1 bag) — Arroz Caldo brunch
 - Better Than Bouillon (1 jar) — Arroz Caldo brunch *(check pantry first)*
@@ -180,10 +173,7 @@ Weekly Staples Subtotal: **~$59.94**
 - Ice cream (1 container)
 - Trail mix (1 bag)
 - Mango juice (1 bottle)
-- Condensed milk (1 can)
 
 ### New Ronson Drug *(or Ideal Foods household aisle)*
 
 - Wet wipes (1 pack)
-- Paper towels (1 pack)
-- Toilet paper (1 pack)
