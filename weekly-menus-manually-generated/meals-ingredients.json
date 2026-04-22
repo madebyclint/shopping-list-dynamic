@@ -101,5 +101,135 @@
         "Vegetable oil"
       ]
     }
-  ]
+  ],
+  "nextWeek": {
+    "week": "2026-04-26",
+    "meals": [
+      {
+        "name": "Arroz Caldo",
+        "day": "Sunday brunch",
+        "emoji": "🍚",
+        "buy_these": [
+          "Rotisserie chicken",
+          "Sushi rice",
+          "Green onions",
+          "Fresh ginger",
+          "Fried garlic",
+          "Peanuts, roasted",
+          "Kecap manis",
+          "Better Than Bouillon",
+          "Salt & vinegar chips"
+        ],
+        "pantry": [
+          "Fish sauce",
+          "Black pepper",
+          "Garlic"
+        ]
+      },
+      {
+        "name": "Filipino Pinakbet with Beef",
+        "day": "Sunday dinner",
+        "emoji": "🍆",
+        "buy_these": [
+          "Beef stew chunks",
+          "Eggplant",
+          "Okra",
+          "Chayote",
+          "Butternut squash",
+          "Green beans",
+          "Tomatoes, plum",
+          "Yellow onions",
+          "Fresh ginger",
+          "Oranges"
+        ],
+        "pantry": [
+          "Fish sauce",
+          "Garlic",
+          "Vegetable oil"
+        ]
+      },
+      {
+        "name": "Chickpea Sopa de Lima",
+        "day": "Monday",
+        "emoji": "🍋",
+        "buy_these": [
+          "Jalapeños",
+          "Tomatoes, plum",
+          "Yellow onions",
+          "Limes",
+          "Cilantro",
+          "Tortilla chips",
+          "Pineapple"
+        ],
+        "pantry": [
+          "Chickpeas, canned",
+          "Garlic",
+          "Cumin",
+          "Dried oregano",
+          "Olive oil",
+          "Chicken broth"
+        ]
+      },
+      {
+        "name": "Hamburgers with Watermelon",
+        "day": "Tuesday",
+        "emoji": "🍔",
+        "buy_these": [
+          "Pre-made beef burger patties",
+          "Burger buns",
+          "Watermelon",
+          "Tomatoes, plum",
+          "Salad mix",
+          "Shredded cheddar"
+        ],
+        "pantry": [
+          "Ketchup",
+          "Mustard",
+          "Mayo",
+          "Salt",
+          "Black pepper"
+        ]
+      },
+      {
+        "name": "Cheesy Turkey Pasta Skillet",
+        "day": "Wednesday",
+        "emoji": "🦃",
+        "buy_these": [
+          "Ground turkey",
+          "Pasta shells",
+          "Yellow onions",
+          "Shredded cheddar",
+          "Salad mix",
+          "Apples"
+        ],
+        "pantry": [
+          "Garlic",
+          "Olive oil",
+          "Salt",
+          "Black pepper",
+          "Chicken broth"
+        ]
+      },
+      {
+        "name": "Esquites with Beef Hot Dogs",
+        "day": "Thursday",
+        "emoji": "🌽",
+        "buy_these": [
+          "Uncured beef hot dogs",
+          "Corn, canned",
+          "Cotija cheese",
+          "Mayo",
+          "Limes",
+          "Cilantro",
+          "Mango"
+        ],
+        "pantry": [
+          "Butter",
+          "Chili powder",
+          "Salt",
+          "Garlic powder"
+        ]
+      }
+    ]
+  }
 }

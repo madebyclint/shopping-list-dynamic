@@ -36,10 +36,11 @@
     .app-header {
       position: sticky; top: 0; z-index: 100;
       background: var(--navy); color: #fff;
-      padding: 0 20px; height: var(--nav-h);
-      display: flex; align-items: center; gap: 20px;
+      padding: 0; height: var(--nav-h);
+      display: flex; align-items: center;
       box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
+    .header-inner { max-width: 1080px; margin: 0 auto; width: 100%; display: flex; align-items: center; gap: 20px; padding: 0 20px; }
     .app-logo { font-size: 1rem; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
     .app-logo span { color: #7ac99e; }
     .tab-nav-wrap {
@@ -188,8 +189,11 @@
     .list-btn { border:none; border-radius:8px; padding:9px 16px; font-size:0.88rem; font-weight:600; cursor:pointer; white-space:nowrap; }
     .list-btn-checklist { background:var(--accent); color:#fff; }
     .list-btn-xray { background:var(--navy); color:#fff; }
+    .back-btn { display:inline-flex; align-items:center; gap:5px; background:none; border:1px solid var(--border); color:var(--muted); font-size:0.84rem; padding:6px 12px; border-radius:6px; cursor:pointer; margin-bottom:16px; }
+    .back-btn:hover { background:var(--bg); color:var(--text); }
     #list-md-content { padding:0 16px 80px; transition: filter 0.25s, opacity 0.25s; }
-    #list-md-content.xray-dimmed { filter: blur(1.5px); opacity:0.38; pointer-events:none; }
+    #list-md-content.xray-dimmed, #next-list-content.xray-dimmed { filter: blur(1.5px); opacity:0.38; pointer-events:none; }
+    #next-list-content { transition: filter 0.25s, opacity 0.25s; }
 
     /* ── X-Ray Drawer ─────────────────────────────────────────────────── */
     #xray-drawer {
@@ -358,7 +362,7 @@
     /* ── Responsive ───────────────────────────────────────────────── */
     @media (max-width: 600px) {
       .main { padding: 18px 14px 80px; }
-      .app-header { padding: 0 14px; }
+      .header-inner { padding: 0 14px; }
       .stat-value { font-size: 1.4rem; }
       .md-content { padding: 16px; }
       .spend-card { padding: 14px 16px; }
@@ -370,18 +374,20 @@
 
 <!-- ── Header ──────────────────────────────────────────────────────────────── -->
 <header class="app-header">
-  <a class="app-logo" href="." style="text-decoration:none;color:inherit;cursor:pointer;">&#x1F96C; <span>Brooklyn</span> Kitchen</a>
-  <div class="tab-nav-wrap" id="tabNavWrap">
-  <nav class="tab-nav" id="tabNav">
-    <button class="tab-btn active" data-tab="home">🏠 This Week</button>
-    <button class="tab-btn" data-tab="next">📅 Next Week</button>
-    <button class="tab-btn" data-tab="menu">🥗 Menu</button>
-    <button class="tab-btn" data-tab="list">🛒 Shopping List</button>
-    <button class="tab-btn" data-tab="audit">📊 Audit</button>
-    <button class="tab-btn" data-tab="history">📅 History</button>
-    <button class="tab-btn" data-tab="prices">💰 Price List</button>
-    <button class="tab-btn" data-tab="archive">📚 Archive</button>
-  </nav>
+  <div class="header-inner">
+    <a class="app-logo" href="." style="text-decoration:none;color:inherit;cursor:pointer;">&#x1F96C; <span>Brooklyn</span> Kitchen</a>
+    <div class="tab-nav-wrap" id="tabNavWrap">
+    <nav class="tab-nav" id="tabNav">
+      <button class="tab-btn active" data-tab="home">🏠 This Week</button>
+      <button class="tab-btn" data-tab="next">📅 Next Week</button>
+      <button class="tab-btn" data-tab="menu">🥗 Menu</button>
+      <button class="tab-btn" data-tab="list">🛒 Shopping List</button>
+      <button class="tab-btn" data-tab="audit">📊 Audit</button>
+      <button class="tab-btn" data-tab="history">📅 History</button>
+      <button class="tab-btn" data-tab="prices">💰 Price List</button>
+      <button class="tab-btn" data-tab="archive">📚 Archive</button>
+    </nav>
+    </div>
   </div>
 </header>
 
@@ -434,6 +440,31 @@
   <!-- NEXT WEEK ─────────────────────────────────────────────────────────── -->
   <section id="tab-next" class="page">
     <div id="next-week-content">
+      <div class="loading"><div class="spinner"></div> Loading…</div>
+    </div>
+  </section>
+
+  <!-- NEXT WEEK — MENU ──────────────────────────────────────────────────── -->
+  <section id="tab-next-menu" class="page">
+    <button class="back-btn" id="next-menu-back-btn">← Next Week</button>
+    <div id="next-menu-content" class="md-content">
+      <div class="loading"><div class="spinner"></div> Loading…</div>
+    </div>
+  </section>
+
+  <!-- NEXT WEEK — SHOPPING LIST ─────────────────────────────────────────── -->
+  <section id="tab-next-list" class="page">
+    <div class="list-tab-toolbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="back-btn" id="next-list-back-btn" style="margin-bottom:0">← Next Week</button>
+        <h2>🛒 Next Week's List</h2>
+      </div>
+      <div class="list-toolbar-btns">
+        <button class="list-btn list-btn-xray" id="next-xrayBtn">&#x1F52C; X-Ray</button>
+        <button class="list-btn list-btn-checklist" id="next-checklistBtn">&#x1F6D2; Checklist</button>
+      </div>
+    </div>
+    <div id="next-list-content" class="md-content">
       <div class="loading"><div class="spinner"></div> Loading…</div>
     </div>
   </section>
@@ -528,6 +559,8 @@ let _audit    = null;
 let _charts   = {};     // { donut, store }
 let _chartsDrawn = false;
 let _listText = '';     // raw shopping list markdown for live checklist
+let _nextListText = '';
+let _nextXrayData = null;
 
 // ── Utilities ────────────────────────────────────────────────────────────────
 const fmt  = n => '$' + parseFloat(n).toFixed(2);
@@ -592,6 +625,21 @@ async function init() {
     renderNextWeek(_manifest);
     if (_audit) renderAuditShell(_audit);
 
+    // Load next week files non-blocking
+    const _nw = _manifest.nextWeek;
+    if (_nw && _nw.files) {
+      if (_nw.files.menu) {
+        fetchText(_nw.files.menu)
+          .then(t => { renderMD($('next-menu-content'), t); if (_nw.meals) injectNextMenuAnchors(_nw.meals); })
+          .catch(() => errState($('next-menu-content'), '⚠️ Could not load next week\'s menu.'));
+      }
+      if (_nw.files.shoppingList) {
+        fetchText(_nw.files.shoppingList)
+          .then(t => { _nextListText = t; renderMD($('next-list-content'), t); })
+          .catch(() => console.warn('Could not load next week shopping list.'));
+      }
+    }
+
     // Non-blocking markdown loads
     fetchText(_manifest.files.menu)
       .then(t => { renderMD($('menu-content'), t); injectMenuAnchors(_manifest.meals); })
@@ -645,18 +693,15 @@ function renderNextWeek(m) {
     return;
   }
   const tagClass = { fast: 'tag-fast', teen: 'tag-teen', special: 'tag-special' };
-  const listLink = nw.files && nw.files.shoppingList
-    ? `<a href="${nw.files.shoppingList}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;padding:9px 18px;border-radius:8px;font-size:0.86rem;font-weight:600;text-decoration:none;margin-bottom:20px">🛒 View Shopping List &rarr;</a>`
-    : `<div style="display:inline-flex;align-items:center;gap:8px;background:#ccc;color:#fff;padding:9px 18px;border-radius:8px;font-size:0.86rem;font-weight:600;margin-bottom:20px;cursor:default">🛒 Shopping List (not yet created)</div>`;
-  const menuLink = nw.files && nw.files.menu
-    ? `<a href="${nw.files.menu}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:#fff;padding:9px 18px;border-radius:8px;font-size:0.86rem;font-weight:600;text-decoration:none;margin-bottom:20px;margin-left:8px">🥗 Full Menu &rarr;</a>`
-    : '';
   el.innerHTML = `
     <div class="section-title">${nw.weekLabel}</div>
-    <div class="section-sub" style="margin-bottom:18px">Shopping trip: ${nw.shoppingDate || 'TBD'} &middot; ${nw.meals.length} meals planned</div>
-    <div style="margin-bottom:20px">${listLink}${menuLink}</div>
+    <div class="section-sub" style="margin-bottom:20px">Shopping trip: ${nw.shoppingDate || 'TBD'} &middot; ${nw.meals.length} meals planned</div>
+    <div style="margin-bottom:24px;display:flex;gap:10px;flex-wrap:wrap">
+      ${nw.files && nw.files.menu ? `<button class="list-btn" style="background:var(--navy);color:#fff" onclick="switchTab('next-menu')">🥗 Menu</button>` : ''}
+      ${nw.files && nw.files.shoppingList ? `<button class="list-btn" style="background:var(--accent);color:#fff" onclick="switchTab('next-list')">🛒 Shopping List</button>` : ''}
+    </div>
     <div class="meal-grid">${nw.meals.map(meal => `
-      <div class="meal-card">
+      <div class="meal-card" style="cursor:pointer" data-next-meal="${meal.name.replace(/"/g, '&quot;')}">
         <div class="meal-day">${meal.day}</div>
         <div class="meal-emoji">${meal.emoji}</div>
         <div class="meal-name">${meal.name}</div>
@@ -665,7 +710,13 @@ function renderNextWeek(m) {
           ${meal.tag ? `<span class="meal-tag ${tagClass[meal.tagType] || ''}">${meal.tag}</span>` : ''}
         </div>
       </div>`).join('')}
-    </div>`;
+    </div>
+  `;
+  el.addEventListener('click', e => {
+    const card = e.target.closest('.meal-card[data-next-meal]');
+    if (!card) return;
+    switchToNextMenuMeal(card.dataset.nextMeal);
+  });
 }
 
 // ── Home tab ──────────────────────────────────────────────────────────────────
@@ -771,6 +822,44 @@ function switchToMenuMeal(mealName) {
   const target = $('meal-' + slug);
   if (target) {
     // Slight delay lets the tab become visible before scrolling
+    requestAnimationFrame(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const navBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+  if (navBtn) navBtn.classList.add('active');
+  const page = $('tab-' + tabId);
+  if (page) page.classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function injectNextMenuAnchors(meals) {
+  const content = $('next-menu-content');
+  if (!content) return;
+  const strongs = [...content.querySelectorAll('strong')];
+  meals.forEach(meal => {
+    const slug = slugify(meal.name);
+    const needle = meal.name.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').trim();
+    const match = strongs.find(el => {
+      const t = el.textContent.replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().toLowerCase();
+      return t.includes(needle) || needle.includes(t);
+    });
+    if (match) {
+      const parent = match.closest('p') || match.closest('div') || match;
+      parent.id = 'next-meal-' + slug;
+      parent.style.scrollMarginTop = 'calc(var(--nav-h) + 16px)';
+    }
+  });
+}
+
+function switchToNextMenuMeal(mealName) {
+  switchTab('next-menu');
+  const slug = slugify(mealName);
+  const target = $('next-meal-' + slug);
+  if (target) {
     requestAnimationFrame(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 }
@@ -1189,20 +1278,31 @@ function clCopyURL() {
     setTimeout(() => { btn.textContent = '📋 Copy URL'; btn.classList.remove('copied'); }, 2000);
   }).catch(() => prompt('Copy this URL:', window.location.href));
 }
-function openChecklist() {
-  const urlParam = new URLSearchParams(window.location.search).get('cart');
-  if (urlParam) {
-    const dec = clDecode(urlParam);
-    if (dec && dec.v === 1) _clState = dec;
-    else _clState = { v: 1, week: _manifest?.currentWeek || '', c: [], s: [], x: [] };
+function openChecklist(context) {
+  context = context === 'next' ? 'next' : 'this';
+  const listText = context === 'next' ? _nextListText : _listText;
+  const weekKey = context === 'next'
+    ? (_manifest?.nextWeek?.shoppingDate || 'next')
+    : (_manifest?.currentWeek || '');
+  if (context === 'this') {
+    const urlParam = new URLSearchParams(window.location.search).get('cart');
+    if (urlParam) {
+      const dec = clDecode(urlParam);
+      if (dec && dec.v === 1) _clState = dec;
+      else _clState = { v: 1, week: weekKey, c: [], s: [], x: [] };
+    } else {
+      _clState = { v: 1, week: weekKey, c: [], s: [], x: [] };
+    }
   } else {
-    _clState = { v: 1, week: _manifest?.currentWeek || '', c: [], s: [], x: [] };
+    _clState = { v: 1, week: weekKey, c: [], s: [], x: [] };
   }
+  document.querySelector('#checklist-overlay .cl-title-row h2').textContent =
+    context === 'next' ? '🛒 Next Week Checklist' : '🛒 Live Checklist';
   _clSort = 'store';
   document.querySelectorAll('.cl-sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === 'store'));
   const si = $('cl-search');
   if (si) { si.value = ''; $('cl-search-clear').classList.remove('show'); }
-  clParseMd(_listText);
+  clParseMd(listText);
   clRender();
   clUpdateTotals();
   $('checklist-overlay').classList.add('show');
@@ -1250,21 +1350,41 @@ let _xrayData = null;
 
 $('xrayBtn').addEventListener('click', openXray);
 $('xrayCloseBtn').addEventListener('click', closeXray);
+$('next-xrayBtn').addEventListener('click', () => openXray('next'));
+$('next-checklistBtn').addEventListener('click', () => openChecklist('next'));
+$('next-menu-back-btn').addEventListener('click', () => switchTab('next'));
+$('next-list-back-btn').addEventListener('click', () => switchTab('next'));
 
-function openXray() {
+function openXray(context) {
+  context = context === 'next' ? 'next' : 'this';
   $('xray-drawer').classList.add('open');
-  $('list-md-content').classList.add('xray-dimmed');
-  if (_xrayData) { renderXray(_xrayData); return; }
-  fetchJSON('meals-ingredients.json')
-    .then(data => { _xrayData = data; renderXray(data); })
-    .catch(() => {
-      $('xray-body').innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.88rem">&#x26A0;&#xFE0F; Could not load meals-ingredients.json</div>';
-    });
+  if (context === 'this') $('list-md-content').classList.add('xray-dimmed');
+  else { const nc = $('next-list-content'); if (nc) nc.classList.add('xray-dimmed'); }
+  document.querySelector('#xray-drawer .xray-header h3').innerHTML =
+    context === 'next' ? '&#x1F52C; X-Ray &#x2014; Next Week' : '&#x1F52C; Ingredient X-Ray';
+  const listText = context === 'next' ? _nextListText : _listText;
+  if (context === 'next') {
+    if (_nextXrayData) { renderXray(_nextXrayData, listText); return; }
+    fetchJSON('meals-ingredients.json')
+      .then(data => { _nextXrayData = data.nextWeek || data; renderXray(_nextXrayData, listText); })
+      .catch(() => {
+        $('xray-body').innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.88rem">&#x26A0;&#xFE0F; Could not load meals-ingredients.json</div>';
+      });
+  } else {
+    if (_xrayData) { renderXray(_xrayData, listText); return; }
+    fetchJSON('meals-ingredients.json')
+      .then(data => { _xrayData = data; renderXray(data, listText); })
+      .catch(() => {
+        $('xray-body').innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.88rem">&#x26A0;&#xFE0F; Could not load meals-ingredients.json</div>';
+      });
+  }
 }
 
 function closeXray() {
   $('xray-drawer').classList.remove('open');
   $('list-md-content').classList.remove('xray-dimmed');
+  const nc = $('next-list-content');
+  if (nc) nc.classList.remove('xray-dimmed');
 }
 
 function xrayCheck(item, listText) {
@@ -1275,8 +1395,8 @@ function xrayCheck(item, listText) {
   return tokens.length > 0 && tokens.some(t => haystack.includes(t));
 }
 
-function renderXray(data) {
-  const listText = _listText || '';
+function renderXray(data, listText) {
+  listText = (listText != null) ? listText : (_listText || '');
   let totalFound = 0, totalMissing = 0, totalPantry = 0;
   let html = '';
 
