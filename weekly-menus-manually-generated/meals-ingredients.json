@@ -1,46 +1,23 @@
 {
   "_comment": "Per-meal ingredient coverage for the X-Ray panel. Update each week alongside the menu. buy_these = items that MUST appear on the shopping list. pantry = assumed at home, not checked.",
-  "week": "2026-04-26",
+  "week": "2026-04-19",
   "meals": [
     {
-      "name": "Arroz Caldo",
-      "day": "Sunday Brunch",
-      "emoji": "🍚",
-      "buy_these": [
-        "Rotisserie chicken",
-        "Sushi rice",
-        "Fresh ginger",
-        "Green onions",
-        "Better Than Bouillon",
-        "Fried garlic",
-        "Peanuts, roasted",
-        "Kecap manis",
-        "Salt & vinegar chips"
-      ],
-      "pantry": [
-        "Vegetable oil",
-        "Fish sauce"
-      ]
-    },
-    {
-      "name": "Filipino Pinakbet with Beef",
+      "name": "Ethiopian Beef Tibs",
       "day": "Sunday",
-      "emoji": "🍆",
+      "emoji": "🥩",
       "buy_these": [
-        "Beef stew chunks",
-        "Eggplant",
-        "Chayote",
-        "Butternut squash",
-        "Okra",
-        "Green beans",
-        "Tomatoes, plum",
+        "Beef, sirloin or eye round",
         "Yellow onions",
+        "Jalapeños",
+        "Tomatoes, plum",
+        "Fresh rosemary",
+        "Berbere spice blend",
         "Oranges"
       ],
       "pantry": [
-        "Fish sauce",
         "Garlic",
-        "Ginger",
+        "Butter",
         "Vegetable oil",
         "Salt",
         "Black pepper",
@@ -48,87 +25,80 @@
       ]
     },
     {
-      "name": "Chickpea Sopa de Lima",
+      "name": "Mexican Ceviche Tostadas",
       "day": "Monday",
-      "emoji": "🍋",
+      "emoji": "🌮",
       "buy_these": [
-        "Tomatoes, plum",
-        "Yellow onions",
+        "Shrimp, medium",
+        "Limes",
+        "Red onion",
         "Jalapeños",
-        "Limes",
-        "Cilantro",
-        "Tortilla chips",
-        "Pineapple"
-      ],
-      "pantry": [
-        "Canned chickpeas",
-        "Chicken broth",
-        "Cumin",
-        "Garlic",
-        "Vegetable oil",
-        "Salt"
-      ]
-    },
-    {
-      "name": "Hamburgers with Watermelon",
-      "day": "Tuesday",
-      "emoji": "🍔",
-      "buy_these": [
-        "Pre-made beef burger patties",
-        "Burger buns",
-        "Shredded cheddar",
-        "Salad mix or head of lettuce",
         "Tomatoes, plum",
-        "Watermelon"
-      ],
-      "pantry": [
-        "Ketchup",
-        "Mustard",
-        "Salt",
-        "Black pepper",
-        "Vegetable oil"
-      ]
-    },
-    {
-      "name": "Cheesy Turkey Pasta Skillet",
-      "day": "Wednesday",
-      "emoji": "🦃",
-      "buy_these": [
-        "Ground turkey",
-        "Pasta shells",
-        "Shredded cheddar",
-        "Yellow onions",
-        "Salad mix or head of lettuce",
-        "Apples"
-      ],
-      "pantry": [
-        "Canned diced tomatoes",
-        "Beef broth",
-        "Garlic",
-        "Paprika",
-        "Dried oregano",
-        "Salt",
-        "Black pepper",
-        "Vegetable oil"
-      ]
-    },
-    {
-      "name": "Esquites with Beef Hot Dogs",
-      "day": "Thursday",
-      "emoji": "🌽",
-      "buy_these": [
-        "Uncured beef hot dogs",
-        "Corn, canned",
-        "Mayo",
-        "Limes",
-        "Cotija cheese",
+        "Cucumber",
+        "Avocados",
         "Cilantro",
+        "Tostada shells",
         "Mango"
       ],
       "pantry": [
-        "Chili powder",
+        "Salt",
+        "Cholula",
+        "Hot sauce"
+      ]
+    },
+    {
+      "name": "Mac & Cheese",
+      "day": "Tuesday",
+      "emoji": "🧀",
+      "buy_these": [
+        "Boxed mac & cheese (2 boxes)",
+        "Frozen peas",
+        "Bananas"
+      ],
+      "pantry": [
         "Butter",
+        "Lactaid Whole Milk",
         "Salt"
+      ]
+    },
+    {
+      "name": "Maggi Beef Ribs",
+      "day": "Wednesday",
+      "emoji": "🥩",
+      "buy_these": [
+        "Beef ribs",
+        "Yellow onions",
+        "Maggi seasoning sauce",
+        "Kimchi",
+        "Oranges"
+      ],
+      "pantry": [
+        "Salt",
+        "Black pepper",
+        "Jasmine rice"
+      ]
+    },
+    {
+      "name": "Al Pastor Street Tacos",
+      "day": "Thursday",
+      "emoji": "🌮",
+      "buy_these": [
+        "Ground beef, 85/15",
+        "Corn tortillas",
+        "Pineapple",
+        "Cilantro",
+        "Yellow onions"
+      ],
+      "pantry": [
+        "Achiote paste or powder",
+        "Cumin",
+        "Chili powder",
+        "Garlic powder",
+        "Apple cider vinegar",
+        "Salsa",
+        "Salt",
+        "Black pepper",
+        "Vegetable oil"
       ]
     }
   ]
