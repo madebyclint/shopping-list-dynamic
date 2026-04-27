@@ -37,41 +37,46 @@ Each week, a new meal plan is generated and saved to this directory:
 
 Run `npx serve .` from this folder, then open [http://localhost:3000](http://localhost:3000) in your browser.
 
-The dashboard shows 6 tabs: **This Week** (meal cards + spending summary), **Menu**, **Shopping List** (with a tap-to-check Shopping Companion mode), **Audit** (charts + extras breakdown), **Meal History**, and **Price List** (with live search).
+The dashboard shows 6 tabs: **This Week** (meal cards + spending summary), **Last Week** (previous week's meal cards + menu), **Menu**, **Shopping List** (with a tap-to-check Shopping Companion mode), **Audit** (charts + extras breakdown), **Meal History**, and **Price List** (with live search).
 
 ### Updating `data.json` each week
 
 When a new meal plan is generated, update `data.json` in this folder:
-1. Set `currentWeek` to the Monday date (e.g., `"2026-03-23"`)
-2. Set `weekLabel` (e.g., `"Week of March 23, 2026"`)
-3. Set `shoppingDate` (the day of the trip, e.g., `"2026-03-21"`)
-4. Update the `files` paths to point to the new menu, shopping list, and audit files
-5. Update the `meals` array with the 5 dinners for the new week (include `name`, `day`, `emoji`, `time`, `tag`, `tagType`)
-6. **Move the old `currentWeek` data to `nextWeek`** — see below
+1. Copy the current `currentWeek` block (including `meals`) into the `lastWeek` block
+2. Set `currentWeek` to the new Monday date (e.g., `"2026-04-26"`)
+3. Set `weekLabel` (e.g., `"Sun Apr 26 - Fri May 1, 2026"`)
+4. Set `shoppingDate` (the day of the trip)
+5. Update the `files` paths to point to the new menu and shopping list files
+6. Update the `meals` array with the 5 dinners for the new week
+7. Leave `lastWeek.files.audit` pointing to the previous week's audit JSON once it's available
 
 `tagType` values: `"fast"` (quick meals), `"teen"` (teen-prep friendly), `"special"` (holiday/occasion), `""` (none)
 
-### Populating `nextWeek` in `data.json` (Planning Ahead Tab)
+### Populating `lastWeek` in `data.json` (Last Week Tab)
 
-`data.json` has a `nextWeek` block that powers the **📅 Next Week** dashboard tab. Populate it as soon as next week's menu is generated — even before the shopping list is finalized.
+`data.json` has a `lastWeek` block that powers the **⬅️ Last Week** dashboard tab. When rolling over to a new week:
+
+1. Copy the current `currentWeek` data into `lastWeek`
+2. Fill in the new week's data as `currentWeek`
+3. There is no `nextWeek` block — planning ahead is done offline and merged in when the week rolls over
 
 ```json
-"nextWeek": {
-  "weekLabel": "Sun May 3 - Fri May 8, 2026",
-  "shoppingDate": "2026-05-03",
+"lastWeek": {
+  "weekLabel": "Sun Apr 19 - Fri Apr 25, 2026",
+  "shoppingDate": "2026-04-19",
   "files": {
-    "menu": "menus/2026-05-03-menu.md",
-    "shoppingList": "shopping-lists/2026-05-03-shopping-list.md"
+    "menu": "menus/2026-04-19-menu.md",
+    "shoppingList": "shopping-lists/2026-04-19-shopping-list.md",
+    "audit": "shopping-audits/2026-04-19-audit.json"
   },
   "meals": [
-    { "name": "Meal Name", "day": "Sunday, May 3", "emoji": "🍽", "time": "30 min", "tag": "", "tagType": "" }
+    { "name": "Meal Name", "day": "Sunday, Apr 19", "emoji": "🍽", "time": "30 min", "tag": "", "tagType": "" }
   ]
 }
 ```
 
-- The tab shows meal cards + a direct link to next week's shopping list (or a greyed-out placeholder if the list doesn't exist yet)
-- Leave `shoppingList` as `""` if the list hasn't been created yet — the button will show as inactive
-- When the week rolls over: promote `nextWeek` → `currentWeek`, clear `nextWeek`, and fill it with the following week's data if planned
+- The tab shows last week's meal cards + a "Menu" button to view the full menu
+- Clicking a meal card navigates to that meal's section in the last week menu
 
 ### Updating `menus/index.json` each week (Archive)
 

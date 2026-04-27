@@ -379,7 +379,7 @@
     <div class="tab-nav-wrap" id="tabNavWrap">
     <nav class="tab-nav" id="tabNav">
       <button class="tab-btn active" data-tab="home">🏠 This Week</button>
-      <button class="tab-btn" data-tab="next">📅 Next Week</button>
+      <button class="tab-btn" data-tab="last">⬅️ Last Week</button>
       <button class="tab-btn" data-tab="menu">🥗 Menu</button>
       <button class="tab-btn" data-tab="list">🛒 Shopping List</button>
       <button class="tab-btn" data-tab="audit">📊 Audit</button>
@@ -437,34 +437,17 @@
     <div id="home-spend"></div>
   </section>
 
-  <!-- NEXT WEEK ─────────────────────────────────────────────────────────── -->
-  <section id="tab-next" class="page">
-    <div id="next-week-content">
+  <!-- LAST WEEK ─────────────────────────────────────────────────────────── -->
+  <section id="tab-last" class="page">
+    <div id="last-week-content">
       <div class="loading"><div class="spinner"></div> Loading…</div>
     </div>
   </section>
 
-  <!-- NEXT WEEK — MENU ──────────────────────────────────────────────────── -->
-  <section id="tab-next-menu" class="page">
-    <button class="back-btn" id="next-menu-back-btn">← Next Week</button>
-    <div id="next-menu-content" class="md-content">
-      <div class="loading"><div class="spinner"></div> Loading…</div>
-    </div>
-  </section>
-
-  <!-- NEXT WEEK — SHOPPING LIST ─────────────────────────────────────────── -->
-  <section id="tab-next-list" class="page">
-    <div class="list-tab-toolbar">
-      <div style="display:flex;align-items:center;gap:12px">
-        <button class="back-btn" id="next-list-back-btn" style="margin-bottom:0">← Next Week</button>
-        <h2>🛒 Next Week's List</h2>
-      </div>
-      <div class="list-toolbar-btns">
-        <button class="list-btn list-btn-xray" id="next-xrayBtn">&#x1F52C; X-Ray</button>
-        <button class="list-btn list-btn-checklist" id="next-checklistBtn">&#x1F6D2; Checklist</button>
-      </div>
-    </div>
-    <div id="next-list-content" class="md-content">
+  <!-- LAST WEEK — MENU ──────────────────────────────────────────────────── -->
+  <section id="tab-last-menu" class="page">
+    <button class="back-btn" id="last-menu-back-btn">← Last Week</button>
+    <div id="last-menu-content" class="md-content">
       <div class="loading"><div class="spinner"></div> Loading…</div>
     </div>
   </section>
@@ -559,8 +542,6 @@ let _audit    = null;
 let _charts   = {};     // { donut, store }
 let _chartsDrawn = false;
 let _listText = '';     // raw shopping list markdown for live checklist
-let _nextListText = '';
-let _nextXrayData = null;
 
 // ── Utilities ────────────────────────────────────────────────────────────────
 const fmt  = n => '$' + parseFloat(n).toFixed(2);
@@ -622,22 +603,15 @@ async function init() {
     }
 
     renderHome(_manifest, _audit);
-    renderNextWeek(_manifest);
+    renderLastWeek(_manifest);
     if (_audit) renderAuditShell(_audit);
 
-    // Load next week files non-blocking
-    const _nw = _manifest.nextWeek;
-    if (_nw && _nw.files) {
-      if (_nw.files.menu) {
-        fetchText(_nw.files.menu)
-          .then(t => { renderMD($('next-menu-content'), t); if (_nw.meals) injectNextMenuAnchors(_nw.meals); })
-          .catch(() => errState($('next-menu-content'), '⚠️ Could not load next week\'s menu.'));
-      }
-      if (_nw.files.shoppingList) {
-        fetchText(_nw.files.shoppingList)
-          .then(t => { _nextListText = t; renderMD($('next-list-content'), t); })
-          .catch(() => console.warn('Could not load next week shopping list.'));
-      }
+    // Load last week menu non-blocking
+    const _lw = _manifest.lastWeek;
+    if (_lw && _lw.files && _lw.files.menu) {
+      fetchText(_lw.files.menu)
+        .then(t => { renderMD($('last-menu-content'), t); if (_lw.meals) injectLastMenuAnchors(_lw.meals); })
+        .catch(() => errState($('last-menu-content'), '⚠️ Could not load last week\'s menu.'));
     }
 
     // Non-blocking markdown loads
@@ -679,29 +653,28 @@ async function init() {
   }
 }
 
-// ── Next Week tab ─────────────────────────────────────────────────────────────
-function renderNextWeek(m) {
-  const el = $('next-week-content');
-  const nw = m.nextWeek;
-  if (!nw || !nw.weekLabel || !nw.meals || nw.meals.length === 0) {
+// ── Last Week tab ─────────────────────────────────────────────────────────────
+function renderLastWeek(m) {
+  const el = $('last-week-content');
+  const lw = m.lastWeek;
+  if (!lw || !lw.weekLabel || !lw.meals || lw.meals.length === 0) {
     el.innerHTML = `
       <div style="padding:48px 24px;text-align:center;color:var(--muted);">
-        <div style="font-size:2.5rem;margin-bottom:16px">📅</div>
-        <div style="font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:8px">Next week hasn't been planned yet.</div>
-        <div style="font-size:0.88rem;line-height:1.6">Generate next week's menu and update <code>nextWeek</code> in <code>data.json</code>.</div>
+        <div style="font-size:2.5rem;margin-bottom:16px">⬅️</div>
+        <div style="font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:8px">No last-week data yet.</div>
+        <div style="font-size:0.88rem;line-height:1.6">Add a <code>lastWeek</code> block to <code>data.json</code> when rolling over to a new week.</div>
       </div>`;
     return;
   }
-  const tagClass = { fast: 'tag-fast', teen: 'tag-teen', special: 'tag-special' };
+  const tagClass = { fast: 'tag-fast', teen: 'tag-teen', special: 'tag-special', kids: '' };
   el.innerHTML = `
-    <div class="section-title">${nw.weekLabel}</div>
-    <div class="section-sub" style="margin-bottom:20px">Shopping trip: ${nw.shoppingDate || 'TBD'} &middot; ${nw.meals.length} meals planned</div>
+    <div class="section-title">${lw.weekLabel}</div>
+    <div class="section-sub" style="margin-bottom:20px">Shopping trip: ${lw.shoppingDate || 'TBD'} &middot; ${lw.meals.length} meals</div>
     <div style="margin-bottom:24px;display:flex;gap:10px;flex-wrap:wrap">
-      ${nw.files && nw.files.menu ? `<button class="list-btn" style="background:var(--navy);color:#fff" onclick="switchTab('next-menu')">🥗 Menu</button>` : ''}
-      ${nw.files && nw.files.shoppingList ? `<button class="list-btn" style="background:var(--accent);color:#fff" onclick="switchTab('next-list')">🛒 Shopping List</button>` : ''}
+      ${lw.files && lw.files.menu ? `<button class="list-btn" style="background:var(--navy);color:#fff" onclick="switchTab('last-menu')">🥗 Menu</button>` : ''}
     </div>
-    <div class="meal-grid">${nw.meals.map(meal => `
-      <div class="meal-card" style="cursor:pointer" data-next-meal="${meal.name.replace(/"/g, '&quot;')}">
+    <div class="meal-grid">${lw.meals.map(meal => `
+      <div class="meal-card" style="cursor:pointer" data-last-meal="${meal.name.replace(/"/g, '&quot;')}">
         <div class="meal-day">${meal.day}</div>
         <div class="meal-emoji">${meal.emoji}</div>
         <div class="meal-name">${meal.name}</div>
@@ -713,9 +686,9 @@ function renderNextWeek(m) {
     </div>
   `;
   el.addEventListener('click', e => {
-    const card = e.target.closest('.meal-card[data-next-meal]');
+    const card = e.target.closest('.meal-card[data-last-meal]');
     if (!card) return;
-    switchToNextMenuMeal(card.dataset.nextMeal);
+    switchToLastMenuMeal(card.dataset.lastMeal);
   });
 }
 
@@ -836,8 +809,8 @@ function switchTab(tabId) {
   window.scrollTo(0, 0);
 }
 
-function injectNextMenuAnchors(meals) {
-  const content = $('next-menu-content');
+function injectLastMenuAnchors(meals) {
+  const content = $('last-menu-content');
   if (!content) return;
   const strongs = [...content.querySelectorAll('strong')];
   meals.forEach(meal => {
@@ -849,16 +822,16 @@ function injectNextMenuAnchors(meals) {
     });
     if (match) {
       const parent = match.closest('p') || match.closest('div') || match;
-      parent.id = 'next-meal-' + slug;
+      parent.id = 'last-meal-' + slug;
       parent.style.scrollMarginTop = 'calc(var(--nav-h) + 16px)';
     }
   });
 }
 
-function switchToNextMenuMeal(mealName) {
-  switchTab('next-menu');
+function switchToLastMenuMeal(mealName) {
+  switchTab('last-menu');
   const slug = slugify(mealName);
-  const target = $('next-meal-' + slug);
+  const target = $('last-meal-' + slug);
   if (target) {
     requestAnimationFrame(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
@@ -1278,31 +1251,22 @@ function clCopyURL() {
     setTimeout(() => { btn.textContent = '📋 Copy URL'; btn.classList.remove('copied'); }, 2000);
   }).catch(() => prompt('Copy this URL:', window.location.href));
 }
-function openChecklist(context) {
-  context = context === 'next' ? 'next' : 'this';
-  const listText = context === 'next' ? _nextListText : _listText;
-  const weekKey = context === 'next'
-    ? (_manifest?.nextWeek?.shoppingDate || 'next')
-    : (_manifest?.currentWeek || '');
-  if (context === 'this') {
-    const urlParam = new URLSearchParams(window.location.search).get('cart');
-    if (urlParam) {
-      const dec = clDecode(urlParam);
-      if (dec && dec.v === 1) _clState = dec;
-      else _clState = { v: 1, week: weekKey, c: [], s: [], x: [] };
-    } else {
-      _clState = { v: 1, week: weekKey, c: [], s: [], x: [] };
-    }
+function openChecklist() {
+  const weekKey = _manifest?.currentWeek || '';
+  const urlParam = new URLSearchParams(window.location.search).get('cart');
+  if (urlParam) {
+    const dec = clDecode(urlParam);
+    if (dec && dec.v === 1) _clState = dec;
+    else _clState = { v: 1, week: weekKey, c: [], s: [], x: [] };
   } else {
     _clState = { v: 1, week: weekKey, c: [], s: [], x: [] };
   }
-  document.querySelector('#checklist-overlay .cl-title-row h2').textContent =
-    context === 'next' ? '🛒 Next Week Checklist' : '🛒 Live Checklist';
+  document.querySelector('#checklist-overlay .cl-title-row h2').textContent = '🛒 Live Checklist';
   _clSort = 'store';
   document.querySelectorAll('.cl-sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === 'store'));
   const si = $('cl-search');
   if (si) { si.value = ''; $('cl-search-clear').classList.remove('show'); }
-  clParseMd(listText);
+  clParseMd(_listText);
   clRender();
   clUpdateTotals();
   $('checklist-overlay').classList.add('show');
@@ -1350,41 +1314,23 @@ let _xrayData = null;
 
 $('xrayBtn').addEventListener('click', openXray);
 $('xrayCloseBtn').addEventListener('click', closeXray);
-$('next-xrayBtn').addEventListener('click', () => openXray('next'));
-$('next-checklistBtn').addEventListener('click', () => openChecklist('next'));
-$('next-menu-back-btn').addEventListener('click', () => switchTab('next'));
-$('next-list-back-btn').addEventListener('click', () => switchTab('next'));
+$('last-menu-back-btn').addEventListener('click', () => switchTab('last'));
 
-function openXray(context) {
-  context = context === 'next' ? 'next' : 'this';
+function openXray() {
   $('xray-drawer').classList.add('open');
-  if (context === 'this') $('list-md-content').classList.add('xray-dimmed');
-  else { const nc = $('next-list-content'); if (nc) nc.classList.add('xray-dimmed'); }
-  document.querySelector('#xray-drawer .xray-header h3').innerHTML =
-    context === 'next' ? '&#x1F52C; X-Ray &#x2014; Next Week' : '&#x1F52C; Ingredient X-Ray';
-  const listText = context === 'next' ? _nextListText : _listText;
-  if (context === 'next') {
-    if (_nextXrayData) { renderXray(_nextXrayData, listText); return; }
-    fetchJSON('meals-ingredients.json')
-      .then(data => { _nextXrayData = data.nextWeek || data; renderXray(_nextXrayData, listText); })
-      .catch(() => {
-        $('xray-body').innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.88rem">&#x26A0;&#xFE0F; Could not load meals-ingredients.json</div>';
-      });
-  } else {
-    if (_xrayData) { renderXray(_xrayData, listText); return; }
-    fetchJSON('meals-ingredients.json')
-      .then(data => { _xrayData = data; renderXray(data, listText); })
-      .catch(() => {
-        $('xray-body').innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.88rem">&#x26A0;&#xFE0F; Could not load meals-ingredients.json</div>';
-      });
-  }
+  $('list-md-content').classList.add('xray-dimmed');
+  document.querySelector('#xray-drawer .xray-header h3').innerHTML = '&#x1F52C; Ingredient X-Ray';
+  if (_xrayData) { renderXray(_xrayData, _listText); return; }
+  fetchJSON('meals-ingredients.json')
+    .then(data => { _xrayData = data; renderXray(data, _listText); })
+    .catch(() => {
+      $('xray-body').innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.88rem">&#x26A0;&#xFE0F; Could not load meals-ingredients.json</div>';
+    });
 }
 
 function closeXray() {
   $('xray-drawer').classList.remove('open');
   $('list-md-content').classList.remove('xray-dimmed');
-  const nc = $('next-list-content');
-  if (nc) nc.classList.remove('xray-dimmed');
 }
 
 function xrayCheck(item, listText) {
