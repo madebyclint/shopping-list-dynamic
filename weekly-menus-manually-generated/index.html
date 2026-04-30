@@ -182,6 +182,25 @@
     .md-content tbody tr:last-child td { border-bottom: none; }
     .md-content tbody tr:hover td { background: #faf9f7; }
 
+    /* ── Recipe link button + copy toast ───────────────────────── */
+    .recipe-link-btn {
+      display: inline-flex; align-items: center; background: none; border: none;
+      cursor: pointer; color: var(--muted); font-size: 0.75rem;
+      padding: 2px 5px; border-radius: 4px; opacity: 0;
+      transition: opacity 0.15s, color 0.15s; vertical-align: middle; margin-left: 6px;
+    }
+    .md-content p:hover .recipe-link-btn { opacity: 0.55; }
+    .recipe-link-btn:hover { opacity: 1 !important; color: var(--accent); }
+    #copy-toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--navy); color: #fff; padding: 9px 18px;
+      border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s; z-index: 500;
+    }
+    #copy-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
     /* ── Shopping list tab extras ─────────────────────────────────── */
     .list-tab-toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px 8px; gap:8px; }
     .list-tab-toolbar h2 { font-size:1.05rem; font-weight:700; color:var(--navy); margin:0; }
@@ -544,6 +563,8 @@
 
 </main>
 
+<div id="copy-toast">🔗 Link copied!</div>
+
 <footer class="app-footer" id="app-footer"></footer>
 
 <script>
@@ -630,7 +651,7 @@ async function init() {
 
     // Non-blocking markdown loads
     fetchText(_manifest.files.menu)
-      .then(t => { renderMD($('menu-content'), t); injectMenuAnchors(_manifest.meals); })
+      .then(t => { renderMD($('menu-content'), t); injectMenuAnchors(_manifest.meals); handleInitialHash(); })
       .catch(() => errState($('menu-content'), '⚠️ Could not load menu.'));
 
     fetchText(_manifest.files.shoppingList)
@@ -782,25 +803,50 @@ function injectMenuAnchors(meals) {
       return t.includes(needle) || needle.includes(t);
     });
     if (match) {
-      // Anchor the closest block-level parent
       const parent = match.closest('p') || match.closest('div') || match;
       parent.id = 'meal-' + slug;
       parent.style.scrollMarginTop = 'calc(var(--nav-h) + 16px)';
+      // Inject copy-link button
+      const btn = document.createElement('button');
+      btn.className = 'recipe-link-btn';
+      btn.title = 'Copy link to this recipe';
+      btn.textContent = '🔗';
+      btn.addEventListener('click', e => { e.stopPropagation(); copyRecipeLink(slug); });
+      parent.appendChild(btn);
     }
   });
 }
 
+function copyRecipeLink(slug) {
+  const url = window.location.origin + window.location.pathname + '#meal-' + slug;
+  navigator.clipboard.writeText(url).then(() => {
+    const toast = $('copy-toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  });
+}
+
+function handleInitialHash() {
+  const hash = window.location.hash.slice(1);
+  if (!hash.startsWith('meal-')) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelector('.tab-btn[data-tab="menu"]').classList.add('active');
+  $('tab-menu').classList.add('active');
+  const target = $(hash);
+  if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+}
+
 function switchToMenuMeal(mealName) {
-  // Switch to menu tab
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelector('.tab-btn[data-tab="menu"]').classList.add('active');
   $('tab-menu').classList.add('active');
 
   const slug = slugify(mealName);
+  history.replaceState(null, '', '#meal-' + slug);
   const target = $('meal-' + slug);
   if (target) {
-    // Slight delay lets the tab become visible before scrolling
     requestAnimationFrame(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 }
