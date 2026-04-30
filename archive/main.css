@@ -955,6 +955,30 @@ li.skipped .item-label {
   color: var(--text-subdued);
 }
 
+.price-editable {
+  cursor: pointer;
+  border-bottom: 1px dashed var(--text-subdued);
+  padding-bottom: 1px;
+}
+
+.price-editable:hover {
+  color: var(--accent, #4a9eff);
+  border-bottom-color: var(--accent, #4a9eff);
+}
+
+.price-inline-input {
+  width: 5ch;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--accent, #4a9eff);
+  outline: none;
+  padding: 0;
+  text-align: center;
+}
+
 .skip-btn {
   background: none;
   border: 1px solid #ffc107;

@@ -30,6 +30,8 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
   } | null>(null);
   const [showAuditResults, setShowAuditResults] = useState(false);
   const [isUsingStoreLayout, setIsUsingStoreLayout] = useState(false);
+  const [editingPriceItemId, setEditingPriceItemId] = useState<number | null>(null);
+  const [editingPriceValue, setEditingPriceValue] = useState('');
 
   const AI_CATEGORIES = [
     'Produce',
@@ -722,6 +724,32 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
       .catch(console.error);
   };
 
+  const handlePriceSave = async (itemId: number) => {
+    const raw = editingPriceValue.trim().replace(/[^0-9.]/g, '');
+    const price = parseFloat(raw);
+    if (isNaN(price) || raw === '') {
+      setEditingPriceItemId(null);
+      return;
+    }
+    const formatted = price.toFixed(2);
+    try {
+      const response = await fetch('/api/items', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId, price: formatted }),
+      });
+      if (response.ok) {
+        setItems(prevItems =>
+          prevItems.map(item => item.id === itemId ? { ...item, price: formatted } : item)
+        );
+      }
+    } catch (error) {
+      console.error('Error updating price:', error);
+    } finally {
+      setEditingPriceItemId(null);
+    }
+  };
+
   const handleBulkRecategorize = async () => {
     if (selectedItems.size === 0 || !bulkCategory || listId === null) return;
 
@@ -1020,7 +1048,37 @@ export default function GroceryListView({ listId, rawText }: GroceryListViewProp
                               {cleanName}
                             </span>
                             <span className="item-details">
-                              ({formattedQty} @ {item.price})
+                              ({formattedQty} @{' '}
+                              {item.id && listId !== null && editingPriceItemId === item.id ? (
+                                <input
+                                  type="text"
+                                  className="price-inline-input"
+                                  value={editingPriceValue}
+                                  onChange={(e) => setEditingPriceValue(e.target.value)}
+                                  onBlur={() => handlePriceSave(item.id!)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handlePriceSave(item.id!);
+                                    if (e.key === 'Escape') setEditingPriceItemId(null);
+                                  }}
+                                  autoFocus
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              ) : (
+                                <span
+                                  className={`price-display${item.id && listId !== null ? ' price-editable' : ''}`}
+                                  onClick={(e) => {
+                                    if (item.id && listId !== null && !showBulkRecategorize) {
+                                      e.stopPropagation();
+                                      setEditingPriceItemId(item.id);
+                                      setEditingPriceValue(item.price);
+                                    }
+                                  }}
+                                  title={item.id && listId !== null ? 'Click to edit price' : undefined}
+                                >
+                                  {item.price}
+                                </span>
+                              )}
+                              )
                               <span className="js-meal">for {item.meal}</span>
                             </span>
                           </label>
