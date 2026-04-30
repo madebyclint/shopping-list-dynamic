@@ -301,6 +301,9 @@
       cursor: pointer; padding: 0 4px; display: none;
     }
     .cl-search-clear.show { display: block; }
+    .cl-live-badge { font-size: 0.68rem; color: #7ac99e; animation: cl-pulse 2s infinite; margin-left: 6px; vertical-align: middle; }
+    .cl-live-badge.offline { color: #888; animation: none; }
+    @keyframes cl-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
     .cl-subgroup-label {
       padding: 8px 16px 4px; font-size: 0.68rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.08em;
@@ -359,6 +362,12 @@
     .archive-week-btn .aw-date { font-size: 0.72rem; color: var(--muted); display: block; margin-top: 2px; }
     .archive-week-btn.active .aw-date { color: var(--accent); opacity: 0.7; }
     .archive-panel { min-height: 200px; }
+    /* ── Footer ─────────────────────────────────────────────────────────── */
+    .app-footer {
+      text-align: center; padding: 18px 20px 32px;
+      font-size: 0.72rem; color: var(--muted);
+      border-top: 1px solid var(--border); margin-top: 40px;
+    }
     /* ── Responsive ───────────────────────────────────────────────── */
     @media (max-width: 600px) {
       .main { padding: 18px 14px 80px; }
@@ -403,7 +412,7 @@
 <div id="checklist-overlay">
   <div class="cl-header">
     <div class="cl-title-row">
-      <h2>🛒 Live Checklist</h2>
+      <h2>🛒 Live Checklist <span id="cl-live-badge" class="cl-live-badge offline" title="Live sync">●</span></h2>
       <div class="cl-header-btns">
         <button class="cl-copy-btn" id="cl-copy-btn">📋 Copy URL</button>
         <button class="cl-close-btn" id="cl-close-btn">✕ Close</button>
@@ -535,6 +544,8 @@
 
 </main>
 
+<footer class="app-footer" id="app-footer"></footer>
+
 <script>
 // ── State ────────────────────────────────────────────────────────────────────
 let _manifest = null;
@@ -542,6 +553,9 @@ let _audit    = null;
 let _charts   = {};     // { donut, store }
 let _chartsDrawn = false;
 let _listText = '';     // raw shopping list markdown for live checklist
+let _sseSource    = null;
+let _clSaveTimer  = null;
+let _clLastPushed = null; // prevents echoing our own SSE update back
 
 // ── Utilities ────────────────────────────────────────────────────────────────
 const fmt  = n => '$' + parseFloat(n).toFixed(2);
@@ -623,14 +637,6 @@ async function init() {
       .then(t => {
         _listText = t;
         renderMD($('list-md-content'), t);
-        // Auto-restore checklist if URL has saved cart state
-        if (new URLSearchParams(window.location.search).has('cart')) {
-          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-          document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-          document.querySelector('.tab-btn[data-tab="list"]').classList.add('active');
-          $('tab-list').classList.add('active');
-          openChecklist();
-        }
       })
       .catch(() => console.warn('Could not load shopping list.'));
 
@@ -1202,12 +1208,47 @@ function clUpdateTotals() {
 }
 function clSync() {
   clUpdateTotals();
-  const enc = clEncode(_clState);
-  if (enc) {
-    const url = new URL(window.location.href);
-    url.searchParams.set('cart', enc);
-    history.replaceState(null, '', url.toString());
-  }
+  clSaveToDB(_clState.week, _clState);
+}
+async function clLoadFromDB(weekKey) {
+  try {
+    const r = await fetch('/api/cart?week=' + encodeURIComponent(weekKey));
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+async function clSaveToDBNow(weekKey, state) {
+  try {
+    const r = await fetch('/api/cart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ week: weekKey, state }),
+    });
+    if (r.ok) _clLastPushed = JSON.stringify(state);
+  } catch (err) { console.warn('Cart save failed:', err); }
+}
+function clSaveToDB(weekKey, state) {
+  clearTimeout(_clSaveTimer);
+  _clSaveTimer = setTimeout(() => clSaveToDBNow(weekKey, state), 400);
+}
+function clConnectSSE(weekKey) {
+  if (_sseSource) { _sseSource.close(); _sseSource = null; }
+  const badge = $('cl-live-badge');
+  try {
+    const src = new EventSource('/api/cart/events?week=' + encodeURIComponent(weekKey));
+    _sseSource = src;
+    src.onopen = () => { if (badge) badge.classList.remove('offline'); };
+    src.onmessage = e => {
+      try {
+        const newState = JSON.parse(e.data);
+        if (JSON.stringify(newState) === _clLastPushed) return; // our own echo
+        _clState = newState;
+        clRender();
+        clUpdateTotals();
+      } catch {}
+    };
+    src.onerror = () => { if (badge) badge.classList.add('offline'); };
+  } catch { if (badge) badge.classList.add('offline'); }
 }
 function clToggleCheck(idx) {
   const ci = _clState.c.indexOf(idx), si = _clState.s.indexOf(idx);
@@ -1246,22 +1287,21 @@ function clToggleCustom(i) {
 }
 function clCopyURL() {
   const btn = $('cl-copy-btn');
-  navigator.clipboard.writeText(window.location.href).then(() => {
+  const url = window.location.origin + window.location.pathname;
+  navigator.clipboard.writeText(url).then(() => {
     btn.textContent = '✓ Copied!'; btn.classList.add('copied');
     setTimeout(() => { btn.textContent = '📋 Copy URL'; btn.classList.remove('copied'); }, 2000);
-  }).catch(() => prompt('Copy this URL:', window.location.href));
+  }).catch(() => prompt('Copy this URL:', url));
 }
-function openChecklist() {
-  const weekKey = _manifest?.currentWeek || '';
-  const urlParam = new URLSearchParams(window.location.search).get('cart');
-  if (urlParam) {
-    const dec = clDecode(urlParam);
-    if (dec && dec.v === 1) _clState = dec;
-    else _clState = { v: 1, week: weekKey, c: [], s: [], x: [] };
+async function openChecklist() {
+  const weekKey = _manifest?.currentWeek || 'current';
+  // Load latest shared state from the database
+  const dbState = await clLoadFromDB(weekKey);
+  if (dbState && dbState.v === 1) {
+    _clState = dbState;
   } else {
     _clState = { v: 1, week: weekKey, c: [], s: [], x: [] };
   }
-  document.querySelector('#checklist-overlay .cl-title-row h2').textContent = '🛒 Live Checklist';
   _clSort = 'store';
   document.querySelectorAll('.cl-sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === 'store'));
   const si = $('cl-search');
@@ -1270,12 +1310,14 @@ function openChecklist() {
   clRender();
   clUpdateTotals();
   $('checklist-overlay').classList.add('show');
+  // Subscribe to live updates from the other device
+  clConnectSSE(weekKey);
 }
 // One-time event delegation for the entire checklist overlay
 (function() {
   const ov = $('checklist-overlay');
   ov.addEventListener('click', e => {
-    if (e.target.closest('#cl-close-btn')) { ov.classList.remove('show'); return; }
+    if (e.target.closest('#cl-close-btn')) { ov.classList.remove('show'); if (_sseSource) { _sseSource.close(); _sseSource = null; } return; }
     if (e.target.closest('#cl-copy-btn'))  { clCopyURL(); return; }
     if (e.target.closest('#cl-search-clear')) {
       $('cl-search').value = ''; $('cl-search-clear').classList.remove('show'); clApplySearch(); return;
@@ -1432,6 +1474,20 @@ $('tabNav').addEventListener('click', e => {
 });
 
 // ── Run ───────────────────────────────────────────────────────────────────────
+$('app-footer').textContent = 'Brooklyn Kitchen';
+fetch('/api/meta')
+  .then(r => r.ok ? r.json() : null)
+  .then(meta => {
+    if (!meta) return;
+    const ts = new Date(meta.deployedAt).toLocaleString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
+    });
+    const env = meta.env !== 'production' ? ` · ${meta.env}` : '';
+    $('app-footer').textContent = `v${meta.version}${env} · deployed ${ts}`;
+  })
+  .catch(() => { /* footer stays as static label */ });
+
 init();
 </script>
 </body>

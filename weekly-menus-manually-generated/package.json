@@ -2,9 +2,12 @@
   "name": "brooklyn-kitchen",
   "version": "1.0.0",
   "scripts": {
-    "start": "serve . -l ${PORT:-3000}"
+    "start": "node server.mjs",
+    "dev": "node --env-file=../.env.local server.mjs"
   },
   "dependencies": {
+    "express": "^4.22.1",
+    "pg": "^8.20.0",
     "serve": "^14.2.4"
   }
 }
