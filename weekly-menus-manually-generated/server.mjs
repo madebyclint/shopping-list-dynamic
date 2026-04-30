@@ -90,10 +90,10 @@ initDb().catch(err => console.error('DB init error:', err));
 // ── In-memory SSE clients  weekKey → Set<Response> ────────────────────────────
 const sseClients = new Map();
 
-function broadcast(weekKey, state) {
+function broadcast(weekKey, state, reqId) {
   const clients = sseClients.get(weekKey);
   if (!clients || clients.size === 0) return;
-  const payload = `data: ${JSON.stringify(state)}\n\n`;
+  const payload = `data: ${JSON.stringify({ state, reqId: reqId || null })}\n\n`;
   for (const res of clients) {
     try { res.write(payload); } catch { /* client disconnected */ }
   }
@@ -261,8 +261,10 @@ app.post('/api/cart', async (req, res) => {
       [weekKey, JSON.stringify(state)],
     );
 
+    const reqId = String(req.body.reqId || '').slice(0, 64) || null;
+
     // Push to all connected clients for this week (real-time sync)
-    broadcast(weekKey, state);
+    broadcast(weekKey, state, reqId);
 
     res.json({ ok: true });
   } catch (err) {
