@@ -4,7 +4,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Next.js build output
+# Next.js build output (archived)
 .next/
 out/
 
@@ -18,6 +18,9 @@ out/
 
 # Vercel
 .vercel
+
+# Menu generation intermediate files (drafts are ephemeral — review & discard)
+weekly-menus-manually-generated/drafts/
 
 # TypeScript
 *.tsbuildinfo
