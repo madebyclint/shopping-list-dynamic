@@ -65,12 +65,17 @@ const prompt = `I need a meal plan for the next week. Here is the criteria:
 1. Needs to be 5 dinners to cook + 1 breakfast
 2. Keep them to under an hour to make, preferably closer to 30 min
 3. Keep them budget friendly
-4. Diversify the meals (cuisine) and don't be shy about non-mainstream — think outside the box
-5. Rainbow plate mentality if possible with always a serving of veggie or fruit and protein. Veggie proteins are ok too.
+4. Diversify the meals (cuisine) — don't be shy about non-mainstream, think outside the box, and **avoid repeating the same cuisine twice in one week**
+5. Rainbow plate mentality — always a serving of veggie and protein. Veggie proteins are ok too. **Every meal must include a fresh fruit as a side** — list it in both the meal summary and ingredients. Pick fruits that pair with the cuisine where possible.
 6. If we do pork, we need to do a pork portion and a non-pork portion for a couple family members.
 7. We are a family of 4 with two teens
-8. **Tuesday must be a super fast no-cook or minimal-cook meal** — we get home at 8pm. Think hot dogs, mac and cheese, charcuterie board, quesadillas, etc.
+8. **Tuesday must be a super fast meal (≤20 min)** — we get home at 8pm. Think mac and cheese, hot dogs, quesadillas, charcuterie board, ramen, grilled cheese, etc. No-cook is fine but not required — speed is the priority.
 9. **Thursday must be a kid-friendly prep meal** — the teens make it themselves. Keep it simple with clear steps (tacos, pasta, stir fry, sheet pan, etc.)
+
+**Health goals to keep in mind (soft guidelines, not hard rules):**
+- Reduce bloating: pull back on high-FODMAP ingredients (onions, garlic, beans, cruciferous veggies) where possible — don't eliminate, just don't lead with them. Prefer meals that are easy to digest on weeknights.
+- Weight loss: protein at every meal, half the plate veggies, sensible portions. Ginger, lemon/lime, avocado, sweet potato, and banana are all good additions where they fit naturally.
+- Lighter weeknight dinners preferred — the family does a short walk after dinner.
 
 **Context:**
 - Week of ${weekDate}
