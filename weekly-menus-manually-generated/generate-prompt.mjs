@@ -81,10 +81,156 @@ const prompt = `I need a meal plan for the next week. Here is the criteria:
 - Week of ${weekDate}
 - Recent meals to avoid repeating (last ${WEEKS_TO_AVOID} weeks): ${recentMeals.join(', ')}${followingIdeas ? `\n- Ideas to consider from last week: ${followingIdeas}` : ''}
 - We are in Brooklyn buying at small markets (higher prices than chain stores)
-- Pantry staples on hand: olive oil, vegetable oil, soy sauce, fish sauce, rice vinegar, sesame oil, chicken broth, vegetable broth, salt, pepper, red pepper flakes, cumin, paprika, chili powder, garlic powder, oregano, turmeric, coriander, cinnamon, bay leaves, jasmine rice, flour, sugar, canned tomatoes/paste, canned chickpeas/black beans/kidney beans, couscous, pasta, hot sauce, Worcestershire, ketchup, fresh garlic, fresh ginger
-- Weekly recurring items to always include: chips, Lactaid whole milk, cereal, eggs, fresh fruit
 
-Please present 5 dinners + 1 breakfast for approval first (name + key components + estimated time), label which is **Tuesday (fast/easy)** and which is **Thursday (kids prep)**, then I'll confirm before you generate the full plan.`;
+**Pantry staples — do NOT add these to the shopping list:**
+- Olive oil, vegetable oil, canola oil, butter
+- Soy sauce, fish sauce, rice vinegar, sesame oil
+- Chicken broth, vegetable broth
+- Salt, black pepper, red pepper flakes
+- Cumin, paprika, chili powder, garlic powder, oregano, turmeric, coriander, cinnamon, bay leaves
+- Jasmine rice, all-purpose flour, sugar
+- Canned tomatoes, tomato paste, canned chickpeas, black beans, kidney beans
+- Couscous, pasta
+- Hot sauce, Worcestershire sauce, ketchup
+- Fresh garlic, fresh ginger
+
+**Weekly recurring items — always include in the shopping list:**
+- Chips (2 bags — always specify type, e.g. tortilla, salt & vinegar; note the meal if applicable)
+- Cereal (2 boxes)
+- Lactaid whole milk (1 half-gallon)
+- Almond milk (1 gallon)
+- Eggs (1 dozen)
+- Assorted fresh fruit (~$10–$15)
+- Ice cream (1 container)
+- Trail mix (1 bag)
+- Mango juice (1 bottle/carton)
+- Condensed milk (1 can)
+- Toilet paper (1 pack)
+- Paper towels (1 pack)
+
+---
+
+Please present 5 dinners + 1 breakfast for approval first (name + key components + estimated time), label which is **Tuesday (fast/easy)** and which is **Thursday (kids prep)**, then after I confirm generate the full output in these sections:
+
+**FILE 1 — \`menus/YYYY-MM-DD-menu.md\`**
+
+Use the Monday date for the filename. Structure:
+\`\`\`
+# Menu — [Week Label]
+
+## Quick Glance Meals
+
+### Sun–Fri Plan
+- [emoji] [Meal Name] *([DAY LABEL, Date])* — [key components] — [fruit side] — [X] min
+...
+
+### For Following Week
+(optional ideas)
+
+[One short narrative paragraph summarizing the week's theme/flow]
+
+---
+
+## Deeper View
+
+**[Meal Name]** *([Day, Date])*
+Total time: ~X min · Approx calories: ~XXX per adult
+
+> [1–2 sentence flavor/background note]
+
+**Ingredients Used**
+
+- Ingredient
+- [Fruit] (served on the side)
+
+**Cooking Overview**
+
+1. Step
+2. Step
+
+---
+\`\`\`
+Format rules: title + day on same line; blank line after bold labels before lists; numbered steps only; fruit in both Quick Glance and Ingredients Used.
+
+**FILE 2 — \`shopping-lists/YYYY-MM-DD-shopping-list.md\`**
+
+\`\`\`
+# Shopping List — [Date Range] — ~$XXX
+
+> [Notes blurb: where to find specialty items, substitutes, tips]
+
+---
+
+🥬 **PRODUCE**
+- Item (qty) — Meal Name — ~$price ea — **~$total**
+...
+Produce Subtotal: **~$XX.XX**
+
+🥩 **PROTEINS**
+...
+Proteins Subtotal: **~$XX.XX**
+
+🧀 **DAIRY & REFRIGERATED**
+...
+
+🛒 **PANTRY & DRY GOODS**
+...
+
+🧻 **HOUSEHOLD**
+...
+
+🛍 **WEEKLY STAPLES**
+...
+
+---
+| Category | Est. Total |
+|---|---|
+| Produce | $XX |
+| Proteins | $XX |
+| ... | ... |
+| **GRAND TOTAL** | **~$XXX** |
+\`\`\`
+Rules: every line item includes the meal it's for; never bare "Chips" — always specify type; combine shared ingredients across meals; do a line-by-line audit against Ingredients Used before finalizing; pantry staples must not appear.
+
+**FILE 3 — \`data.json\` currentWeek block**
+
+Output only the updated \`currentWeek\` JSON block:
+\`\`\`json
+"currentWeek": "YYYY-MM-DD",
+"weekLabel": "Sun Mon D - Fri Mon D, YYYY",
+"shoppingDate": "YYYY-MM-DD",
+"files": {
+  "menu": "menus/YYYY-MM-DD-menu.md",
+  "shoppingList": "shopping-lists/YYYY-MM-DD-shopping-list.md"
+},
+"meals": [
+  { "name": "...", "day": "Sunday, Mon D", "emoji": "...", "time": "X min", "tag": "", "tagType": "" }
+]
+\`\`\`
+tagType values: "fast" (Tuesday), "teen" (Thursday), "special" (occasion), "" (none). tag is the display label: "FAST", "TEEN PREP", "BRUNCH", etc.
+
+**FILE 4 — \`meal-history.md\` entry**
+
+One-liner per meal in this format, grouped under a new week heading:
+\`\`\`
+## [Week Label]
+
+### Dinners
+- [emoji] [Meal Name] *([DAY LABEL])* — key components — X min
+
+### Breakfast / Brunch
+- [emoji] [Meal Name] *([DAY LABEL])* — key components — X min
+
+### Notes
+- Any substitutions, special notes, or "For Following Week" ideas
+\`\`\`
+
+**FILE 5 — \`menus/index.json\` entry**
+
+Single line to prepend to the menus array:
+\`\`\`json
+{ "filename": "YYYY-MM-DD-menu.md", "date": "YYYY-MM-DD", "label": "Week of Month D, YYYY" }
+\`\`\``;
 
 console.log('\n' + '='.repeat(60));
 console.log('  WEEKLY MENU PROMPT — copy everything below the line');
