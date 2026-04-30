@@ -42,6 +42,14 @@ const ENV = process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV || 'local';
 // ── Database ──────────────────────────────────────────────────────────────────
 const DB_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
+if (!DB_URL) {
+  console.error('⚠️  No DATABASE_URL or POSTGRES_URL env var found — DB features will not work.');
+} else {
+  // Log a masked version so you can confirm which host is being used
+  const masked = DB_URL.replace(/:([^:@]+)@/, ':***@');
+  console.log('🗄️  DB connecting to:', masked);
+}
+
 const pool = new Pool({
   connectionString: DB_URL,
   ssl: DB_URL ? { rejectUnauthorized: false } : false,
@@ -86,6 +94,22 @@ async function initDb() {
 }
 
 initDb().catch(err => console.error('DB init error:', err));
+
+// ── DB status diagnostic ──────────────────────────────────────────────────────
+app.get('/api/db-status', async (_req, res) => {
+  if (!DB_URL) {
+    return res.status(503).json({ ok: false, error: 'no_db_url', detail: 'DATABASE_URL / POSTGRES_URL env var not set' });
+  }
+  try {
+    const { rows } = await pool.query('SELECT NOW() AS now');
+    const tableCheck = await pool.query(
+      `SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_name = 'cart_state'`
+    );
+    res.json({ ok: true, db_time: rows[0].now, cart_state_table_exists: tableCheck.rows[0].n === '1' });
+  } catch (err) {
+    res.status(503).json({ ok: false, error: err.message });
+  }
+});
 
 // ── In-memory SSE clients  weekKey → Set<Response> ────────────────────────────
 const sseClients = new Map();

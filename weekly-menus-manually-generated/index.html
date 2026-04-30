@@ -1299,6 +1299,7 @@ function clUpdateTotals() {
 }
 function clSync() {
   clUpdateTotals();
+  clSaveLocal();
   clSaveToDB();
 }
 async function clLoadFromDB(weekKey) {
@@ -1308,6 +1309,20 @@ async function clLoadFromDB(weekKey) {
     return await r.json();
   } catch { return null; }
 }
+function clSaveLocal() {
+  if (!_clWeekKey) return;
+  try {
+    localStorage.setItem('bk-cart-' + _clWeekKey, JSON.stringify(_clState));
+  } catch { /* storage full or private-browsing restriction */ }
+}
+function clLoadLocal(weekKey) {
+  try {
+    const raw = localStorage.getItem('bk-cart-' + weekKey);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    return (p && p.v === 1) ? p : null;
+  } catch { return null; }
+}
 async function clSaveToDBNow() {
   if (!_clWeekKey) return;
   const reqId = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
@@ -1315,12 +1330,19 @@ async function clSaveToDBNow() {
   // Snapshot _clState at fire time (not at schedule time) to avoid stale-closure bug
   const snapshot = JSON.parse(JSON.stringify(_clState));
   try {
-    await fetch('/api/cart', {
+    const r = await fetch('/api/cart', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ week: _clWeekKey, state: snapshot, reqId }),
     });
-  } catch (err) { console.warn('Cart save failed:', err); }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    // DB save succeeded — live badge stays green
+  } catch (err) {
+    console.warn('Cart save to DB failed (state preserved in localStorage):', err.message);
+    // Show badge as degraded but not fully offline
+    const badge = $('cl-live-badge');
+    if (badge) badge.classList.add('offline');
+  }
 }
 function clSaveToDB() {
   clearTimeout(_clSaveTimer);
@@ -1357,6 +1379,7 @@ function clConnectSSE(weekKey) {
         // Cancel any pending save — the incoming state is authoritative
         clearTimeout(_clSaveTimer);
         _clState = newState;
+        clSaveLocal(); // keep localStorage in sync with incoming state too
         clRender();
         clUpdateTotals();
       } catch {}
@@ -1410,10 +1433,19 @@ function clCopyURL() {
 async function openChecklist() {
   history.pushState(null, '', '#checklist');
   _clWeekKey = _manifest?.currentWeek || 'current';
-  // Load latest shared state from the database
-  const dbState = await clLoadFromDB(_clWeekKey);
-  if (dbState && dbState.v === 1) {
-    _clState = dbState;
+  // Try DB first for cross-device state, fall back to localStorage
+  const dbState    = await clLoadFromDB(_clWeekKey);
+  const localState = clLoadLocal(_clWeekKey);
+  // Pick whichever source has more checked items (most recently active)
+  let bestState = null;
+  if (dbState    && dbState.v    === 1) bestState = dbState;
+  if (localState && localState.v === 1) {
+    const dbCount    = (bestState ? (bestState.c.length + bestState.s.length) : -1);
+    const localCount = localState.c.length + localState.s.length;
+    if (localCount > dbCount) bestState = localState;
+  }
+  if (bestState) {
+    _clState = bestState;
   } else {
     _clState = { v: 1, c: [], s: [], x: [] };
   }
