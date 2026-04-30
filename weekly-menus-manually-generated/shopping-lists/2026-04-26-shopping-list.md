@@ -52,19 +52,19 @@ Proteins Subtotal: **~$43.96**
 🧀 **DAIRY & REFRIGERATED**
 
 - Shredded cheddar (1 bag, 8 oz) — Turkey Pasta Skillet + Burgers — ~$4.99 — **~$4.99**
-- Cotija cheese (1 block or pre-crumbled bag) — Esquites — ~$4.99 — **~$4.99**
-  *(Check dairy/cheese section; crumbled feta is a fine substitute if unavailable)*
+- ~~Cotija cheese~~ — have it (crumbled, on hand)
 
-Dairy & Refrigerated Subtotal: **~$9.98**
+Dairy & Refrigerated Subtotal: **~$4.99**
 
 ---
 
 🛒 **PANTRY & DRY GOODS**
 
 - Burger buns (1 pack, 4–6 ct) — Hamburgers — ~$3.99 — **~$3.99**
+- Hot dog buns (1 pack, 8 ct) — Esquites — ~$3.99 — **~$3.99**
 - Arnold Hearty Bread (1 loaf) — household — $5.29 — **$5.29**
-- Corn, canned (3 cans, 15 oz) — Esquites — 2/$3.00 + $1.50 — **~$4.50**
-- Mayo (1 jar) — Esquites — ~$3.99 — **~$3.99** *(check pantry first)*
+- Frozen corn (1 lb bag) — Esquites — ~$2.99 — **~$2.99**
+- ~~Mayo~~ — making from scratch (eggs + avocado oil on hand)
 - Pasta shells (1 lb) — Turkey Pasta Skillet — ~$2.49 — **~$2.49** *(pantry staple — buy if running low)*
 - Sushi rice (1 bag) — Arroz Caldo brunch — ~$3.99 — **~$3.99**
 - Better Than Bouillon, beef or chicken (1 jar) — Arroz Caldo brunch — ~$6.99 — **~$6.99** *(check pantry first)*
@@ -72,7 +72,7 @@ Dairy & Refrigerated Subtotal: **~$9.98**
 - Peanuts, roasted (1 bag) — Arroz Caldo garnish — ~$3.99 — **~$3.99**
 - Kecap manis / sweet soy sauce (1 bottle) — Arroz Caldo garnish — ~$3.99 — **~$3.99** *(1426 St Johns or Brooklyn Fare; skip if unavailable)*
 
-Pantry & Dry Goods Subtotal: **~$42.21**
+Pantry & Dry Goods Subtotal: **~$41.70**
 
 ---
 
@@ -107,11 +107,11 @@ Weekly Staples Subtotal: **~$56.15**
 |----------|-----------|
 | Produce | ~$60.83 |
 | Proteins | ~$43.96 |
-| Dairy & Refrigerated | ~$9.98 |
-| Pantry & Dry Goods | ~$42.21 |
+| Dairy & Refrigerated | ~$4.99 |
+| Pantry & Dry Goods | ~$41.70 |
 | Household | ~$5.99 |
 | Weekly Staples | ~$56.15 |
-| **TOTAL** | **~$219.12** |
+| **TOTAL** | **~$213.62** |
 
 ---
 
@@ -149,13 +149,13 @@ Weekly Staples Subtotal: **~$56.15**
 
 **— Dairy —**
 - Shredded cheddar (1 bag, 8 oz) — Turkey Pasta Skillet + Burgers
-- Cotija cheese (1 block/bag) — Esquites; feta if unavailable
+- ~~Cotija cheese~~ — on hand
 
 **— Aisles —**
 - Burger buns (1 pack) — Hamburgers
+- Hot dog buns (1 pack) — Esquites
 - Arnold Hearty Bread (1 loaf) — household
-- Corn, canned (3 cans) — Esquites
-- Mayo (1 jar) — Esquites; check pantry first
+- Frozen corn (1 lb bag) — Esquites
 - Pasta shells (1 lb) — Turkey Pasta Skillet; check pantry first
 - Sushi rice (1 bag) — Arroz Caldo brunch
 - Better Than Bouillon (1 jar) — Arroz Caldo brunch *(check pantry first)*

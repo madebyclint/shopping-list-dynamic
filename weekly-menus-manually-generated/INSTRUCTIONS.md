@@ -14,6 +14,20 @@
 
 ---
 
+## Updating a Meal Mid-Week
+
+When modifying an existing meal (swap an ingredient, change a cooking method, add a note), only read and edit these files — do not re-read the full system:
+
+1. **`menus/YYYY-MM-DD-menu.md`** — Edit the affected meal's Deep Dive section (Ingredients Used + Cooking Overview). Also update the Quick Glance one-liner if the description changes.
+2. **`shopping-lists/YYYY-MM-DD-shopping-list.md`** — Add/remove/change the affected line items in the relevant category, update the category subtotal, and update the grand total table.
+3. **`meals-ingredients.json`** — Update the affected meal's `buy_these` and/or `pantry` arrays to match the new ingredients.
+
+**That's it.** Do not re-read `data.json`, `meal-history.md`, `price-list.md`, `INSTRUCTIONS.md`, or any other file unless the change specifically affects them.
+
+> If the meal name itself changes, also update `data.json` → `currentWeek.meals[].name`.
+
+---
+
 ## How This Works
 
 Each week, a new meal plan is generated and saved to this directory:
