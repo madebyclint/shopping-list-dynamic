@@ -1,6 +1,6 @@
 {
   "name": "brooklyn-kitchen",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "scripts": {
     "start": "node server.mjs",
     "dev": "node --env-file=../.env.local server.mjs"

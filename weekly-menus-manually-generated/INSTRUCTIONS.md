@@ -14,6 +14,32 @@
 
 ---
 
+## Health Goals
+
+> These goals apply to the whole family. Let them guide meal and ingredient choices without overhauling what we cook.
+
+### Reducing Bloating
+
+- **Minimize high-FODMAP ingredients** — pull back on onions, garlic, beans, lentils, apples, and cruciferous veggies (broccoli, cauliflower, cabbage) where possible. Don't eliminate — just don't lead with them.
+- **Watch sodium** — avoid over-relying on salty sauces, heavy broths, or condiment-heavy dishes. Season with herbs and acid (citrus, vinegar) when possible.
+- **Avoid carbonated drinks** as meal pairings.
+- **Prefer lighter, earlier dinners** — meals that are easy to digest; avoid very heavy, rich dishes as weeknight dinners.
+- **Add these where they fit naturally:** ginger (already a pantry staple), lemon/lime, bananas, avocado, sweet potato — all help with digestion and counteract water retention.
+
+### Weight Loss (Goal: ~1 lb/week through year end)
+
+- **Protein at every meal** — chicken, turkey, fish, eggs, Greek yogurt, cottage cheese, legumes. Protein keeps the family full and supports muscle.
+- **Fill half the plate with vegetables** — this is already in the rainbow plate rule; reinforce it.
+- **Modest portions** — don't overhaul recipes, just aim for sensible serving sizes. Avoid "the whole pot in one sitting" meals.
+- **Avoid liquid calories** — limit juice, alcohol, and sweetened drinks in meal planning.
+
+### General Meal Planning Notes
+
+- A 15–20 min post-dinner walk is part of the routine — lighter dinners that don't require recovery time are preferred on weeknights.
+- **These are soft guidelines, not hard rules.** A great diverse meal that doesn't tick every health box is still a good meal. Apply judgment.
+
+---
+
 ## Updating a Meal Mid-Week
 
 When modifying an existing meal (swap an ingredient, change a cooking method, add a note), only read and edit these files — do not re-read the full system:
