@@ -1079,10 +1079,11 @@ function setupPriceSearch() {
 }
 
 // ── Live Checklist ────────────────────────────────────────────────────────────
-let _clItems  = [];
-let _priceMap = {};
-let _clState  = { v: 1, week: '', c: [], s: [], x: [] };
-let _clSort   = 'store'; // 'store' | 'meal'
+let _clItems   = [];
+let _priceMap  = {};
+let _clState   = { v: 1, c: [], s: [], x: [] };
+let _clWeekKey = '';   // authoritative week key for all saves/loads
+let _clSort    = 'store'; // 'store' | 'meal'
 
 function clEncode(obj) {
   try { return btoa(encodeURIComponent(JSON.stringify(obj))); } catch(e) { return ''; }
@@ -1298,7 +1299,7 @@ function clUpdateTotals() {
 }
 function clSync() {
   clUpdateTotals();
-  clSaveToDB(_clState.week, _clState);
+  clSaveToDB();
 }
 async function clLoadFromDB(weekKey) {
   try {
@@ -1307,28 +1308,45 @@ async function clLoadFromDB(weekKey) {
     return await r.json();
   } catch { return null; }
 }
-async function clSaveToDBNow(weekKey, state) {
+async function clSaveToDBNow() {
+  if (!_clWeekKey) return;
   const reqId = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
   _clLastReqId = reqId;
+  // Snapshot _clState at fire time (not at schedule time) to avoid stale-closure bug
+  const snapshot = JSON.parse(JSON.stringify(_clState));
   try {
     await fetch('/api/cart', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ week: weekKey, state, reqId }),
+      body: JSON.stringify({ week: _clWeekKey, state: snapshot, reqId }),
     });
   } catch (err) { console.warn('Cart save failed:', err); }
 }
-function clSaveToDB(weekKey, state) {
+function clSaveToDB() {
   clearTimeout(_clSaveTimer);
-  _clSaveTimer = setTimeout(() => clSaveToDBNow(weekKey, state), 400);
+  _clSaveTimer = setTimeout(clSaveToDBNow, 400);
 }
+let _sseReconnecting = false;
 function clConnectSSE(weekKey) {
   if (_sseSource) { _sseSource.close(); _sseSource = null; }
   const badge = $('cl-live-badge');
   try {
     const src = new EventSource('/api/cart/events?week=' + encodeURIComponent(weekKey));
     _sseSource = src;
-    src.onopen = () => { if (badge) badge.classList.remove('offline'); };
+    src.onopen = async () => {
+      if (badge) badge.classList.remove('offline');
+      if (_sseReconnecting) {
+        // Re-fetch from DB on reconnect to catch any missed broadcasts
+        _sseReconnecting = false;
+        const latest = await clLoadFromDB(weekKey);
+        if (latest && latest.v === 1) {
+          _clState = latest;
+          clRender();
+          clUpdateTotals();
+        }
+      }
+      _sseReconnecting = false;
+    };
     src.onmessage = e => {
       try {
         const msg = JSON.parse(e.data);
@@ -1336,12 +1354,14 @@ function clConnectSSE(weekKey) {
         const newState = (msg && msg.state !== undefined) ? msg.state : msg;
         if (!newState || !Array.isArray(newState.c)) return; // malformed
         if (msg.reqId && msg.reqId === _clLastReqId) return; // our own echo
+        // Cancel any pending save — the incoming state is authoritative
+        clearTimeout(_clSaveTimer);
         _clState = newState;
         clRender();
         clUpdateTotals();
       } catch {}
     };
-    src.onerror = () => { if (badge) badge.classList.add('offline'); };
+    src.onerror = () => { if (badge) badge.classList.add('offline'); _sseReconnecting = true; };
   } catch { if (badge) badge.classList.add('offline'); }
 }
 function clToggleCheck(idx) {
@@ -1389,13 +1409,13 @@ function clCopyURL() {
 }
 async function openChecklist() {
   history.pushState(null, '', '#checklist');
-  const weekKey = _manifest?.currentWeek || 'current';
+  _clWeekKey = _manifest?.currentWeek || 'current';
   // Load latest shared state from the database
-  const dbState = await clLoadFromDB(weekKey);
+  const dbState = await clLoadFromDB(_clWeekKey);
   if (dbState && dbState.v === 1) {
     _clState = dbState;
   } else {
-    _clState = { v: 1, week: weekKey, c: [], s: [], x: [] };
+    _clState = { v: 1, c: [], s: [], x: [] };
   }
   _clSort = 'store';
   document.querySelectorAll('.cl-sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === 'store'));
@@ -1406,7 +1426,7 @@ async function openChecklist() {
   clUpdateTotals();
   $('checklist-overlay').classList.add('show');
   // Subscribe to live updates from the other device
-  clConnectSSE(weekKey);
+  clConnectSSE(_clWeekKey);
 }
 // One-time event delegation for the entire checklist overlay
 (function() {
