@@ -292,6 +292,9 @@
     .cl-item-price { font-size: 0.78rem; color: var(--muted); padding: 0 6px; white-space: nowrap; flex-shrink: 0; }
     .cl-item[data-state="checked"] .cl-item-price { color: var(--accent); font-weight: 600; }
     .cl-item[data-state="skipped"] .cl-item-price { text-decoration: line-through; color: #ccc; }
+    .cl-item-price[data-price-idx] { cursor: pointer; border-bottom: 1px dashed transparent; transition: border-color 0.12s, color 0.12s; }
+    .cl-item-price[data-price-idx]:hover { border-bottom-color: var(--muted); color: var(--accent); }
+    .cl-price-edit-input { width: 5ch; font-size: 0.78rem; font-family: inherit; color: var(--text); background: transparent; border: none; border-bottom: 1.5px solid var(--accent); outline: none; padding: 0; text-align: center; }
     .cl-skip-btn { padding: 13px 14px; border: none; background: none; font-size: 0.95rem; color: #ddd; cursor: pointer; flex-shrink: 0; }
     .cl-item[data-state="skipped"] .cl-skip-btn { color: var(--warn); }
     .cl-skip-btn:hover { color: var(--warn); }
@@ -1081,7 +1084,7 @@ function setupPriceSearch() {
 // ── Live Checklist ────────────────────────────────────────────────────────────
 let _clItems   = [];
 let _priceMap  = {};
-let _clState   = { v: 1, c: [], s: [], x: [] };
+let _clState   = { v: 1, c: [], s: [], x: [], prices: {} };
 let _clWeekKey = '';   // authoritative week key for all saves/loads
 let _clSort    = 'store'; // 'store' | 'meal'
 
@@ -1163,6 +1166,24 @@ function clParseMd(md) {
   });
 }
 
+function clApplyPriceOverrides() {
+  if (!_clState.prices) return;
+  Object.entries(_clState.prices).forEach(([k, p]) => {
+    const i = parseInt(k);
+    if (_clItems[i] !== undefined) _clItems[i].price = p;
+  });
+}
+function clUpdatePrice(idx, raw) {
+  const p = parseFloat(String(raw).replace(/[^0-9.]/g, ''));
+  if (isNaN(p)) return;
+  const val = parseFloat(p.toFixed(2));
+  _clItems[idx].price = val;
+  if (!_clState.prices) _clState.prices = {};
+  _clState.prices[String(idx)] = val;
+  clUpdateTotals();
+  clSaveToDB();
+  clSaveLocal();
+}
 function clGetState(idx) {
   return _clState.c.includes(idx) ? 'checked' : _clState.s.includes(idx) ? 'skipped' : 'unchecked';
 }
@@ -1173,7 +1194,7 @@ function clItemRow({ name, price, meal, idx }, showMeal) {
         <span class="cl-checkbox"></span>
         <span class="cl-item-name">${name}${showMeal && meal ? `<span class="cl-item-meal">${meal}</span>` : ''}</span>
       </button>
-      <span class="cl-item-price">${price ? clFmtP(price) : ''}</span>
+      <span class="cl-item-price" data-price-idx="${idx}" title="Click to edit price">${price != null ? clFmtP(price) : ''}</span>
       <button class="cl-skip-btn" data-skip="${idx}" title="Skip">⏭</button>
     </div>`;
 }
@@ -1380,6 +1401,7 @@ function clConnectSSE(weekKey) {
         clearTimeout(_clSaveTimer);
         _clState = newState;
         clSaveLocal(); // keep localStorage in sync with incoming state too
+        clApplyPriceOverrides();
         clRender();
         clUpdateTotals();
       } catch {}
@@ -1454,6 +1476,7 @@ async function openChecklist() {
   const si = $('cl-search');
   if (si) { si.value = ''; $('cl-search-clear').classList.remove('show'); }
   clParseMd(_listText);
+  clApplyPriceOverrides();
   clRender();
   clUpdateTotals();
   $('checklist-overlay').classList.add('show');
@@ -1474,6 +1497,30 @@ async function openChecklist() {
       _clSort = sortBtn.dataset.sort;
       document.querySelectorAll('.cl-sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === _clSort));
       clRender();
+      return;
+    }
+    const priceEl = e.target.closest('.cl-item-price[data-price-idx]');
+    if (priceEl && !priceEl.querySelector('input')) {
+      const idx = parseInt(priceEl.dataset.priceIdx);
+      const cur = _clItems[idx]?.price;
+      const inp = document.createElement('input');
+      inp.className = 'cl-price-edit-input';
+      inp.type = 'text';
+      inp.value = cur != null ? parseFloat(cur).toFixed(2) : '';
+      inp.placeholder = '0.00';
+      priceEl.textContent = '';
+      priceEl.appendChild(inp);
+      inp.focus(); inp.select();
+      const commit = () => {
+        const v = inp.value.trim();
+        if (v !== '') clUpdatePrice(idx, v);
+        priceEl.textContent = _clItems[idx]?.price != null ? clFmtP(_clItems[idx].price) : '';
+      };
+      inp.addEventListener('blur', commit);
+      inp.addEventListener('keydown', ke => {
+        if (ke.key === 'Enter') { ke.preventDefault(); inp.blur(); }
+        if (ke.key === 'Escape') { priceEl.textContent = cur != null ? clFmtP(cur) : ''; }
+      });
       return;
     }
     const tog = e.target.closest('.cl-item-toggle[data-idx]');
