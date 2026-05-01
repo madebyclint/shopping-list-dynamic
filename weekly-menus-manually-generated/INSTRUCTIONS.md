@@ -130,13 +130,26 @@ The **📚 Archive** tab in `index.html` reads this file to build the week list.
 
 ### Updating `meals-ingredients.json` each week (X-Ray)
 
-The **🔬 X-Ray** panel on the Shopping List tab reads `meals-ingredients.json`. **Update it every single week alongside the menu** — if it's stale, the X-Ray will flag false warnings against the old week's ingredients.
+The **🔬 X-Ray** panel on the Shopping List tab reads `meals-ingredients.json`. **This file must be output as FILE 6 in every weekly meal plan generation** — it is a full replacement of the file, not an append.
+
+> ⚠️ **Critical:** Always REPLACE the entire file. Never append to it. Two JSON objects in the same file will silently break the X-Ray panel.
 
 For each meal, provide:
 - `buy_these` — every ingredient that must appear on the shopping list (produce, protein, dairy, specialty items, garnishes, fruit sides)
 - `pantry` — items assumed to be at home (oil, salt, garlic, broth, pantry spices, etc.)
+- `name` — must exactly match the meal name in `data.json` meals array (after slugification — avoid `/` in names, use `()` instead)
 
 Do not include pantry staples in `buy_these` — they will always show as "missing" since they're never on the shopping list.
+
+### After Importing New Week Files — Run Migration
+
+The dashboard reads **all files from the database**, not from disk. After pasting in any new or updated files, you must push them to the DB:
+
+```bash
+npm run migrate
+```
+
+Run this from the `weekly-menus-manually-generated/` folder. Changes on disk are invisible to the dashboard until migration is run. This applies to: menu, shopping list, data.json, meal-history.md, meals-ingredients.json, and any audit files.
 
 ---
 

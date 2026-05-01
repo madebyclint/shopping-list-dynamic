@@ -256,7 +256,36 @@ One-liner per meal in this format, grouped under a new week heading:
 Single line to prepend to the menus array:
 \`\`\`json
 { "filename": "YYYY-MM-DD-menu.md", "date": "YYYY-MM-DD", "label": "Week of Month D, YYYY" }
-\`\`\``;
+\`\`\`
+
+**FILE 6 — \`meals-ingredients.json\` (FULL FILE REPLACEMENT — do NOT append)**
+
+This powers the X-Ray panel on the dashboard. Output the entire file — replace everything. One entry per meal, in week order.
+\`\`\`json
+{
+  "week": "YYYY-MM-DD",
+  "meals": [
+    {
+      "name": "Exact Meal Name from data.json",
+      "day": "Monday",
+      "emoji": "🍽",
+      "buy_these": [
+        "Every ingredient from the shopping list for this meal",
+        "Including fruit sides",
+        "Including garnishes"
+      ],
+      "pantry": [
+        "Oil, salt, garlic, broth, pantry spices assumed at home"
+      ]
+    }
+  ]
+}
+\`\`\`
+Rules: \`buy_these\` = every item that must appear on the shopping list for this meal. \`pantry\` = items assumed at home (never on the shopping list). Do NOT include pantry staples in \`buy_these\`. The \`name\` field must exactly match the meal name in \`data.json\` meals array.
+
+---
+
+**After you paste these files, run:** \`npm run migrate\` from the \`weekly-menus-manually-generated\` folder to push everything to the database. The dashboard reads from the DB — changes on disk won't show until you migrate.`;
 
 console.log('\n' + '='.repeat(60));
 console.log('  WEEKLY MENU PROMPT — copy everything below the line');
