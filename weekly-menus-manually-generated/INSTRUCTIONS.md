@@ -355,14 +355,25 @@ This audit catches items like fresh herbs, lemons, parmesan, or garnishes that a
 ```
 ## Shopping List by Trip
 
-### Meals
-- [items needed specifically for this week's meals]
+### [Store Name] *(e.g. Ideal Foods, H Mart, New Ronson Drug)*
 
-### Pantry / Weekly
-- [recurring weekly items — chips, milk, cereal, eggs, fruit, etc.]
+**— Produce —**
+- Item (qty) — Meal Name
 
-### Other (Non-Food)
-- [toilet paper, paper towels, etc.]
+**— Proteins —**
+- Item (qty) — Meal Name
+
+**— Dairy —**
+- Item (qty) — Meal Name
+
+**— Aisles —**
+- Item (qty) — Meal Name or weekly
+
+**— Household —**
+- Item (qty) — weekly
+
+### [Second Store, if needed]
+- Item (qty) — Meal Name
 ```
 
 > **Critical rule for Section D:** Every item in the by-trip checklist must include the meal name it is for — `[Item] — [Meal Name]`. This is the list used during actual grocery shopping. "Corn, canned" with no context is useless at the store — "Corn, canned (3 cans) — Esquites" is not. Never emit a bare item. If it spans meals, list them. If it is a staple/snack with no meal, write `— weekly` or `— snacking`.

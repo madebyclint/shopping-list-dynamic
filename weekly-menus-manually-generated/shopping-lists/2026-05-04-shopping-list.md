@@ -112,58 +112,67 @@ Weekly Staples Subtotal: **~$3.99**
 
 ## Shopping List by Trip
 
-### Meals
+### Ideal Foods *(or your main market)*
+
+**— Produce —**
 - Shallots (8 Asian or 4 European) — Pepes Tahu
 - Red chilies, finger-length (2–4) — Pepes Tahu
 - Red bell pepper (1) — Pepes Tahu
 - Green onions (1 bunch) — Pepes Tahu
-- Lemon basil, cilantro, or mint (1 bunch) — Pepes Tahu
+- Lemon basil, cilantro, or mint (1 small bunch) — Pepes Tahu
 - Lemongrass (1 stalk) — Pepes Tahu
 - Lemon (1) — Homemade mayo
-- Banana leaves, frozen (1 pack) — Pepes Tahu
-- Makrut lime leaves (small pack) — Pepes Tahu
-- Sambal oelek (1 jar) — Pepes Tahu
-- Medium-firm tofu (1 lb) — Pepes Tahu
 - Cherry tomatoes (1 pint) — Breakfast for Dinner + Pesto Pasta
 - Mushrooms, white or cremini (8 oz) — Breakfast for Dinner
-- Turkey sausage links (1 pack) — Breakfast for Dinner
-- Baked beans (1 can) — Breakfast for Dinner
-- Bread (1 loaf) — Breakfast for Dinner
 - Avocado (1) — Sushi Hand Rolls
 - Cucumber (1) — Sushi Hand Rolls
-- Nori sheets (1 pack) — Sushi Hand Rolls
-- Microwave rice packets (2 packs) — Sushi Hand Rolls
-- Imitation crab sticks (1 pack) — Sushi Hand Rolls
-- Sriracha (1 small bottle, if needed) — Sushi Hand Rolls
-- Penne or fusilli pasta (12 oz) — Pesto Pasta
-- Pre-cooked chicken sausage links (1 pack) — Pesto Pasta
-- Store-bought basil pesto (1 jar) — Pesto Pasta
-- Parmesan, grated (4 oz) — Pesto Pasta
-- Pork spare ribs or St. Louis ribs (2–3 lbs) — Maggi Ribs
-- Beef short ribs (1–1.5 lbs) — Maggi Ribs
-- Maggi seasoning sauce (1 bottle) — Maggi Ribs
 - Napa cabbage (1 small head) — Kimchi Slaw
 - Carrot (1 medium) — Kimchi Slaw
-- Gochugaru (1 small bag) — Kimchi Slaw
-- Avocado oil (1 bottle) — Homemade mayo
-- Dijon or yellow mustard (1 small jar) — Homemade mayo
-- Eggs (1 dozen) — Breakfast for Dinner + Pepes Tahu + Homemade mayo + weekly
-- Mango (1–2) — Pepes Tahu side
-- Mandarin oranges (1 bag) — Sushi Hand Rolls side
+- Mango (1–2, ripe) — Pepes Tahu side
+- Mandarin oranges (1 small bag) — Sushi Hand Rolls side
 - Navel oranges (4) — Breakfast for Dinner side + Maggi Ribs side
 - Strawberries (1 pint) — Pesto Pasta side
+- Assorted fresh fruit — weekly
 
-### Pantry / Weekly
-- Cereal (2 boxes) — weekly
+**— Proteins —**
+- Medium-firm tofu (1 lb) — Pepes Tahu
+- Pork spare ribs or St. Louis ribs (2–3 lbs) — Maggi Ribs
+- Beef short ribs (1–1.5 lbs) — Maggi Ribs (non-pork)
+- Pre-cooked chicken sausage links (1 pack, ~12 oz) — Pesto Pasta
+- Turkey sausage links (1 pack, ~12 oz) — Breakfast for Dinner
+- Imitation crab sticks (1 pack, ~8 oz) — Sushi Hand Rolls
+- Eggs (1 dozen) — Breakfast for Dinner + Pepes Tahu + Homemade mayo + weekly
+
+**— Dairy —**
+- Parmesan, grated (small wedge or shaker, ~4 oz) — Pesto Pasta
+- Store-bought basil pesto (1 jar, ~6 oz) — Pesto Pasta
 - Lactaid whole milk (1 half-gallon) — weekly
 - Almond milk (1 gallon) — weekly
 - Ice cream (1 container) — weekly
+
+**— Aisles —**
+- Baked beans (1 can, low-sodium preferred) — Breakfast for Dinner
+- Penne or fusilli pasta (12 oz box) — Pesto Pasta
+- Microwave sushi/rice packets (2 packs, e.g. Bibigo) — Sushi Hand Rolls
+- Sriracha (small bottle, if not on hand) — Sushi Hand Rolls
+- Maggi seasoning sauce (small bottle) — Maggi Ribs
+- Avocado oil (1 bottle) — Homemade mayo
+- Dijon or yellow mustard (small jar) — Homemade mayo
+- Cereal (2 boxes) — weekly
 - Trail mix (1 bag) — weekly
-- Mango juice (1 bottle) — weekly
+- Mango juice (1 bottle/carton) — weekly
 - Condensed milk (1 can) — weekly
 - Tortilla chips (2 bags) — snacking
-- Assorted fresh fruit (~$10–$15) — weekly
+- Bread (1 loaf, sliced) — Breakfast for Dinner
 
-### Non-Food
+**— Household —**
 - Toilet paper (1 pack) — weekly
 - Paper towels (1 pack) — weekly
+
+### Asian Market *(H Mart, Sunrise Mart, or similar)*
+
+- Banana leaves, frozen (1 pack) — Pepes Tahu
+- Makrut lime leaves (fresh or frozen, small pack) — Pepes Tahu
+- Sambal oelek (small jar) — Pepes Tahu
+- Nori sheets (1 pack, ~10 sheets) — Sushi Hand Rolls
+- Gochugaru / Korean red pepper flakes (small bag) — Kimchi Slaw

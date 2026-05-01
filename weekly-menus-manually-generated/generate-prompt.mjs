@@ -196,18 +196,27 @@ After the grand total table, add a section with this EXACT heading (the dashboar
 \`\`\`
 ## Shopping List by Trip
 
-### Meals
+### [Store Name] *(e.g. Ideal Foods, H Mart, New Ronson Drug)*
+
+**— Produce —**
 - Item (qty) — Meal Name
-...
 
-### Pantry / Weekly
-- Item — weekly
-...
+**— Proteins —**
+- Item (qty) — Meal Name
 
-### Non-Food
-- Item — weekly
+**— Dairy —**
+- Item (qty) — Meal Name
+
+**— Aisles —**
+- Item (qty) — Meal Name or weekly
+
+**— Household —**
+- Item (qty) — weekly
+
+### [Second Store, if needed] *(e.g. Asian market for specialty items)*
+- Item (qty) — Meal Name
 \`\`\`
-Every item must include the meal name after a dash. Weekly staples use \`— weekly\`. Snacks use \`— snacking\`.
+Group items by the store where they're most likely bought. Use a second \`### Store\` block for specialty items (Asian market, Latin market, etc.). Every item must include the meal name after a dash. Weekly staples use \`— weekly\`. Snacks use \`— snacking\`.
 
 **FILE 3 — \`data.json\` currentWeek block**
 
