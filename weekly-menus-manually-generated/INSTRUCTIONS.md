@@ -350,7 +350,7 @@ After drafting the shopping list, do a line-by-line pass through every meal's **
 
 This audit catches items like fresh herbs, lemons, parmesan, or garnishes that are listed in the menu recipe but not carried over to the shopping list.
 
-#### Section D: Shopping by Trip
+#### Section D: Shopping List by Trip
 
 ```
 ## Shopping List by Trip

@@ -6,6 +6,30 @@ Running log of weekly menus. Reference when generating new plans to avoid repeat
 
 ---
 
+## Mon May 4 - Fri May 9, 2026
+
+### Dinners
+
+- 🫘 Pepes Tahu / Banana Leaf-Wrapped Tofu Packets *(MONDAY)* — spiced crumbled tofu + egg, lemongrass, chilies, makrut lime leaves, bell pepper, green onion, lemon basil, steamed + grilled in banana leaf, jasmine rice — 55 min
+- 🍣 Sushi Hand Rolls / Temaki *(TUESDAY FAST)* — nori, seasoned microwave rice, imitation crab, avocado, cucumber, homemade sriracha mayo — 15 min
+- 🍳 English/Scottish Breakfast for Dinner *(WEDNESDAY)* — fried eggs, turkey/veggie sausage, roasted cherry tomatoes, sautéed mushrooms, baked beans, toast — 30 min
+- 🍝 Pesto Pasta with Chicken Sausage & Cherry Tomatoes *(THURSDAY TEEN PREP)* — penne, store-bought pesto, pre-cooked chicken sausage, burst cherry tomatoes, parmesan — 25 min
+- 🍖 Maggi-Marinated Ribs + Kimchi Slaw *(FRIDAY)* — pork spare ribs + beef short ribs (non-pork), Maggi sauce, air-fried, napa cabbage kimchi slaw, gochugaru, jasmine rice — 45 min
+
+### Breakfast / Brunch
+
+- *(none this week — English/Scottish fry-up moved to Wednesday dinner)*
+
+### Notes
+
+- Pepes Tahu recipe from *Mortar & Pestle* cookbook, p. 134–135 (Let's Grill section). Makes 10 packets. Banana leaves from Asian/Caribbean market, frozen section.
+- Ribs: Maggi seasoning sauce marinade → air fryer at 375°F, 25–30 min, flip halfway. Pork and beef short ribs cooked in separate batches.
+- Pork swap protocol: turkey or veggie sausage (Wednesday), beef short ribs (Friday) — cook in separate pans.
+- Homemade mayo lesson with daughter: 2 eggs + 1 tbsp lemon juice + 1 tsp mustard + ½ cup avocado oil, immersion blender. Used in Tuesday sriracha mayo.
+- "For Following Week" ideas: Turkish lamb köfte with flatbread and tzatziki, Hawaiian Huli Huli chicken bowls, Jamaican brown stew chicken
+
+---
+
 ## Sun Apr 26 - Fri May 1, 2026
 
 ### Dinners

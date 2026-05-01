@@ -192,6 +192,23 @@ Proteins Subtotal: **~$XX.XX**
 \`\`\`
 Rules: every line item includes the meal it's for; never bare "Chips" — always specify type; combine shared ingredients across meals; do a line-by-line audit against Ingredients Used before finalizing; pantry staples must not appear.
 
+After the grand total table, add a section with this EXACT heading (the dashboard checklist depends on it):
+\`\`\`
+## Shopping List by Trip
+
+### Meals
+- Item (qty) — Meal Name
+...
+
+### Pantry / Weekly
+- Item — weekly
+...
+
+### Non-Food
+- Item — weekly
+\`\`\`
+Every item must include the meal name after a dash. Weekly staples use \`— weekly\`. Snacks use \`— snacking\`.
+
 **FILE 3 — \`data.json\` currentWeek block**
 
 Output only the updated \`currentWeek\` JSON block:

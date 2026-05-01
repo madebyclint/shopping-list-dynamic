@@ -1,108 +1,108 @@
 {
   "_comment": "Update this file each week when generating a new meal plan. weekLabel uses the Monday date. shoppingDate is the day of the trip.",
   "_commentLastWeek": "lastWeek holds the previous week's data. When rolling over, move currentWeek → lastWeek, then fill in the new week as currentWeek.",
-  "currentWeek": "2026-04-26",
-  "weekLabel": "Sun Apr 26 - Fri May 1, 2026",
-  "shoppingDate": "2026-04-26",
+  "currentWeek": "2026-05-04",
+  "weekLabel": "Mon May 4 - Fri May 9, 2026",
+  "shoppingDate": "2026-05-03",
   "files": {
-    "menu": "menus/2026-04-26-menu.md",
-    "shoppingList": "shopping-lists/2026-04-26-shopping-list.md"
+    "menu": "menus/2026-05-04-menu.md",
+    "shoppingList": "shopping-lists/2026-05-04-shopping-list.md"
   },
   "meals": [
     {
-      "name": "Arroz Caldo",
-      "day": "Sunday, Apr 26",
-      "emoji": "🍚",
-      "time": "30 min",
-      "tag": "BRUNCH",
-      "tagType": "special"
-    },
-    {
-      "name": "Filipino Pinakbet with Beef",
-      "day": "Sunday, Apr 26",
-      "emoji": "🍆",
-      "time": "40 min",
+      "name": "Pepes Tahu / Banana Leaf-Wrapped Tofu Packets",
+      "day": "Monday, May 4",
+      "emoji": "🫘",
+      "time": "55 min",
       "tag": "",
       "tagType": ""
     },
     {
-      "name": "Chickpea Sopa de Lima",
-      "day": "Monday, Apr 27",
-      "emoji": "🍋",
-      "time": "35 min",
-      "tag": "",
-      "tagType": ""
-    },
-    {
-      "name": "Hamburgers with Watermelon",
-      "day": "Tuesday, Apr 28",
-      "emoji": "🍔",
+      "name": "Sushi Hand Rolls (Temaki)",
+      "day": "Tuesday, May 5",
+      "emoji": "🍣",
       "time": "15 min",
       "tag": "FAST",
       "tagType": "fast"
     },
     {
-      "name": "Cheesy Turkey Pasta Skillet",
-      "day": "Wednesday, Apr 29",
-      "emoji": "🦃",
+      "name": "English/Scottish Breakfast for Dinner",
+      "day": "Wednesday, May 6",
+      "emoji": "🍳",
       "time": "30 min",
       "tag": "",
       "tagType": ""
     },
     {
-      "name": "Esquites with Beef Hot Dogs",
-      "day": "Thursday, Apr 30",
-      "emoji": "🌽",
+      "name": "Pesto Pasta with Chicken Sausage & Cherry Tomatoes",
+      "day": "Thursday, May 7",
+      "emoji": "🍝",
       "time": "25 min",
       "tag": "TEEN PREP",
       "tagType": "teen"
+    },
+    {
+      "name": "Maggi-Marinated Ribs + Kimchi Slaw",
+      "day": "Friday, May 8",
+      "emoji": "🍖",
+      "time": "45 min",
+      "tag": "",
+      "tagType": ""
     }
   ],
   "lastWeek": {
-    "weekLabel": "Sun Apr 19 - Fri Apr 25, 2026",
-    "shoppingDate": "2026-04-19",
+    "weekLabel": "Sun Apr 26 - Fri May 1, 2026",
+    "shoppingDate": "2026-04-26",
     "files": {
-      "menu": "menus/2026-04-19-menu.md",
-      "shoppingList": "shopping-lists/2026-04-19-shopping-list.md",
-      "audit": "shopping-audits/2026-04-19-audit.json"
+      "menu": "menus/2026-04-26-menu.md",
+      "shoppingList": "shopping-lists/2026-04-26-shopping-list.md",
+      "audit": "shopping-audits/2026-04-26-audit.json"
     },
     "meals": [
       {
-        "name": "Ethiopian Beef Tibs",
-        "day": "Sunday, Apr 19",
-        "emoji": "🥩",
+        "name": "Arroz Caldo",
+        "day": "Sunday, Apr 26",
+        "emoji": "🍚",
+        "time": "30 min",
+        "tag": "BRUNCH",
+        "tagType": "special"
+      },
+      {
+        "name": "Filipino Pinakbet with Beef",
+        "day": "Sunday, Apr 26",
+        "emoji": "🍆",
+        "time": "40 min",
+        "tag": "",
+        "tagType": ""
+      },
+      {
+        "name": "Chickpea Sopa de Lima",
+        "day": "Monday, Apr 27",
+        "emoji": "🍋",
+        "time": "35 min",
+        "tag": "",
+        "tagType": ""
+      },
+      {
+        "name": "Hamburgers with Watermelon",
+        "day": "Tuesday, Apr 28",
+        "emoji": "🍔",
+        "time": "15 min",
+        "tag": "FAST",
+        "tagType": "fast"
+      },
+      {
+        "name": "Cheesy Turkey Pasta Skillet",
+        "day": "Wednesday, Apr 29",
+        "emoji": "🦃",
         "time": "30 min",
         "tag": "",
         "tagType": ""
       },
       {
-        "name": "Mexican Ceviche Tostadas",
-        "day": "Monday, Apr 20",
-        "emoji": "🌮",
-        "time": "30 min + curing",
-        "tag": "",
-        "tagType": ""
-      },
-      {
-        "name": "Mac & Cheese",
-        "day": "Tuesday, Apr 21",
-        "emoji": "🧀",
-        "time": "25 min",
-        "tag": "FAST",
-        "tagType": "fast"
-      },
-      {
-        "name": "Maggi Beef Ribs",
-        "day": "Wednesday, Apr 22",
-        "emoji": "🥩",
-        "time": "75 min",
-        "tag": "KIDS NIGHT",
-        "tagType": "kids"
-      },
-      {
-        "name": "Al Pastor Street Tacos",
-        "day": "Thursday, Apr 24",
-        "emoji": "🌮",
+        "name": "Esquites with Beef Hot Dogs",
+        "day": "Thursday, Apr 30",
+        "emoji": "🌽",
         "time": "25 min",
         "tag": "TEEN PREP",
         "tagType": "teen"

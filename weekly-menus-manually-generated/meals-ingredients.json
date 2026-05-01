@@ -1,7 +1,118 @@
 {
   "_comment": "Per-meal ingredient coverage for the X-Ray panel. Update each week alongside the menu. buy_these = items that MUST appear on the shopping list. pantry = assumed at home, not checked.",
-  "week": "2026-04-26",
+  "week": "2026-05-04",
   "meals": [
+    {
+      "name": "Pepes Tahu / Banana Leaf-Wrapped Tofu Packets",
+      "day": "Monday",
+      "emoji": "🫘",
+      "buy_these": [
+        "Medium-firm tofu",
+        "Shallots",
+        "Red chilies",
+        "Sambal oelek",
+        "Red bell pepper",
+        "Green onions",
+        "Lemon basil",
+        "Banana leaves",
+        "Makrut lime leaves",
+        "Lemongrass",
+        "Mango"
+      ],
+      "pantry": [
+        "Coriander seeds",
+        "Garlic",
+        "Salt",
+        "Sugar",
+        "Black pepper",
+        "Vegetable oil",
+        "Jasmine rice",
+        "Eggs"
+      ]
+    },
+    {
+      "name": "Sushi Hand Rolls (Temaki)",
+      "day": "Tuesday",
+      "emoji": "🍣",
+      "buy_these": [
+        "Imitation crab sticks",
+        "Avocado",
+        "Cucumber",
+        "Nori sheets",
+        "Microwave rice packets",
+        "Sriracha",
+        "Mandarin oranges"
+      ],
+      "pantry": [
+        "Rice vinegar",
+        "Sugar",
+        "Salt",
+        "Soy sauce",
+        "Mayo (homemade from eggs + avocado oil)"
+      ]
+    },
+    {
+      "name": "English/Scottish Breakfast for Dinner",
+      "day": "Wednesday",
+      "emoji": "🍳",
+      "buy_these": [
+        "Eggs",
+        "Turkey sausage links",
+        "Cherry tomatoes",
+        "Mushrooms",
+        "Baked beans",
+        "Bread",
+        "Navel oranges"
+      ],
+      "pantry": [
+        "Olive oil",
+        "Butter",
+        "Salt",
+        "Black pepper"
+      ]
+    },
+    {
+      "name": "Pesto Pasta with Chicken Sausage & Cherry Tomatoes",
+      "day": "Thursday",
+      "emoji": "🍝",
+      "buy_these": [
+        "Penne or fusilli pasta",
+        "Pre-cooked chicken sausage links",
+        "Cherry tomatoes",
+        "Store-bought basil pesto",
+        "Parmesan",
+        "Strawberries"
+      ],
+      "pantry": [
+        "Olive oil",
+        "Salt",
+        "Black pepper"
+      ]
+    },
+    {
+      "name": "Maggi-Marinated Ribs + Kimchi Slaw",
+      "day": "Friday",
+      "emoji": "🍖",
+      "buy_these": [
+        "Pork spare ribs",
+        "Beef short ribs",
+        "Maggi seasoning sauce",
+        "Napa cabbage",
+        "Carrot",
+        "Gochugaru",
+        "Navel oranges"
+      ],
+      "pantry": [
+        "Garlic powder",
+        "Black pepper",
+        "Rice vinegar",
+        "Sesame oil",
+        "Sugar",
+        "Jasmine rice"
+      ]
+    }
+  ]
+}
     {
       "name": "Arroz Caldo",
       "day": "Sunday brunch",
