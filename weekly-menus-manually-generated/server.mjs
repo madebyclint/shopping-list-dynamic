@@ -25,7 +25,18 @@ import express from 'express';
 import pg      from 'pg';
 import { fileURLToPath } from 'url';
 import path    from 'path';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
+
+// ── Load .env.local as fallback when env vars are missing (local dev) ─────────
+if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
+  const envFile = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.env.local');
+  if (existsSync(envFile)) {
+    for (const line of readFileSync(envFile, 'utf8').split('\n')) {
+      const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)=(.*)$/);
+      if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
+    }
+  }
+}
 
 const { Pool } = pg;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

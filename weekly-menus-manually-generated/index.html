@@ -443,6 +443,7 @@
     <div class="cl-sort-row">
       <button class="cl-sort-btn active" data-sort="store">📍 By Store</button>
       <button class="cl-sort-btn" data-sort="meal">🍽 By Meal</button>
+      <button class="cl-sort-btn" id="cl-filter-unchecked">🔲 Unchecked</button>
     </div>
     <div class="cl-search-row">
       <div class="cl-search-wrap">
@@ -1087,6 +1088,7 @@ let _priceMap  = {};
 let _clState   = { v: 1, c: [], s: [], x: [], prices: {} };
 let _clWeekKey = '';   // authoritative week key for all saves/loads
 let _clSort    = 'store'; // 'store' | 'meal'
+let _clFilter  = 'all'; // 'all' | 'unchecked'
 
 function clEncode(obj) {
   try { return btoa(encodeURIComponent(JSON.stringify(obj))); } catch(e) { return ''; }
@@ -1248,7 +1250,8 @@ function clRender() {
 }
 function clApplySearch() {
   const q = ($('cl-search')?.value || '').toLowerCase().trim();
-  if (!q) {
+  const filterUnchecked = _clFilter === 'unchecked';
+  if (!q && !filterUnchecked) {
     document.querySelectorAll('#cl-body .cl-item[data-idx]').forEach(el => el.style.display = '');
     document.querySelectorAll('#cl-body .cl-store-section').forEach(sec => sec.style.display = '');
     document.querySelectorAll('#cl-body .cl-subgroup-label').forEach(el => el.style.display = '');
@@ -1258,7 +1261,9 @@ function clApplySearch() {
     let anyVisible = false;
     sec.querySelectorAll('.cl-item[data-idx]').forEach(el => {
       const text = el.querySelector('.cl-item-name')?.textContent.toLowerCase() || '';
-      const match = text.includes(q);
+      const matchSearch = !q || text.includes(q);
+      const matchFilter = !filterUnchecked || el.dataset.state === 'unchecked';
+      const match = matchSearch && matchFilter;
       el.style.display = match ? '' : 'none';
       if (match) anyVisible = true;
     });
@@ -1415,6 +1420,7 @@ function clToggleCheck(idx) {
   else { if (si !== -1) _clState.s.splice(si, 1); _clState.c.push(idx); }
   const el = document.querySelector(`.cl-item[data-idx="${idx}"]`);
   if (el) el.dataset.state = clGetState(idx);
+  if (_clFilter === 'unchecked') clApplySearch();
   clSync();
 }
 function clToggleSkip(idx) {
@@ -1423,6 +1429,7 @@ function clToggleSkip(idx) {
   else { if (ci !== -1) _clState.c.splice(ci, 1); _clState.s.push(idx); }
   const el = document.querySelector(`.cl-item[data-idx="${idx}"]`);
   if (el) el.dataset.state = clGetState(idx);
+  if (_clFilter === 'unchecked') clApplySearch();
   clSync();
 }
 function clAddCustom() {
@@ -1472,7 +1479,9 @@ async function openChecklist() {
     _clState = { v: 1, c: [], s: [], x: [] };
   }
   _clSort = 'store';
+  _clFilter = 'all';
   document.querySelectorAll('.cl-sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === 'store'));
+  const filterBtn = $('cl-filter-unchecked'); if (filterBtn) filterBtn.classList.remove('active');
   const si = $('cl-search');
   if (si) { si.value = ''; $('cl-search-clear').classList.remove('show'); }
   clParseMd(_listText);
@@ -1497,6 +1506,12 @@ async function openChecklist() {
       _clSort = sortBtn.dataset.sort;
       document.querySelectorAll('.cl-sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === _clSort));
       clRender();
+      return;
+    }
+    if (e.target.closest('#cl-filter-unchecked')) {
+      _clFilter = _clFilter === 'unchecked' ? 'all' : 'unchecked';
+      $('cl-filter-unchecked').classList.toggle('active', _clFilter === 'unchecked');
+      clApplySearch();
       return;
     }
     const priceEl = e.target.closest('.cl-item-price[data-price-idx]');

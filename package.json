@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "npx serve weekly-menus-manually-generated",
+    "start": "node weekly-menus-manually-generated/server.mjs",
     "menu:prompt": "node weekly-menus-manually-generated/generate-prompt.mjs",
     "menu:draft": "node weekly-menus-manually-generated/scripts/menu-draft.mjs",
     "menu:build": "node weekly-menus-manually-generated/scripts/menu-build.mjs",
