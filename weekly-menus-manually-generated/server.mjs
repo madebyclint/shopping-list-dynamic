@@ -101,6 +101,11 @@ async function initDb() {
       content    TEXT        NOT NULL,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS item_prices (
+      name       TEXT        PRIMARY KEY,
+      price      NUMERIC     NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
 }
 
@@ -304,6 +309,41 @@ app.post('/api/cart', async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error('POST /api/cart:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+// ── GET /api/item-prices  ─────────────────────────────────────────────────────
+app.get('/api/item-prices', async (_req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT name, price FROM item_prices');
+    const result = {};
+    for (const r of rows) result[r.name] = parseFloat(r.price);
+    res.json(result);
+  } catch (err) {
+    console.error('GET /api/item-prices:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+// ── PUT /api/item-prices  body: { name, price } ────────────────────────────────
+app.put('/api/item-prices', async (req, res) => {
+  try {
+    const name  = String(req.body.name  || '').slice(0, 200).trim();
+    const price = parseFloat(req.body.price);
+    if (!name || isNaN(price) || price < 0) {
+      return res.status(400).json({ error: 'invalid_params' });
+    }
+    await pool.query(
+      `INSERT INTO item_prices (name, price, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (name)
+       DO UPDATE SET price = EXCLUDED.price, updated_at = NOW()`,
+      [name, price],
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('PUT /api/item-prices:', err.message);
     res.status(500).json({ error: 'db_error' });
   }
 });
