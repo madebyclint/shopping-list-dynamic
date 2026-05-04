@@ -128,6 +128,26 @@
 
   <!-- SPEND REPORT ──────────────────────────────────────────────────────── -->
   <section id="tab-audit" class="page">
+    <div class="log-trip-card" id="log-trip-card">
+      <h3 class="lt-title">Log a Trip</h3>
+      <div class="lt-grid">
+        <div class="lt-field">
+          <label for="lf-date">Date</label>
+          <input type="date" id="lf-date" />
+        </div>
+        <div class="lt-field">
+          <label for="lf-store">Store</label>
+          <input type="text" id="lf-store" list="lf-stores" placeholder="Ideal Food Basket…" autocomplete="off" />
+          <datalist id="lf-stores"></datalist>
+        </div>
+        <div class="lt-field">
+          <label for="lf-amount">Receipt Total</label>
+          <input type="number" id="lf-amount" placeholder="0.00" step="0.01" min="0" />
+        </div>
+        <button class="lt-save-btn" id="lf-save">✓ Save</button>
+      </div>
+      <div id="lf-status" class="lt-status"></div>
+    </div>
     <div id="audit-loading" class="loading"><div class="spinner"></div> Loading spend data…</div>
     <div id="audit-report" style="display:none"></div>
     <div id="audit-empty" style="display:none;padding:40px;text-align:center;color:var(--muted);font-size:0.9rem">
@@ -506,6 +526,8 @@ function switchToLastMenuMeal(mealName) {
 }
 
 // ── Spend Report ──────────────────────────────────────────────────────────────
+let _auditStoresLoaded = false;
+
 async function loadSpendReport() {
   const report  = $('audit-report');
   const empty   = $('audit-empty');
@@ -514,6 +536,7 @@ async function loadSpendReport() {
   loading.style.display = '';
   report.style.display  = 'none';
   empty.style.display   = 'none';
+  if (!_auditStoresLoaded) { _auditStoresLoaded = true; initLogTripForm(); }
   try {
     const audits = await fetchJSON('/api/audits');
     renderSpendReport(audits);
@@ -522,6 +545,51 @@ async function loadSpendReport() {
     empty.style.display   = 'block';
     empty.textContent     = '⚠️ Could not load spend data.';
   }
+}
+
+function initLogTripForm() {
+  const dateEl = $('lf-date');
+  if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0, 10);
+  fetchJSON('/api/audit-stores').then(stores => {
+    const dl = $('lf-stores');
+    if (!dl) return;
+    dl.innerHTML = stores.map(s => `<option value="${s.replace(/"/g, '&quot;')}">`).join('');
+  }).catch(() => {});
+  const saveBtn = $('lf-save');
+  if (!saveBtn || saveBtn.dataset.bound) return;
+  saveBtn.dataset.bound = '1';
+  saveBtn.addEventListener('click', async () => {
+    const date   = ($('lf-date')?.value   || '').trim();
+    const store  = ($('lf-store')?.value  || '').trim();
+    const amount = parseFloat($('lf-amount')?.value);
+    const status = $('lf-status');
+    if (!date || !store || isNaN(amount) || amount <= 0) {
+      if (status) { status.textContent = '⚠️ Please fill in date, store, and a valid amount.'; status.className = 'lt-status lt-err'; }
+      return;
+    }
+    saveBtn.disabled = true;
+    try {
+      const r = await fetch('/api/audits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ week: date, store, receipt_amount: amount }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      if (status) { status.textContent = `✓ Saved — ${store} ${fmt(amount)} on ${date}`; status.className = 'lt-status lt-ok'; }
+      const dl = $('lf-stores');
+      if (dl && ![...dl.options].some(o => o.value === store)) {
+        const opt = document.createElement('option'); opt.value = store; dl.appendChild(opt);
+      }
+      $('lf-amount').value = '';
+      _auditStoresLoaded = true;
+      await loadSpendReport();
+    } catch (err) {
+      if (status) { status.textContent = '⚠️ Save failed — ' + err.message; status.className = 'lt-status lt-err'; }
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+  $('lf-amount')?.addEventListener('keydown', e => { if (e.key === 'Enter') $('lf-save').click(); });
 }
 
 function renderSpendReport(audits) {
@@ -538,47 +606,52 @@ function renderSpendReport(audits) {
   report.style.display = 'block';
 
   const now       = new Date();
-  const thisMonth = now.toISOString().slice(0, 7);       // "YYYY-MM"
+  const thisMonth = now.toISOString().slice(0, 7);
   const thisYear  = String(now.getFullYear());
   const thirtyAgo = new Date(now - 30 * 86400000).toISOString().slice(0, 10);
   const lastTrip  = audits[0];
-  const mtd       = audits.filter(a => (a.week || '').startsWith(thisMonth));
-  const last30    = audits.filter(a => (a.week || '') >= thirtyAgo);
-  const ytd       = audits.filter(a => (a.week || '').startsWith(thisYear));
 
-  const sumF = (arr, k) => arr.reduce((s, a) => s + (a[k] || 0), 0);
+  // Effective actual: receipt total if logged, else checklist estimate
+  const eff   = a => a.actual ?? a.checklist_total ?? 0;
+  const isEst = a => a.actual == null;
 
-  // Weekly avg across all recorded trips
-  const wkAvgActual = audits.length ? sumF(audits, 'actual') / audits.length : 0;
-  const wkAvgBudget = audits.length ? sumF(audits, 'budget') / audits.length : 0;
+  const mtd    = audits.filter(a => (a.week || '').startsWith(thisMonth));
+  const last30 = audits.filter(a => (a.week || '') >= thirtyAgo);
+  const ytd    = audits.filter(a => (a.week || '').startsWith(thisYear));
 
-  // Monthly avg: group trips by YYYY-MM then average month totals
+  const sumEff = arr => arr.reduce((s, a) => s + eff(a), 0);
+  const sumBgt = arr => arr.reduce((s, a) => s + (a.budget || 0), 0);
+  const anyEst = arr => arr.some(isEst);
+
+  const wkAvgActual = audits.length ? sumEff(audits) / audits.length : 0;
+  const wkAvgBudget = audits.length ? sumBgt(audits) / audits.length : 0;
+
   const byMonth = {};
   audits.forEach(a => {
     const mo = (a.week || '').slice(0, 7);
     if (!mo) return;
     if (!byMonth[mo]) byMonth[mo] = { actual: 0, budget: 0 };
-    byMonth[mo].actual += a.actual || 0;
-    byMonth[mo].budget += a.budget || 0;
+    byMonth[mo].actual += eff(a);
+    byMonth[mo].budget += (a.budget || 0);
   });
   const months      = Object.values(byMonth);
   const moAvgActual = months.length ? months.reduce((s, m) => s + m.actual, 0) / months.length : 0;
   const moAvgBudget = months.length ? months.reduce((s, m) => s + m.budget, 0) / months.length : 0;
 
   const periods = [
-    { label: 'Last Trip',     actual: lastTrip.actual,        budget: lastTrip.budget,        items: lastTrip.item_count,    trips: 1              },
-    { label: 'Month to Date', actual: sumF(mtd,   'actual'),  budget: sumF(mtd,   'budget'),  items: sumF(mtd,   'item_count'), trips: mtd.length   },
-    { label: 'Last 30 Days',  actual: sumF(last30,'actual'),  budget: sumF(last30,'budget'),  items: sumF(last30,'item_count'), trips: last30.length },
-    { label: 'Year to Date',  actual: sumF(ytd,   'actual'),  budget: sumF(ytd,   'budget'),  items: sumF(ytd,   'item_count'), trips: ytd.length   },
-    { label: 'Weekly Avg',    actual: wkAvgActual,            budget: wkAvgBudget,            items: null,                   trips: null           },
-    { label: 'Monthly Avg',   actual: moAvgActual,            budget: moAvgBudget,            items: null,                   trips: null           },
+    { label: 'Last Trip',     actual: eff(lastTrip),  budget: lastTrip.budget || 0, items: lastTrip.item_count, trips: 1,            est: isEst(lastTrip) },
+    { label: 'Month to Date', actual: sumEff(mtd),    budget: sumBgt(mtd),          items: null,                trips: mtd.length,    est: anyEst(mtd)     },
+    { label: 'Last 30 Days',  actual: sumEff(last30), budget: sumBgt(last30),       items: null,                trips: last30.length, est: anyEst(last30)  },
+    { label: 'Year to Date',  actual: sumEff(ytd),    budget: sumBgt(ytd),          items: null,                trips: ytd.length,    est: anyEst(ytd)     },
+    { label: 'Weekly Avg',    actual: wkAvgActual,    budget: wkAvgBudget,          items: null,                trips: null,          est: false           },
+    { label: 'Monthly Avg',   actual: moAvgActual,    budget: moAvgBudget,          items: null,                trips: null,          est: false           },
   ];
 
-  const varRow = periods.map(p => {
-    const v   = p.actual - p.budget;
+  const fmtCell = (p, val) => fmt(val) + (p.est ? '<span class="sr-est"> est.</span>' : '');
+  const varRow  = periods.map(p => {
+    const v = p.actual - p.budget, sign = v >= 0 ? '+' : '';
     const cls = v > 0.005 ? 'sr-over' : v < -0.005 ? 'sr-under' : '';
-    const sign = v >= 0 ? '+' : '';
-    return `<td class="${cls}">${sign}${fmt(v)}</td>`;
+    return `<td class="${cls}">${sign}${fmt(v)}${p.est ? '<span class="sr-est"> est.</span>' : ''}</td>`;
   }).join('');
 
   let html = `
@@ -586,10 +659,7 @@ function renderSpendReport(audits) {
   <div class="spend-table-wrap">
     <table class="spend-table">
       <thead>
-        <tr>
-          <th></th>
-          ${periods.map(p => `<th>${p.label}</th>`).join('')}
-        </tr>
+        <tr><th></th>${periods.map(p => `<th>${p.label}</th>`).join('')}</tr>
       </thead>
       <tbody>
         <tr>
@@ -598,7 +668,7 @@ function renderSpendReport(audits) {
         </tr>
         <tr class="sr-actual-row">
           <td class="sr-row-label">Actual</td>
-          ${periods.map(p => `<td>${fmt(p.actual)}</td>`).join('')}
+          ${periods.map(p => `<td>${fmtCell(p, p.actual)}</td>`).join('')}
         </tr>
         <tr>
           <td class="sr-row-label">Overage</td>
@@ -616,46 +686,65 @@ function renderSpendReport(audits) {
     </table>
   </div>`;
 
-  // Last trip by-store breakdown + 4-week trend chart
+  // Last trip: checklist vs receipt comparison
+  const hasReceipt   = lastTrip.actual        != null;
+  const hasChecklist = lastTrip.checklist_total != null;
+  if (hasReceipt || hasChecklist) {
+    html += `<div class="lt-compare">`;
+    if (hasChecklist) {
+      html += `<div class="ltc-row"><span>Checklist est.</span><span>${fmt(lastTrip.checklist_total)} <span class="ltc-sub">(checked items)</span></span></div>`;
+    }
+    if (hasReceipt) {
+      html += `<div class="ltc-row"><span>Receipt total</span><span class="sr-actual-val">${fmt(lastTrip.actual)}</span></div>`;
+      if (hasChecklist) {
+        const delta = lastTrip.actual - lastTrip.checklist_total;
+        const sign  = delta >= 0 ? '+' : '';
+        html += `<div class="ltc-row ltc-delta"><span>Delta</span><span class="${delta > 0.005 ? 'sr-over' : delta < -0.005 ? 'sr-under' : ''}">${sign}${fmt(delta)} <span class="ltc-sub">(receipt vs estimates)</span></span></div>`;
+      }
+    } else {
+      html += `<div class="ltc-hint">Log a receipt above to compare estimates against what you actually paid.</div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Store breakdown + recent trend chart
   const recent4      = audits.slice(0, 4).reverse();
   const storeEntries = lastTrip.by_store ? Object.entries(lastTrip.by_store) : [];
+  const storeTotal   = storeEntries.reduce((s, [, v]) => s + v, 0);
 
   html += `<div class="sr-two-col">`;
-
   if (storeEntries.length) {
-    html += `<div class="chart-card">
-      <h3>Last Trip — By Store</h3>
-      <div class="store-breakdown">`;
+    html += `<div class="chart-card"><h3>Last Trip — By Store</h3><div class="store-breakdown">`;
     storeEntries.forEach(([store, amt]) => {
-      const pct = lastTrip.actual > 0 ? (amt / lastTrip.actual * 100).toFixed(0) : 0;
+      const pct = storeTotal > 0 ? (amt / storeTotal * 100).toFixed(0) : 0;
       html += `<div class="sb-row">
-        <span class="sb-store">${store}</span>
+        <div class="sb-top"><span class="sb-store">${store}</span><span class="sb-amt">${fmt(amt)}</span></div>
         <div class="sb-bar-wrap"><div class="sb-bar" style="width:${pct}%"></div></div>
-        <span class="sb-amt">${fmt(amt)}</span>
       </div>`;
     });
     html += `</div></div>`;
   }
-
   if (recent4.length >= 1) {
     html += `<div class="chart-card"><h3>Recent Trips</h3><canvas id="trendChart"></canvas></div>`;
   }
   html += `</div>`;
 
-  // Rolling 4-trip nudge: if avg overage > 8%, suggest bumping estimates
+  // Rolling 4-trip nudge
   if (recent4.length >= 2) {
-    const avgPct = recent4.reduce((s, a) => s + (a.budget > 0 ? (a.actual - a.budget) / a.budget : 0), 0) / recent4.length;
-    if (avgPct > 0.08) {
-      html += `<div class="audit-nudge">
-        💡 You've averaged <strong>${(avgPct * 100).toFixed(0)}%</strong> over budget across the last ${recent4.length} trips.
-        Consider bumping item estimates up ~${(avgPct * 100).toFixed(0)}% to better match actual spending.
-      </div>`;
+    const r4b = recent4.filter(a => (a.budget || 0) > 0);
+    if (r4b.length >= 2) {
+      const avgPct = r4b.reduce((s, a) => s + (eff(a) - a.budget) / a.budget, 0) / r4b.length;
+      if (avgPct > 0.08) {
+        html += `<div class="audit-nudge">
+          💡 You've averaged <strong>${(avgPct * 100).toFixed(0)}%</strong> over budget across the last ${r4b.length} trips.
+          Consider bumping item estimates up ~${(avgPct * 100).toFixed(0)}% to better match actual spending.
+        </div>`;
+      }
     }
   }
 
   report.innerHTML = html;
 
-  // Draw trend chart after DOM is updated
   if ($('trendChart') && recent4.length >= 1) {
     if (_spendChart) _spendChart.destroy();
     _spendChart = new Chart($('trendChart'), {
@@ -663,22 +752,8 @@ function renderSpendReport(audits) {
       data: {
         labels: recent4.map(a => (a.week || '').slice(5)),
         datasets: [
-          {
-            label: 'Budget',
-            data: recent4.map(a => a.budget || 0),
-            backgroundColor: 'rgba(45,106,79,0.45)',
-            borderColor: '#2d6a4f',
-            borderWidth: 1,
-            borderRadius: 4,
-          },
-          {
-            label: 'Actual',
-            data: recent4.map(a => a.actual || 0),
-            backgroundColor: 'rgba(224,123,57,0.45)',
-            borderColor: '#e07b39',
-            borderWidth: 1,
-            borderRadius: 4,
-          },
+          { label: 'Budget', data: recent4.map(a => a.budget || 0), backgroundColor: 'rgba(45,106,79,0.45)',   borderColor: '#2d6a4f', borderWidth: 1, borderRadius: 4 },
+          { label: 'Actual', data: recent4.map(a => eff(a)),        backgroundColor: 'rgba(224,123,57,0.45)', borderColor: '#e07b39', borderWidth: 1, borderRadius: 4 },
         ],
       },
       options: {
@@ -1059,34 +1134,26 @@ function clSync() {
 }
 function clComputeAudit() {
   if (!_clWeekKey || _clItems.length === 0) return null;
-  let budget = 0, actual = 0, itemCount = 0;
-  const byStore = {};
+  let budget = 0, checklist_total = 0, itemCount = 0;
   _clItems.forEach((item, idx) => {
     const p = item.price || 0;
     budget += p;
     if (_clState.c.includes(idx)) {
-      actual += p;
+      checklist_total += p;
       itemCount++;
-      const store = item.store || 'Other';
-      byStore[store] = (byStore[store] || 0) + p;
     }
   });
   _clState.x.forEach(item => {
     if (item.st === 'c') {
-      const p = item.p || 0;
-      actual += p;
+      checklist_total += (item.p || 0);
       itemCount++;
-      byStore['Extra Items'] = (byStore['Extra Items'] || 0) + p;
     }
   });
-  Object.keys(byStore).forEach(k => { byStore[k] = parseFloat(byStore[k].toFixed(2)); });
   return {
-    week:       _clWeekKey,
-    budget:     parseFloat(budget.toFixed(2)),
-    actual:     parseFloat(actual.toFixed(2)),
-    variance:   parseFloat((actual - budget).toFixed(2)),
-    item_count: itemCount,
-    by_store:   byStore,
+    week:            _clWeekKey,
+    budget:          parseFloat(budget.toFixed(2)),
+    checklist_total: parseFloat(checklist_total.toFixed(2)),
+    item_count:      itemCount,
   };
 }
 function clSaveAudit() {

@@ -348,33 +348,110 @@ app.put('/api/item-prices', async (req, res) => {
   }
 });
 
+// Strip trailing " (4/17 — tx1)" / " (3/21)" style suffixes from old store names.
+// Only removes a trailing parenthetical whose first char is a digit (date-like).
+// Also merges known aliases to a canonical name.
+const STORE_ALIASES = {
+  'ideal foods': 'Ideal Food Basket',
+  'ideal food basket': 'Ideal Food Basket',
+};
+function normalizeStore(name) {
+  const stripped = String(name).replace(/\s*\(\d[^)]*\)\s*$/, '').trim();
+  return STORE_ALIASES[stripped.toLowerCase()] ?? stripped;
+}
+// Merge a by_store object, normalizing all keys and summing amounts.
+function normByStore(bs) {
+  if (!bs || typeof bs !== 'object') return {};
+  const out = {};
+  for (const [k, v] of Object.entries(bs)) {
+    const nk = normalizeStore(k);
+    out[nk] = parseFloat(((out[nk] || 0) + v).toFixed(2));
+  }
+  return out;
+}
+
 // ── GET /api/audits — all trips for reporting ─────────────────────────────────
 app.get('/api/audits', async (_req, res) => {
   try {
     const { rows } = await pool.query(
       'SELECT week_date, data FROM shopping_audits ORDER BY week_date DESC',
     );
-    res.json(rows.map(r => ({ week: r.week_date, ...r.data })));
+    // Normalize old format (total_spent / list_estimate) to new (actual / budget)
+    res.json(rows.map(r => {
+      const d = r.data || {};
+      return {
+        week:            r.week_date,
+        budget:          d.budget          ?? d.list_estimate       ?? 0,
+        actual:          d.actual          ?? d.total_spent         ?? null,
+        checklist_total: d.checklist_total ?? d.on_list_total_est   ?? null,
+        item_count:      d.item_count      ?? null,
+        by_store:        normByStore(d.by_store ?? {}),
+        variance:        d.variance        ?? (
+          (d.actual ?? d.total_spent ?? null) != null
+            ? (d.actual ?? d.total_spent) - (d.budget ?? d.list_estimate ?? 0)
+            : null
+        ),
+      };
+    }));
   } catch (err) {
     console.error('GET /api/audits:', err.message);
     res.status(500).json({ error: 'db_error' });
   }
 });
 
-// ── POST /api/audits — upsert simplified audit ────────────────────────────────
+// ── POST /api/audits — two modes: receipt entry OR checklist auto-save ─────────
+// Receipt mode:   { week, store, receipt_amount }       — sets store → amount in by_store
+// Checklist mode: { week, budget, checklist_total, item_count } — updates estimates only
 app.post('/api/audits', async (req, res) => {
   try {
-    const { week, budget, actual, variance, item_count, by_store } = req.body;
-    if (!week || typeof actual !== 'number') {
-      return res.status(400).json({ error: 'invalid_params' });
+    const week = String(req.body.week || '').slice(0, 20).trim();
+    if (!week) return res.status(400).json({ error: 'week_required' });
+
+    // Fetch existing row so we can merge
+    const { rows } = await pool.query(
+      'SELECT data FROM shopping_audits WHERE shopping_date = $1', [week],
+    );
+    const existing = rows[0]?.data || {};
+
+    let data;
+    if (req.body.store != null && req.body.receipt_amount != null) {
+      // ── Receipt entry mode ──────────────────────────────────────────────────
+      const store  = normalizeStore(String(req.body.store).slice(0, 150));
+      const amount = parseFloat(req.body.receipt_amount);
+      if (!store || isNaN(amount) || amount < 0) {
+        return res.status(400).json({ error: 'invalid_params' });
+      }
+      const by_store = normByStore(existing.by_store || {});
+      by_store[store] = parseFloat(amount.toFixed(2));  // replaces existing amount for this store
+      const actual = parseFloat(
+        Object.values(by_store).reduce((s, v) => s + v, 0).toFixed(2),
+      );
+      const budget = existing.budget ?? 0;
+      data = {
+        ...existing,
+        by_store,
+        actual,
+        variance: parseFloat((actual - budget).toFixed(2)),
+      };
+    } else {
+      // ── Checklist auto-save mode ────────────────────────────────────────────
+      const budget          = typeof req.body.budget          === 'number' ? req.body.budget          : (existing.budget ?? 0);
+      const checklist_total = typeof req.body.checklist_total === 'number' ? req.body.checklist_total : (existing.checklist_total ?? null);
+      const item_count      = typeof req.body.item_count      === 'number' ? req.body.item_count      : (existing.item_count ?? 0);
+      // Never overwrite receipt-entered actual / by_store
+      const actual = existing.actual ?? null;
+      data = {
+        ...existing,
+        budget,
+        checklist_total,
+        item_count,
+        actual,
+        variance: actual != null
+          ? parseFloat((actual   - budget).toFixed(2))
+          : parseFloat(((checklist_total ?? 0) - budget).toFixed(2)),
+      };
     }
-    const data = {
-      budget:     typeof budget     === 'number' ? budget     : 0,
-      actual,
-      variance:   typeof variance   === 'number' ? variance   : (actual - (budget || 0)),
-      item_count: typeof item_count === 'number' ? item_count : 0,
-      by_store:   (by_store && typeof by_store === 'object' && !Array.isArray(by_store)) ? by_store : {},
-    };
+
     await pool.query(
       `INSERT INTO shopping_audits (shopping_date, week_date, data, updated_at)
        VALUES ($1, $1, $2, NOW())
@@ -385,6 +462,22 @@ app.post('/api/audits', async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error('POST /api/audits:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+// ── GET /api/audit-stores — distinct store names for autocomplete ──────────────
+app.get('/api/audit-stores', async (_req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT data FROM shopping_audits');
+    const stores = new Set();
+    for (const r of rows) {
+      const bs = r.data?.by_store;
+      if (bs && typeof bs === 'object') Object.keys(bs).forEach(k => stores.add(normalizeStore(k)));
+    }
+    res.json([...stores].sort());
+  } catch (err) {
+    console.error('GET /api/audit-stores:', err.message);
     res.status(500).json({ error: 'db_error' });
   }
 });
