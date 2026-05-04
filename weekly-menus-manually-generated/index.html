@@ -126,17 +126,13 @@
     </div>
   </div>
 
-  <!-- AUDIT ─────────────────────────────────────────────────────────────── -->
+  <!-- SPEND REPORT ──────────────────────────────────────────────────────── -->
   <section id="tab-audit" class="page">
-    <p class="section-sub" id="audit-sub"></p>
-    <a class="trends-link-btn" href="shopping-audits/price-trends.html" target="_blank">📈 Historical Price Trends →</a>
-    <div id="audit-stats" class="card-row"></div>
-    <div class="two-col">
-      <div class="chart-card"><h3>On-List vs Extras</h3><canvas id="donutChart"></canvas></div>
-      <div class="chart-card"><h3>By Store</h3><canvas id="storeChart"></canvas></div>
+    <div id="audit-loading" class="loading"><div class="spinner"></div> Loading spend data…</div>
+    <div id="audit-report" style="display:none"></div>
+    <div id="audit-empty" style="display:none;padding:40px;text-align:center;color:var(--muted);font-size:0.9rem">
+      No trips recorded yet. Start checking items off — the report updates automatically.
     </div>
-    <div id="audit-extras" class="extras-card"></div>
-    <div id="audit-notes" class="audit-notes" style="display:none"></div>
   </section>
 
   <!-- HISTORY ───────────────────────────────────────────────────────────── -->
@@ -183,9 +179,8 @@
 <script>
 // ── State ────────────────────────────────────────────────────────────────────
 let _manifest = null;
-let _audit    = null;
-let _charts   = {};     // { donut, store }
-let _chartsDrawn = false;
+let _spendChart     = null;
+let _auditSaveTimer = null;
 let _listText = '';     // raw shopping list markdown for live checklist
 let _sseSource    = null;
 let _clSaveTimer  = null;
@@ -234,11 +229,8 @@ $('tabNav').addEventListener('click', e => {
   btn.classList.add('active');
   $('tab-' + btn.dataset.tab).classList.add('active');
   history.pushState(null, '', '#' + btn.dataset.tab);
-  // Lazy-draw audit charts when tab becomes visible
-  if (btn.dataset.tab === 'audit' && _audit && !_chartsDrawn) {
-    _chartsDrawn = true;
-    setTimeout(() => drawAuditCharts(_audit), 60);
-  }
+  // Load spend report when tab becomes visible
+  if (btn.dataset.tab === 'audit') loadSpendReport();
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -246,14 +238,8 @@ async function init() {
   try {
     _manifest = await fetchJSON('data.json');
 
-    // Audit is optional — shopping may not have happened yet
-    if (_manifest.files && _manifest.files.audit) {
-      _audit = await fetchJSON(_manifest.files.audit).catch(() => null);
-    }
-
-    renderHome(_manifest, _audit);
+    renderHome(_manifest);
     renderLastWeek(_manifest);
-    if (_audit) renderAuditShell(_audit);
 
     // Load last week menu non-blocking
     const _lw = _manifest.lastWeek;
@@ -292,7 +278,6 @@ async function init() {
       errState($(id), '⚠️ Could not load — serve this folder with ');
     });
     $('home-week-header').innerHTML = `<div class="error-state">⚠️ Could not load data. Run <code>npx serve .</code> in this folder.</div>`;
-    $('audit-extras').innerHTML = '';
   }
 }
 
@@ -336,7 +321,7 @@ function renderLastWeek(m) {
 }
 
 // ── Home tab ──────────────────────────────────────────────────────────────────
-function renderHome(m, audit) {
+function renderHome(m) {
   $('home-week-header').innerHTML = `
     <div class="section-title">${m.weekLabel}</div>
     <div class="section-sub">Shopping trip: ${m.shoppingDate} · ${m.meals.length} meals</div>
@@ -363,34 +348,14 @@ function renderHome(m, audit) {
     switchToMenuMeal(card.dataset.mealName);
   });
 
-  // Spend summary
-  if (!audit) {
-    $('home-spend').innerHTML = `<div class="spend-card"><h3>💳 This Week's Spending</h3><p style="color:var(--muted);text-align:center;padding:1rem">Audit not yet available — check back after the shopping trip.</p></div>`;
-    return;
-  }
-  const variance = audit.total_spent - audit.list_estimate;
-  const isOver   = variance >= 0;
-  const storePills = Object.entries(audit.by_store)
-    .map(([name, amt]) => `<span class="store-pill">${name} <strong>${fmt(amt)}</strong></span>`)
-    .join('');
-
+  // Spend summary — full report in Audit tab
   $('home-spend').innerHTML = `
     <div class="spend-card">
-      <h3>💳 This Week's Spending</h3>
-      <div class="spend-row"><span>Shopping list estimate</span><span>${fmt(audit.list_estimate)}</span></div>
-      <div class="spend-row"><span>On-list actual</span><span>${fmt(audit.on_list_total_est)}</span></div>
-      <div class="spend-row">
-        <span>Extras</span>
-        <span class="val-warn">${fmt(audit.extras_total_est)}</span>
-      </div>
-      <div class="spend-row">
-        <span>Total spent</span>
-        <span class="${isOver ? 'val-warn' : 'val-good'}">
-          ${fmt(audit.total_spent)}
-          <span style="font-size:0.8rem;font-weight:400"> (${isOver ? '+' : ''}${fmt(Math.abs(variance))} ${isOver ? 'over' : 'under'})</span>
-        </span>
-      </div>
-      <div class="store-pills">${storePills}</div>
+      <h3>💳 Spending</h3>
+      <p style="color:var(--muted);text-align:center;padding:0.5rem 1rem 1rem;font-size:0.9rem">
+        Spending updates live as you check items off. Full report in the
+        <button class="link-btn" onclick="switchTab('audit');loadSpendReport()">&#x1F4CA; Audit tab</button>.
+      </p>
     </div>
   `;
 }
@@ -459,10 +424,7 @@ function handleInitialHash() {
   if (tabBtn) {
     switchTab(hash, false);
     if (hash === 'archive') loadArchive();
-    if (hash === 'audit' && _audit && !_chartsDrawn) {
-      _chartsDrawn = true;
-      setTimeout(() => drawAuditCharts(_audit), 60);
-    }
+    if (hash === 'audit') loadSpendReport();
   }
 }
 
@@ -486,10 +448,7 @@ window.addEventListener('popstate', () => {
   if (tabBtn) {
     switchTab(hash, false);
     if (hash === 'archive') loadArchive();
-    if (hash === 'audit' && _audit && !_chartsDrawn) {
-      _chartsDrawn = true;
-      setTimeout(() => drawAuditCharts(_audit), 60);
-    }
+    if (hash === 'audit') loadSpendReport();
   }
 });
 
@@ -546,120 +505,195 @@ function switchToLastMenuMeal(mealName) {
   }
 }
 
-// ── Audit tab (shell — no charts yet) ────────────────────────────────────────
-function renderAuditShell(audit) {
-  $('audit-sub').textContent = `Shopping date: ${audit.shopping_date}  ·  Week of ${audit.week}`;
-
-  const variance = audit.total_spent - audit.list_estimate;
-  const isOver   = variance >= 0;
-  const extrasRatio = ((audit.extras_total_est / audit.total_spent) * 100).toFixed(0);
-
-  // Stat cards
-  $('audit-stats').innerHTML = `
-    <div class="stat-card">
-      <div class="stat-label">Budget Estimate</div>
-      <div class="stat-value">${fmt(audit.list_estimate)}</div>
-      <div class="stat-sub">Original shopping list</div>
-    </div>
-    <div class="stat-card ${isOver ? 'warn' : 'good'}">
-      <div class="stat-label">Total Spent</div>
-      <div class="stat-value">${fmt(audit.total_spent)}</div>
-      <div class="stat-sub">${isOver ? '+' : ''}${fmt(Math.abs(variance))} ${isOver ? 'over' : 'under'} estimate</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">On-List</div>
-      <div class="stat-value">${fmt(audit.on_list_total_est)}</div>
-      <div class="stat-sub">${((audit.on_list_total_est / audit.total_spent) * 100).toFixed(0)}% of total</div>
-    </div>
-    <div class="stat-card warn">
-      <div class="stat-label">Extras</div>
-      <div class="stat-value">${fmt(audit.extras_total_est)}</div>
-      <div class="stat-sub">${extrasRatio}% of total spend</div>
-    </div>
-  `;
-
-  // Extras breakdown
-  let html = '<h3>Extra Purchases — Not on Shopping List</h3>';
-  let grandTotal = 0;
-  Object.entries(audit.extras_breakdown).forEach(([source, group]) => {
-    grandTotal += group.amount;
-    html += `<div class="extras-group">
-      <div class="extras-group-label">${source}</div>`;
-    group.items.forEach(item => {
-      html += `<div class="extras-item">
-        <span>${item.name}${item.note ? `<span class="item-note">${item.note}</span>` : ''}</span>
-        <span>${fmt(item.price)}</span>
-      </div>`;
-    });
-    if (group.note) {
-      html += `<div style="font-size:0.75rem;color:var(--muted);margin-top:6px">${group.note}</div>`;
-    }
-    html += `<div class="extras-subtotal"><span>Subtotal</span><span>${fmt(group.amount)}</span></div>
-    </div>`;
-  });
-  html += `<div class="extras-grand"><span>Total Extras</span><span>${fmt(grandTotal)}</span></div>`;
-  $('audit-extras').innerHTML = html;
-
-  // Notes
-  if (audit.notes) {
-    $('audit-notes').style.display = 'block';
-    $('audit-notes').innerHTML = '<strong>Notes:</strong> ' + audit.notes;
+// ── Spend Report ──────────────────────────────────────────────────────────────
+async function loadSpendReport() {
+  const report  = $('audit-report');
+  const empty   = $('audit-empty');
+  const loading = $('audit-loading');
+  if (!report) return;
+  loading.style.display = '';
+  report.style.display  = 'none';
+  empty.style.display   = 'none';
+  try {
+    const audits = await fetchJSON('/api/audits');
+    renderSpendReport(audits);
+  } catch {
+    loading.style.display = 'none';
+    empty.style.display   = 'block';
+    empty.textContent     = '⚠️ Could not load spend data.';
   }
 }
 
-// ── Audit charts (lazy — drawn when tab first opened) ────────────────────────
-function drawAuditCharts(audit) {
-  if (_charts.donut) _charts.donut.destroy();
-  if (_charts.store) _charts.store.destroy();
+function renderSpendReport(audits) {
+  const report  = $('audit-report');
+  const empty   = $('audit-empty');
+  const loading = $('audit-loading');
+  loading.style.display = 'none';
+  if (!audits || audits.length === 0) {
+    empty.style.display  = 'block';
+    report.style.display = 'none';
+    return;
+  }
+  empty.style.display  = 'none';
+  report.style.display = 'block';
 
-  _charts.donut = new Chart($('donutChart'), {
-    type: 'doughnut',
-    data: {
-      labels: ['On-List', 'Extras'],
-      datasets: [{
-        data: [audit.on_list_total_est, audit.extras_total_est],
-        backgroundColor: ['#2d6a4f', '#e07b39'],
-        borderWidth: 0,
-        hoverOffset: 6,
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: 'bottom' },
-        tooltip: {
-          callbacks: {
-            label: ctx => ` ${ctx.label}: ${fmt(ctx.raw)} (${((ctx.raw / audit.total_spent) * 100).toFixed(0)}%)`
-          }
-        }
-      }
-    }
+  const now       = new Date();
+  const thisMonth = now.toISOString().slice(0, 7);       // "YYYY-MM"
+  const thisYear  = String(now.getFullYear());
+  const thirtyAgo = new Date(now - 30 * 86400000).toISOString().slice(0, 10);
+  const lastTrip  = audits[0];
+  const mtd       = audits.filter(a => (a.week || '').startsWith(thisMonth));
+  const last30    = audits.filter(a => (a.week || '') >= thirtyAgo);
+  const ytd       = audits.filter(a => (a.week || '').startsWith(thisYear));
+
+  const sumF = (arr, k) => arr.reduce((s, a) => s + (a[k] || 0), 0);
+
+  // Weekly avg across all recorded trips
+  const wkAvgActual = audits.length ? sumF(audits, 'actual') / audits.length : 0;
+  const wkAvgBudget = audits.length ? sumF(audits, 'budget') / audits.length : 0;
+
+  // Monthly avg: group trips by YYYY-MM then average month totals
+  const byMonth = {};
+  audits.forEach(a => {
+    const mo = (a.week || '').slice(0, 7);
+    if (!mo) return;
+    if (!byMonth[mo]) byMonth[mo] = { actual: 0, budget: 0 };
+    byMonth[mo].actual += a.actual || 0;
+    byMonth[mo].budget += a.budget || 0;
   });
+  const months      = Object.values(byMonth);
+  const moAvgActual = months.length ? months.reduce((s, m) => s + m.actual, 0) / months.length : 0;
+  const moAvgBudget = months.length ? months.reduce((s, m) => s + m.budget, 0) / months.length : 0;
 
-  const storeLabels = Object.keys(audit.by_store);
-  const storeValues = Object.values(audit.by_store);
-  const palette = ['#2d6a4f', '#3665c9', '#9b59b6', '#e07b39', '#888'];
+  const periods = [
+    { label: 'Last Trip',     actual: lastTrip.actual,        budget: lastTrip.budget,        items: lastTrip.item_count,    trips: 1              },
+    { label: 'Month to Date', actual: sumF(mtd,   'actual'),  budget: sumF(mtd,   'budget'),  items: sumF(mtd,   'item_count'), trips: mtd.length   },
+    { label: 'Last 30 Days',  actual: sumF(last30,'actual'),  budget: sumF(last30,'budget'),  items: sumF(last30,'item_count'), trips: last30.length },
+    { label: 'Year to Date',  actual: sumF(ytd,   'actual'),  budget: sumF(ytd,   'budget'),  items: sumF(ytd,   'item_count'), trips: ytd.length   },
+    { label: 'Weekly Avg',    actual: wkAvgActual,            budget: wkAvgBudget,            items: null,                   trips: null           },
+    { label: 'Monthly Avg',   actual: moAvgActual,            budget: moAvgBudget,            items: null,                   trips: null           },
+  ];
 
-  _charts.store = new Chart($('storeChart'), {
-    type: 'bar',
-    data: {
-      labels: storeLabels,
-      datasets: [{
-        data: storeValues,
-        backgroundColor: palette.slice(0, storeLabels.length),
-        borderRadius: 6,
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${fmt(ctx.raw)}` } } },
-      scales: {
-        x: { ticks: { callback: v => '$' + v }, grid: { color: '#f0f0f0' } },
-        y: { grid: { display: false } }
-      }
+  const varRow = periods.map(p => {
+    const v   = p.actual - p.budget;
+    const cls = v > 0.005 ? 'sr-over' : v < -0.005 ? 'sr-under' : '';
+    const sign = v >= 0 ? '+' : '';
+    return `<td class="${cls}">${sign}${fmt(v)}</td>`;
+  }).join('');
+
+  let html = `
+  <h2 class="sr-title">📊 Spend Report</h2>
+  <div class="spend-table-wrap">
+    <table class="spend-table">
+      <thead>
+        <tr>
+          <th></th>
+          ${periods.map(p => `<th>${p.label}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="sr-row-label">Budgeted</td>
+          ${periods.map(p => `<td>${fmt(p.budget)}</td>`).join('')}
+        </tr>
+        <tr class="sr-actual-row">
+          <td class="sr-row-label">Actual</td>
+          ${periods.map(p => `<td>${fmt(p.actual)}</td>`).join('')}
+        </tr>
+        <tr>
+          <td class="sr-row-label">Overage</td>
+          ${varRow}
+        </tr>
+        <tr class="sr-dim-row">
+          <td class="sr-row-label">Items</td>
+          ${periods.map(p => `<td>${p.items != null ? p.items : '—'}</td>`).join('')}
+        </tr>
+        <tr class="sr-dim-row">
+          <td class="sr-row-label">Trips</td>
+          ${periods.map(p => `<td>${p.trips != null ? p.trips : '—'}</td>`).join('')}
+        </tr>
+      </tbody>
+    </table>
+  </div>`;
+
+  // Last trip by-store breakdown + 4-week trend chart
+  const recent4      = audits.slice(0, 4).reverse();
+  const storeEntries = lastTrip.by_store ? Object.entries(lastTrip.by_store) : [];
+
+  html += `<div class="sr-two-col">`;
+
+  if (storeEntries.length) {
+    html += `<div class="chart-card">
+      <h3>Last Trip — By Store</h3>
+      <div class="store-breakdown">`;
+    storeEntries.forEach(([store, amt]) => {
+      const pct = lastTrip.actual > 0 ? (amt / lastTrip.actual * 100).toFixed(0) : 0;
+      html += `<div class="sb-row">
+        <span class="sb-store">${store}</span>
+        <div class="sb-bar-wrap"><div class="sb-bar" style="width:${pct}%"></div></div>
+        <span class="sb-amt">${fmt(amt)}</span>
+      </div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  if (recent4.length >= 1) {
+    html += `<div class="chart-card"><h3>Recent Trips</h3><canvas id="trendChart"></canvas></div>`;
+  }
+  html += `</div>`;
+
+  // Rolling 4-trip nudge: if avg overage > 8%, suggest bumping estimates
+  if (recent4.length >= 2) {
+    const avgPct = recent4.reduce((s, a) => s + (a.budget > 0 ? (a.actual - a.budget) / a.budget : 0), 0) / recent4.length;
+    if (avgPct > 0.08) {
+      html += `<div class="audit-nudge">
+        💡 You've averaged <strong>${(avgPct * 100).toFixed(0)}%</strong> over budget across the last ${recent4.length} trips.
+        Consider bumping item estimates up ~${(avgPct * 100).toFixed(0)}% to better match actual spending.
+      </div>`;
     }
-  });
+  }
+
+  report.innerHTML = html;
+
+  // Draw trend chart after DOM is updated
+  if ($('trendChart') && recent4.length >= 1) {
+    if (_spendChart) _spendChart.destroy();
+    _spendChart = new Chart($('trendChart'), {
+      type: 'bar',
+      data: {
+        labels: recent4.map(a => (a.week || '').slice(5)),
+        datasets: [
+          {
+            label: 'Budget',
+            data: recent4.map(a => a.budget || 0),
+            backgroundColor: 'rgba(45,106,79,0.45)',
+            borderColor: '#2d6a4f',
+            borderWidth: 1,
+            borderRadius: 4,
+          },
+          {
+            label: 'Actual',
+            data: recent4.map(a => a.actual || 0),
+            backgroundColor: 'rgba(224,123,57,0.45)',
+            borderColor: '#e07b39',
+            borderWidth: 1,
+            borderRadius: 4,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}` } },
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: { ticks: { callback: v => '$' + v }, grid: { color: '#f0f0f0' } },
+        },
+      },
+    });
+  }
 }
 
 // ── Price list search ─────────────────────────────────────────────────────────
@@ -1021,6 +1055,53 @@ function clSync() {
   clUpdateTotals();
   clSaveLocal();
   clSaveToDB();
+  clSaveAudit();
+}
+function clComputeAudit() {
+  if (!_clWeekKey || _clItems.length === 0) return null;
+  let budget = 0, actual = 0, itemCount = 0;
+  const byStore = {};
+  _clItems.forEach((item, idx) => {
+    const p = item.price || 0;
+    budget += p;
+    if (_clState.c.includes(idx)) {
+      actual += p;
+      itemCount++;
+      const store = item.store || 'Other';
+      byStore[store] = (byStore[store] || 0) + p;
+    }
+  });
+  _clState.x.forEach(item => {
+    if (item.st === 'c') {
+      const p = item.p || 0;
+      actual += p;
+      itemCount++;
+      byStore['Extra Items'] = (byStore['Extra Items'] || 0) + p;
+    }
+  });
+  Object.keys(byStore).forEach(k => { byStore[k] = parseFloat(byStore[k].toFixed(2)); });
+  return {
+    week:       _clWeekKey,
+    budget:     parseFloat(budget.toFixed(2)),
+    actual:     parseFloat(actual.toFixed(2)),
+    variance:   parseFloat((actual - budget).toFixed(2)),
+    item_count: itemCount,
+    by_store:   byStore,
+  };
+}
+function clSaveAudit() {
+  clearTimeout(_auditSaveTimer);
+  _auditSaveTimer = setTimeout(async () => {
+    const audit = clComputeAudit();
+    if (!audit || audit.item_count === 0) return; // nothing checked yet
+    try {
+      await fetch('/api/audits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(audit),
+      });
+    } catch { /* ignore — cart state already saved */ }
+  }, 1200);
 }
 async function clLoadFromDB(weekKey) {
   try {

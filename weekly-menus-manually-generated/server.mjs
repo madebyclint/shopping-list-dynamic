@@ -348,6 +348,47 @@ app.put('/api/item-prices', async (req, res) => {
   }
 });
 
+// ── GET /api/audits — all trips for reporting ─────────────────────────────────
+app.get('/api/audits', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT week_date, data FROM shopping_audits ORDER BY week_date DESC',
+    );
+    res.json(rows.map(r => ({ week: r.week_date, ...r.data })));
+  } catch (err) {
+    console.error('GET /api/audits:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+// ── POST /api/audits — upsert simplified audit ────────────────────────────────
+app.post('/api/audits', async (req, res) => {
+  try {
+    const { week, budget, actual, variance, item_count, by_store } = req.body;
+    if (!week || typeof actual !== 'number') {
+      return res.status(400).json({ error: 'invalid_params' });
+    }
+    const data = {
+      budget:     typeof budget     === 'number' ? budget     : 0,
+      actual,
+      variance:   typeof variance   === 'number' ? variance   : (actual - (budget || 0)),
+      item_count: typeof item_count === 'number' ? item_count : 0,
+      by_store:   (by_store && typeof by_store === 'object' && !Array.isArray(by_store)) ? by_store : {},
+    };
+    await pool.query(
+      `INSERT INTO shopping_audits (shopping_date, week_date, data, updated_at)
+       VALUES ($1, $1, $2, NOW())
+       ON CONFLICT (shopping_date)
+       DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()`,
+      [week, JSON.stringify(data)],
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /api/audits:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
 // ── GET /api/cart/events?week=YYYY-MM-DD  (Server-Sent Events) ────────────────
 app.get('/api/cart/events', (req, res) => {
   const weekKey = String(req.query.week || 'current').slice(0, 50);

@@ -469,6 +469,116 @@ button {
   color: var(--text);
 }
 
+/* ── Spend Report ─────────────────────────────────────────────── */
+.sr-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+  color: var(--text);
+}
+.spend-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.07);
+}
+.spend-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  background: #fff;
+}
+.spend-table th,
+.spend-table td {
+  padding: 10px 14px;
+  text-align: right;
+  border-bottom: 1px solid #f0f0f0;
+  white-space: nowrap;
+}
+.spend-table th {
+  background: #f8f8f6;
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--muted);
+}
+.spend-table td:first-child,
+.spend-table th:first-child {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text);
+}
+.sr-actual-row td { font-weight: 600; }
+.sr-dim-row td    { color: var(--muted); font-size: 0.82rem; }
+.sr-over  { color: #c0392b; font-weight: 600; }
+.sr-under { color: #27ae60; font-weight: 600; }
+.sr-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+@media (max-width: 680px) {
+  .sr-two-col { grid-template-columns: 1fr; }
+}
+.store-breakdown { padding: 4px 0; }
+.sb-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f5f5f3;
+}
+.sb-row:last-child { border-bottom: none; }
+.sb-store {
+  flex: 0 0 110px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sb-bar-wrap {
+  flex: 1;
+  background: #f0f0ee;
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+.sb-bar {
+  height: 100%;
+  background: var(--primary, #2d6a4f);
+  border-radius: 4px;
+  transition: width .4s ease;
+}
+.sb-amt {
+  flex: 0 0 60px;
+  text-align: right;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--primary, #2d6a4f);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+.audit-nudge {
+  margin-top: 1.25rem;
+  padding: 14px 18px;
+  background: #fffbf0;
+  border: 1px solid #f0d080;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #6b5000;
+}
+
 /* ── Markdown content ─────────────────────────────────────────── */
 .md-content {
   background: var(--surface);
