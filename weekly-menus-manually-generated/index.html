@@ -941,6 +941,7 @@ function clApplySearch() {
     document.querySelectorAll('#cl-body .cl-item[data-idx]').forEach(el => el.style.display = '');
     document.querySelectorAll('#cl-body .cl-store-section').forEach(sec => sec.style.display = '');
     document.querySelectorAll('#cl-body .cl-subgroup-label').forEach(el => el.style.display = '');
+    document.querySelectorAll('#cl-body .cl-item[data-custom]').forEach(el => el.style.display = '');
     return;
   }
   document.querySelectorAll('#cl-body .cl-store-section').forEach(sec => {
@@ -964,6 +965,13 @@ function clApplySearch() {
       }
       label.style.display = hasVisible ? '' : 'none';
     });
+  });
+  // Also filter custom items
+  document.querySelectorAll('#cl-body .cl-item[data-custom]').forEach(el => {
+    const text = el.querySelector('.cl-item-name')?.textContent.toLowerCase() || '';
+    const matchSearch = !q || text.includes(q);
+    const matchFilter = !filterUnchecked || el.dataset.state === 'unchecked';
+    el.style.display = (matchSearch && matchFilter) ? '' : 'none';
   });
 }
 function clRenderCustom() {
