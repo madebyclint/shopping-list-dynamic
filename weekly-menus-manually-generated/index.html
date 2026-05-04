@@ -1215,9 +1215,11 @@ function clApplyQtyOverrides() {
   Object.entries(_clState.qtys).forEach(([k, q]) => {
     const i = parseInt(k);
     if (_clItems[i] === undefined) return;
-    _clItems[i].qtyN = q;
+    const n = parseFloat(q);
+    if (isNaN(n)) return;
+    _clItems[i].qtyN = n;
     if (_clItems[i].unitCost != null) {
-      _clItems[i].price = parseFloat((_clItems[i].unitCost * q).toFixed(2));
+      _clItems[i].price = parseFloat((_clItems[i].unitCost * n).toFixed(2));
     }
   });
 }
@@ -1263,7 +1265,7 @@ function clUpdateQty(idx, newN) {
 function clGetState(idx) {
   return _clState.c.includes(idx) ? 'checked' : _clState.s.includes(idx) ? 'skipped' : 'unchecked';
 }
-function clFmtN(n) { return n % 1 === 0 ? String(n) : n.toFixed(1); }
+function clFmtN(n) { const v = parseFloat(n); if (isNaN(v)) return '1'; return v % 1 === 0 ? String(v) : v.toFixed(1); }
 function clItemRow({ name, displayName, qtyN, unit, price, meal, idx }, showMeal) {
   const dn = displayName || name;
   const qtyHtml = qtyN != null
