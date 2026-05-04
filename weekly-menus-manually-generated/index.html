@@ -295,12 +295,15 @@
     .cl-item-price[data-price-idx] { cursor: pointer; border-bottom: 1px dashed transparent; transition: border-color 0.12s, color 0.12s; }
     .cl-item-price[data-price-idx]:hover { border-bottom-color: var(--muted); color: var(--accent); }
     .cl-price-edit-input { width: 5ch; font-size: 0.78rem; font-family: inherit; color: var(--text); background: transparent; border: none; border-bottom: 1.5px solid var(--accent); outline: none; padding: 0; text-align: center; }
-    .cl-item-qty { font-size: 0.72rem; color: var(--muted); padding: 0 5px 0 0; white-space: nowrap; flex-shrink: 0; cursor: pointer; border-bottom: 1px dashed transparent; transition: border-color 0.12s, color 0.12s; }
-    .cl-item-qty:empty { display: none; }
-    .cl-item-qty:hover { border-bottom-color: var(--muted); color: var(--accent); }
-    .cl-item[data-state="checked"] .cl-item-qty,
-    .cl-item[data-state="skipped"] .cl-item-qty { text-decoration: line-through; color: #ccc; cursor: default; }
-    .cl-qty-edit-input { width: 9ch; font-size: 0.72rem; font-family: inherit; color: var(--text); background: transparent; border: none; border-bottom: 1.5px solid var(--accent); outline: none; padding: 0; }
+    .cl-qty-stepper { display: flex; align-items: center; gap: 2px; flex-shrink: 0; padding: 0 4px; }
+    .cl-qty-btn { border: none; background: none; font-size: 1.05rem; line-height: 1; color: var(--muted); cursor: pointer; padding: 6px 7px; border-radius: 4px; flex-shrink: 0; }
+    .cl-qty-btn:hover { background: var(--border); color: var(--text); }
+    .cl-qty-n { font-size: 0.82rem; font-weight: 600; color: var(--text); min-width: 2ch; text-align: center; cursor: pointer; padding: 2px 3px; border-radius: 3px; }
+    .cl-qty-n:hover { background: var(--border); color: var(--accent); }
+    .cl-qty-unit { font-size: 0.72rem; color: var(--muted); white-space: nowrap; padding-left: 2px; }
+    .cl-item[data-state="checked"] .cl-qty-stepper,
+    .cl-item[data-state="skipped"] .cl-qty-stepper { opacity: 0.35; pointer-events: none; }
+    .cl-qty-edit-input { width: 6ch; font-size: 0.82rem; font-family: inherit; font-weight: 600; color: var(--text); background: transparent; border: none; border-bottom: 1.5px solid var(--accent); outline: none; padding: 0; text-align: center; }
     .cl-skip-btn { padding: 13px 14px; border: none; background: none; font-size: 0.95rem; color: #ddd; cursor: pointer; flex-shrink: 0; }
     .cl-item[data-state="skipped"] .cl-skip-btn { color: var(--warn); }
     .cl-skip-btn:hover { color: var(--warn); }
@@ -1181,12 +1184,19 @@ function clParseMd(md) {
       if (name.startsWith('*(')) return;
       const clean = name.replace(/\s*\*?\(.*?\)\*?/g, '').replace(/\s*—.*$/, '').trim();
       const normClean = clNorm(clean);
-      // Extract qty from first parenthetical (e.g. "Eggs (1 dozen)" → qty="1 dozen")
+      // Extract qty from first parenthetical (e.g. "Eggs (1 dozen)" → qtyN=1, unit="dozen")
       const qtyMatch = name.match(/\(([^)]+)\)/);
-      const qty = qtyMatch ? qtyMatch[1] : '';
+      const qtyStr = qtyMatch ? qtyMatch[1] : '';
+      // Take first number in range like "2–3"
+      const qtyNumM = qtyStr.match(/(\d+\.?\d*)/);
+      const qtyN = qtyNumM ? parseFloat(qtyNumM[1]) : 1;
+      // Unit: first word(s) after the number
+      const unit = qtyStr.replace(/^[\d.\s\u2013\u2014~-]+/, '').match(/^([\w]+)/)?.[1] || '';
       // Display name: clean name without parenthetical or meal annotation
       const displayName = name.replace(/\s*\(.*?\)/g, '').replace(/\s*—.*$/, '').trim();
-      _clItems.push({ name, displayName, qty, price: clLookupPrice(clean), meal: _mealMap[normClean] || '', store, subgroup });
+      const price = clLookupPrice(clean);
+      const unitCost = (price != null && qtyN > 0) ? price / qtyN : null;
+      _clItems.push({ name, displayName, qtyStr, qtyN, unit, unitCost, price, meal: _mealMap[normClean] || '', store, subgroup });
     });
   });
 }
@@ -1195,14 +1205,20 @@ function clApplyPriceOverrides() {
   if (!_clState.prices) return;
   Object.entries(_clState.prices).forEach(([k, p]) => {
     const i = parseInt(k);
-    if (_clItems[i] !== undefined) _clItems[i].price = p;
+    if (_clItems[i] === undefined) return;
+    _clItems[i].price = p;
+    if (_clItems[i].qtyN > 0) _clItems[i].unitCost = p / _clItems[i].qtyN;
   });
 }
 function clApplyQtyOverrides() {
   if (!_clState.qtys) return;
   Object.entries(_clState.qtys).forEach(([k, q]) => {
     const i = parseInt(k);
-    if (_clItems[i] !== undefined) _clItems[i].qty = q;
+    if (_clItems[i] === undefined) return;
+    _clItems[i].qtyN = q;
+    if (_clItems[i].unitCost != null) {
+      _clItems[i].price = parseFloat((_clItems[i].unitCost * q).toFixed(2));
+    }
   });
 }
 function clUpdatePrice(idx, raw) {
@@ -1210,6 +1226,8 @@ function clUpdatePrice(idx, raw) {
   if (isNaN(p)) return;
   const val = parseFloat(p.toFixed(2));
   _clItems[idx].price = val;
+  // Update unit cost so future qty changes scale correctly
+  if (_clItems[idx].qtyN > 0) _clItems[idx].unitCost = val / _clItems[idx].qtyN;
   if (!_clState.prices) _clState.prices = {};
   _clState.prices[String(idx)] = val;
   clUpdateTotals();
@@ -1226,27 +1244,42 @@ function clUpdatePrice(idx, raw) {
     }).catch(() => {}); // fire-and-forget
   }
 }
-function clUpdateQty(idx, raw) {
-  const val = raw.trim();
-  if (!val) return;
-  _clItems[idx].qty = val;
+function clUpdateQty(idx, newN) {
+  const n = parseFloat(String(newN));
+  if (isNaN(n) || n < 0) return;
+  _clItems[idx].qtyN = n;
+  if (_clItems[idx].unitCost != null) {
+    const newPrice = parseFloat((_clItems[idx].unitCost * n).toFixed(2));
+    _clItems[idx].price = newPrice;
+    if (!_clState.prices) _clState.prices = {};
+    _clState.prices[String(idx)] = newPrice;
+  }
   if (!_clState.qtys) _clState.qtys = {};
-  _clState.qtys[String(idx)] = val;
+  _clState.qtys[String(idx)] = n;
+  clUpdateTotals();
   clSaveToDB();
   clSaveLocal();
 }
 function clGetState(idx) {
   return _clState.c.includes(idx) ? 'checked' : _clState.s.includes(idx) ? 'skipped' : 'unchecked';
 }
-function clItemRow({ name, displayName, qty, price, meal, idx }, showMeal) {
+function clFmtN(n) { return n % 1 === 0 ? String(n) : n.toFixed(1); }
+function clItemRow({ name, displayName, qtyN, unit, price, meal, idx }, showMeal) {
   const dn = displayName || name;
+  const qtyHtml = qtyN != null
+    ? `<div class="cl-qty-stepper">
+        <button class="cl-qty-btn" data-dec="${idx}">−</button>
+        <span class="cl-qty-n" data-qty-idx="${idx}" title="Tap to edit">${clFmtN(qtyN)}</span>
+        <button class="cl-qty-btn" data-inc="${idx}">+</button>
+        ${unit ? `<span class="cl-qty-unit">${unit}</span>` : ''}
+       </div>` : '';
   return `
     <div class="cl-item" data-idx="${idx}" data-state="${clGetState(idx)}">
       <button class="cl-item-toggle" data-idx="${idx}">
         <span class="cl-checkbox"></span>
         <span class="cl-item-name">${dn}${showMeal && meal ? `<span class="cl-item-meal">${meal}</span>` : ''}</span>
       </button>
-      <span class="cl-item-qty" data-qty-idx="${idx}" title="Click to edit qty">${qty || ''}</span>
+      ${qtyHtml}
       <span class="cl-item-price" data-price-idx="${idx}" title="Click to edit price">${price != null ? clFmtP(price) : ''}</span>
       <button class="cl-skip-btn" data-skip="${idx}" title="Skip">⏭</button>
     </div>`;
@@ -1576,27 +1609,46 @@ async function openChecklist() {
       clApplySearch();
       return;
     }
-    const qtyEl = e.target.closest('.cl-item-qty[data-qty-idx]');
-    if (qtyEl && !qtyEl.querySelector('input')) {
-      const idx = parseInt(qtyEl.dataset.qtyIdx);
-      const cur = _clItems[idx]?.qty || '';
+    const dec = e.target.closest('.cl-qty-btn[data-dec]');
+    if (dec) {
+      const idx = parseInt(dec.dataset.dec);
+      clUpdateQty(idx, Math.max(0, (_clItems[idx]?.qtyN ?? 1) - 1));
+      dec.closest('.cl-qty-stepper').querySelector('.cl-qty-n').textContent = clFmtN(_clItems[idx].qtyN);
+      const prEl = dec.closest('.cl-item').querySelector('.cl-item-price[data-price-idx]');
+      if (prEl && !prEl.querySelector('input')) prEl.textContent = _clItems[idx].price != null ? clFmtP(_clItems[idx].price) : '';
+      return;
+    }
+    const inc = e.target.closest('.cl-qty-btn[data-inc]');
+    if (inc) {
+      const idx = parseInt(inc.dataset.inc);
+      clUpdateQty(idx, (_clItems[idx]?.qtyN ?? 0) + 1);
+      inc.closest('.cl-qty-stepper').querySelector('.cl-qty-n').textContent = clFmtN(_clItems[idx].qtyN);
+      const prEl = inc.closest('.cl-item').querySelector('.cl-item-price[data-price-idx]');
+      if (prEl && !prEl.querySelector('input')) prEl.textContent = _clItems[idx].price != null ? clFmtP(_clItems[idx].price) : '';
+      return;
+    }
+    const qtyNEl = e.target.closest('.cl-qty-n[data-qty-idx]');
+    if (qtyNEl && !qtyNEl.querySelector('input')) {
+      const idx = parseInt(qtyNEl.dataset.qtyIdx);
+      const cur = _clItems[idx]?.qtyN ?? 1;
       const inp = document.createElement('input');
       inp.className = 'cl-qty-edit-input';
-      inp.type = 'text';
+      inp.type = 'number'; inp.min = '0'; inp.step = '0.5';
       inp.value = cur;
-      inp.placeholder = 'qty';
-      qtyEl.textContent = '';
-      qtyEl.appendChild(inp);
+      qtyNEl.textContent = '';
+      qtyNEl.appendChild(inp);
       inp.focus(); inp.select();
       const commit = () => {
         const v = inp.value.trim();
         if (v !== '') clUpdateQty(idx, v);
-        qtyEl.textContent = _clItems[idx]?.qty || '';
+        qtyNEl.textContent = clFmtN(_clItems[idx]?.qtyN ?? cur);
+        const prEl = qtyNEl.closest('.cl-item').querySelector('.cl-item-price[data-price-idx]');
+        if (prEl && !prEl.querySelector('input')) prEl.textContent = _clItems[idx].price != null ? clFmtP(_clItems[idx].price) : '';
       };
       inp.addEventListener('blur', commit);
       inp.addEventListener('keydown', ke => {
         if (ke.key === 'Enter') { ke.preventDefault(); inp.blur(); }
-        if (ke.key === 'Escape') { qtyEl.textContent = cur; }
+        if (ke.key === 'Escape') { qtyNEl.textContent = clFmtN(cur); }
       });
       return;
     }
