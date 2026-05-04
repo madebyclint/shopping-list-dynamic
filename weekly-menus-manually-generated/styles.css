@@ -756,6 +756,13 @@ button {
   font-weight: 400;
   margin-top: 2px;
 }
+.sr-leftover {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--green, #4caf50);
+  font-weight: 500;
+  margin-top: 2px;
+}
 
 /* ── Markdown content ─────────────────────────────────────────── */
 .md-content {

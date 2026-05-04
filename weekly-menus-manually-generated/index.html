@@ -654,7 +654,7 @@ function renderSpendReport(audits) {
       .sort((x, y) => Math.abs(new Date(x.week) - new Date(a.week)) - Math.abs(new Date(y.week) - new Date(a.week)));
     if (nearbyChecklist.length && Math.abs(new Date(nearbyChecklist[0].week) - new Date(a.week)) / 86400000 <= 7) {
       const src = nearbyChecklist[0];
-      return { ...a, budget: src.budget, budget_item_count: src.budget_item_count, item_count: a.item_count ?? src.item_count };
+      return { ...a, budget: src.budget, budget_item_count: src.budget_item_count, item_count: a.item_count ?? src.item_count, checklist_total: a.checklist_total ?? src.checklist_total };
     }
     // Already has a budget — keep it
     if ((a.budget || 0) > 0) return a;
@@ -664,7 +664,7 @@ function renderSpendReport(audits) {
       .sort((x, y) => Math.abs(new Date(x.week) - new Date(a.week)) - Math.abs(new Date(y.week) - new Date(a.week)));
     if (!fallback.length) return a;
     const src = fallback[0];
-    return { ...a, budget: src.budget, budget_item_count: a.budget_item_count ?? src.budget_item_count, item_count: a.item_count ?? src.item_count };
+    return { ...a, budget: src.budget, budget_item_count: a.budget_item_count ?? src.budget_item_count, item_count: a.item_count ?? src.item_count, checklist_total: a.checklist_total ?? src.checklist_total };
   });
 
   // "Last Trip" = most recent row with a logged receipt; fall back to withBudgets[0].
@@ -703,7 +703,7 @@ function renderSpendReport(audits) {
   const ltActualItems  = lastTrip.receipt_line_items ?? null;
 
   const periods = [
-    { label: 'Last Trip',     actual: eff(lastTrip),  budget: lastTrip.budget || 0, budgetItems: ltBudgetItems,  actualItems: ltActualItems,  trips: 1,            est: isEst(lastTrip) },
+    { label: 'Last Trip',     actual: eff(lastTrip),  budget: lastTrip.budget || 0, budgetItems: ltBudgetItems,  actualItems: ltActualItems,  trips: 1,            est: isEst(lastTrip), checklist_total: lastTrip.checklist_total ?? null },
     { label: 'Month to Date', actual: sumEff(mtd),    budget: sumBgt(mtd),          budgetItems: null,           actualItems: null,           trips: mtd.length,   est: anyEst(mtd)     },
     { label: 'Last 30 Days',  actual: sumEff(last30), budget: sumBgt(last30),       budgetItems: null,           actualItems: null,           trips: last30.length,est: anyEst(last30)  },
     { label: 'Year to Date',  actual: sumEff(ytd),    budget: sumBgt(ytd),          budgetItems: null,           actualItems: null,           trips: ytd.length,   est: anyEst(ytd)     },
@@ -712,6 +712,12 @@ function renderSpendReport(audits) {
   ];
 
   const itemSub  = n => n != null ? `<span class="sr-items">${n} items</span>` : '';
+  const leftoverSub = p => {
+    if (p.checklist_total == null || p.budget <= 0) return '';
+    const left = p.budget - p.checklist_total;
+    if (left <= 0.005) return '';
+    return `<span class="sr-leftover">${fmt(left)} left</span>`;
+  };
   const fmtCell  = (_p, val) => fmt(val);
   const varRow   = periods.map(p => {
     const v = p.actual - p.budget, sign = v >= 0 ? '+' : '';
@@ -731,7 +737,7 @@ function renderSpendReport(audits) {
       <tbody>
         <tr>
           <td class="sr-row-label">Budgeted</td>
-          ${periods.map(p => `<td>${fmt(p.budget)}${itemSub(p.budgetItems)}</td>`).join('')}
+          ${periods.map(p => `<td>${fmt(p.budget)}${leftoverSub(p)}${itemSub(p.budgetItems)}</td>`).join('')}
         </tr>
         <tr class="sr-actual-row">
           <td class="sr-row-label">Actual</td>
