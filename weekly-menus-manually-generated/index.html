@@ -553,7 +553,9 @@ async function loadSpendReport() {
 
 function initLogTripForm() {
   const dateEl = $('lf-date');
-  if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0, 10);
+  // Default to the current week key so receipt and checklist auto-save merge into the same row.
+  // Fall back to today if no week key is set yet.
+  if (dateEl && !dateEl.value) dateEl.value = _clWeekKey || new Date().toISOString().slice(0, 10);
   fetchJSON('/api/audit-stores').then(stores => {
     const dl = $('lf-stores');
     if (!dl) return;
@@ -617,7 +619,14 @@ function renderSpendReport(audits) {
   const thisMonth = now.toISOString().slice(0, 7);
   const thisYear  = String(now.getFullYear());
   const thirtyAgo = new Date(now - 30 * 86400000).toISOString().slice(0, 10);
-  const lastTrip  = audits[0];
+
+  // "Last Trip" = most recent row with a logged receipt; fall back to audits[0].
+  // If that row has no budget (receipt logged before checklist auto-save ran),
+  // pull the budget from the most recent row that has one.
+  const lastTrip       = audits.find(a => a.actual != null) ?? audits[0];
+  const lastTripBudget = lastTrip.budget > 0
+    ? lastTrip.budget
+    : (audits.find(a => (a.budget || 0) > 0)?.budget || 0);
 
   // Effective actual: receipt total if logged, else checklist estimate
   const eff   = a => a.actual ?? a.checklist_total ?? 0;
@@ -647,7 +656,7 @@ function renderSpendReport(audits) {
   const moAvgBudget = months.length ? months.reduce((s, m) => s + m.budget, 0) / months.length : 0;
 
   const periods = [
-    { label: 'Last Trip',     actual: eff(lastTrip),  budget: lastTrip.budget || 0, items: lastTrip.item_count, trips: 1,            est: isEst(lastTrip) },
+    { label: 'Last Trip',     actual: eff(lastTrip),  budget: lastTripBudget,       items: lastTrip.item_count, trips: 1,            est: isEst(lastTrip) },
     { label: 'Month to Date', actual: sumEff(mtd),    budget: sumBgt(mtd),          items: null,                trips: mtd.length,    est: anyEst(mtd)     },
     { label: 'Last 30 Days',  actual: sumEff(last30), budget: sumBgt(last30),       items: null,                trips: last30.length, est: anyEst(last30)  },
     { label: 'Year to Date',  actual: sumEff(ytd),    budget: sumBgt(ytd),          items: null,                trips: ytd.length,    est: anyEst(ytd)     },
