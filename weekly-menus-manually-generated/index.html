@@ -543,7 +543,28 @@ async function loadSpendReport() {
   if (!_auditStoresLoaded) { _auditStoresLoaded = true; initLogTripForm(); }
   try {
     const audits = await fetchJSON('/api/audits');
-    renderSpendReport(audits);
+    // Merge live checklist budget into the matching DB row (or prepend a synthetic one).
+    // This ensures Budgeted always reflects the current in-cart state regardless of
+    // whether the checklist auto-save has fired or the row was recently deleted.
+    await clEnsureParsed(); // populate _clItems if checklist was never opened
+    const liveAudit = clComputeAudit();
+    let merged = audits;
+    if (liveAudit) {
+      const idx = audits.findIndex(a => a.week === liveAudit.week);
+      if (idx >= 0) {
+        merged = audits.map((a, i) => i === idx ? {
+          ...a,
+          budget:            liveAudit.budget,
+          budget_item_count: liveAudit.budget_item_count,
+          checklist_total:   liveAudit.checklist_total,
+          item_count:        liveAudit.item_count,
+        } : a);
+      } else {
+        // No DB row yet for this week — prepend a live-only entry
+        merged = [{ week: liveAudit.week, ...liveAudit, actual: null, by_store: {}, variance: null }, ...audits];
+      }
+    }
+    renderSpendReport(merged);
   } catch {
     loading.style.display = 'none';
     empty.style.display   = 'block';
@@ -622,19 +643,28 @@ function renderSpendReport(audits) {
 
   // For rows that have a receipt (actual) but no budget, borrow the nearest row's budget.
   // This handles receipts logged on a date that differs from the checklist week key.
+  // For each row, prefer the budget from a nearby checklist row (has budget_item_count,
+  // meaning it was computed live from the shopping list) over any stale borrowed value.
+  // This handles the case where a receipt was logged on a different date than the
+  // checklist auto-save (e.g. 05-02 receipt vs 05-04 checklist).
   const withBudgets = audits.map(a => {
-    if ((a.budget || 0) > 0 || a.actual == null) return a;
-    const nearest = audits
+    // Look for a nearby row (≤7 days) that has a live checklist-computed budget
+    const nearbyChecklist = audits
+      .filter(b => b.week !== a.week && b.budget_item_count != null && (b.budget || 0) > 0)
+      .sort((x, y) => Math.abs(new Date(x.week) - new Date(a.week)) - Math.abs(new Date(y.week) - new Date(a.week)));
+    if (nearbyChecklist.length && Math.abs(new Date(nearbyChecklist[0].week) - new Date(a.week)) / 86400000 <= 7) {
+      const src = nearbyChecklist[0];
+      return { ...a, budget: src.budget, budget_item_count: src.budget_item_count, item_count: a.item_count ?? src.item_count };
+    }
+    // Already has a budget — keep it
+    if ((a.budget || 0) > 0) return a;
+    // No budget anywhere nearby — borrow from the closest row that has one
+    const fallback = audits
       .filter(b => (b.budget || 0) > 0)
       .sort((x, y) => Math.abs(new Date(x.week) - new Date(a.week)) - Math.abs(new Date(y.week) - new Date(a.week)));
-    if (!nearest.length) return a;
-    const src = nearest[0];
-    return {
-      ...a,
-      budget:            src.budget,
-      budget_item_count: a.budget_item_count ?? src.budget_item_count ?? null,
-      item_count:        a.item_count        ?? src.item_count        ?? null,
-    };
+    if (!fallback.length) return a;
+    const src = fallback[0];
+    return { ...a, budget: src.budget, budget_item_count: a.budget_item_count ?? src.budget_item_count, item_count: a.item_count ?? src.item_count };
   });
 
   // "Last Trip" = most recent row with a logged receipt; fall back to withBudgets[0].
@@ -881,12 +911,51 @@ function setupPriceSearch() {
 }
 
 // ── Live Checklist ────────────────────────────────────────────────────────────
-let _clItems   = [];
-let _priceMap  = {};
+let _clItems        = [];
+let _priceMap       = {};
+let _persistedPrices = {};  // master item prices from DB
 let _clState   = { v: 1, c: [], s: [], x: [], prices: {} };
 let _clWeekKey = '';   // authoritative week key for all saves/loads
 let _clSort    = 'store'; // 'store' | 'meal'
 let _clFilter  = 'all'; // 'all' | 'unchecked'
+
+// Lazily parse the shopping list so clComputeAudit() works even if the
+// checklist overlay has never been opened.
+let _clParsedOnce = false;
+async function clEnsureParsed() {
+  if (_clItems.length > 0 || _clParsedOnce) return;
+  if (!_listText) return; // list hasn't loaded yet — don't mark done, will retry on next report load
+  _clParsedOnce = true; // prevent concurrent double-parse
+  // Ensure week key is set (mirrors what openChecklist does)
+  if (!_clWeekKey) _clWeekKey = _manifest?.currentWeek || 'current';
+  // Load checklist state (checked/skipped/extras) so budget calc is accurate
+  if (_clState.c.length === 0 && _clState.s.length === 0 && _clState.x.length === 0) {
+    const dbState    = await clLoadFromDB(_clWeekKey);
+    const localState = clLoadLocal(_clWeekKey);
+    let bestState = null;
+    if (dbState    && dbState.v    === 1) bestState = dbState;
+    if (localState && localState.v === 1) {
+      const dbCount    = bestState ? (bestState.c.length + bestState.s.length) : -1;
+      const localCount = localState.c.length + localState.s.length;
+      if (localCount > dbCount) bestState = localState;
+    }
+    if (bestState) {
+      _clState = bestState;
+      if (!_clState.qtys)   _clState.qtys   = {};
+      if (!_clState.prices) _clState.prices = {};
+    }
+  }
+  // Load persisted prices if not already loaded
+  if (Object.keys(_persistedPrices).length === 0) {
+    try {
+      const pr = await fetch('/api/item-prices');
+      if (pr.ok) _persistedPrices = await pr.json();
+    } catch { /* fall through with empty prices */ }
+  }
+  clParseMd(_listText);
+  clApplyPriceOverrides();
+  clApplyQtyOverrides();
+}
 
 function clEncode(obj) {
   try { return btoa(encodeURIComponent(JSON.stringify(obj))); } catch(e) { return ''; }
