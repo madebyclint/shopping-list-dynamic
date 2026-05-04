@@ -384,7 +384,8 @@ app.get('/api/audits', async (_req, res) => {
         budget:          d.budget          ?? d.list_estimate       ?? 0,
         actual:          d.actual          ?? d.total_spent         ?? null,
         checklist_total: d.checklist_total ?? d.on_list_total_est   ?? null,
-        item_count:      d.item_count      ?? null,
+        item_count:           d.item_count           ?? null,
+        receipt_line_items:   d.receipt_line_items   ?? null,
         by_store:        normByStore(d.by_store ?? {}),
         variance:        d.variance        ?? (
           (d.actual ?? d.total_spent ?? null) != null
@@ -427,11 +428,14 @@ app.post('/api/audits', async (req, res) => {
         Object.values(by_store).reduce((s, v) => s + v, 0).toFixed(2),
       );
       const budget = existing.budget ?? 0;
+      const lineItems = req.body.receipt_line_items != null
+        ? parseInt(req.body.receipt_line_items, 10) : undefined;
       data = {
         ...existing,
         by_store,
         actual,
         variance: parseFloat((actual - budget).toFixed(2)),
+        ...(lineItems > 0 ? { receipt_line_items: lineItems } : {}),
       };
     } else {
       // ── Checklist auto-save mode ────────────────────────────────────────────

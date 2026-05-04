@@ -144,6 +144,10 @@
           <label for="lf-amount">Receipt Total</label>
           <input type="number" id="lf-amount" placeholder="0.00" step="0.01" min="0" />
         </div>
+        <div class="lt-field">
+          <label for="lf-line-items"># Line Items</label>
+          <input type="number" id="lf-line-items" placeholder="optional" step="1" min="1" />
+        </div>
         <button class="lt-save-btn" id="lf-save">✓ Save</button>
       </div>
       <div id="lf-status" class="lt-status"></div>
@@ -559,9 +563,10 @@ function initLogTripForm() {
   if (!saveBtn || saveBtn.dataset.bound) return;
   saveBtn.dataset.bound = '1';
   saveBtn.addEventListener('click', async () => {
-    const date   = ($('lf-date')?.value   || '').trim();
-    const store  = ($('lf-store')?.value  || '').trim();
-    const amount = parseFloat($('lf-amount')?.value);
+    const date      = ($('lf-date')?.value   || '').trim();
+    const store     = ($('lf-store')?.value  || '').trim();
+    const amount    = parseFloat($('lf-amount')?.value);
+    const lineItems = parseInt($('lf-line-items')?.value, 10);
     const status = $('lf-status');
     if (!date || !store || isNaN(amount) || amount <= 0) {
       if (status) { status.textContent = '⚠️ Please fill in date, store, and a valid amount.'; status.className = 'lt-status lt-err'; }
@@ -569,10 +574,12 @@ function initLogTripForm() {
     }
     saveBtn.disabled = true;
     try {
+      const payload = { week: date, store, receipt_amount: amount };
+      if (!isNaN(lineItems) && lineItems > 0) payload.receipt_line_items = lineItems;
       const r = await fetch('/api/audits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ week: date, store, receipt_amount: amount }),
+        body: JSON.stringify(payload),
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       if (status) { status.textContent = `✓ Saved — ${store} ${fmt(amount)} on ${date}`; status.className = 'lt-status lt-ok'; }
@@ -581,6 +588,7 @@ function initLogTripForm() {
         const opt = document.createElement('option'); opt.value = store; dl.appendChild(opt);
       }
       $('lf-amount').value = '';
+      $('lf-line-items').value = '';
       _auditStoresLoaded = true;
       await loadSpendReport();
     } catch (err) {
@@ -695,7 +703,8 @@ function renderSpendReport(audits) {
       html += `<div class="ltc-row"><span>Checklist est.</span><span>${fmt(lastTrip.checklist_total)} <span class="ltc-sub">(checked items)</span></span></div>`;
     }
     if (hasReceipt) {
-      html += `<div class="ltc-row"><span>Receipt total</span><span class="sr-actual-val">${fmt(lastTrip.actual)}</span></div>`;
+      const rliLabel = lastTrip.receipt_line_items != null ? ` · ${lastTrip.receipt_line_items} line items` : '';
+      html += `<div class="ltc-row"><span>Receipt total</span><span class="sr-actual-val">${fmt(lastTrip.actual)}<span class="ltc-sub">${rliLabel}</span></span></div>`;
       if (hasChecklist) {
         const delta = lastTrip.actual - lastTrip.checklist_total;
         const sign  = delta >= 0 ? '+' : '';
