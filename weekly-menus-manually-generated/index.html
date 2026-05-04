@@ -620,31 +620,43 @@ function renderSpendReport(audits) {
   const thisYear  = String(now.getFullYear());
   const thirtyAgo = new Date(now - 30 * 86400000).toISOString().slice(0, 10);
 
-  // "Last Trip" = most recent row with a logged receipt; fall back to audits[0].
-  // If that row has no budget (receipt logged before checklist auto-save ran),
-  // pull the budget from the most recent row that has one.
-  const lastTrip       = audits.find(a => a.actual != null) ?? audits[0];
-  const lastTripBudget = lastTrip.budget > 0
-    ? lastTrip.budget
-    : (audits.find(a => (a.budget || 0) > 0)?.budget || 0);
+  // For rows that have a receipt (actual) but no budget, borrow the nearest row's budget.
+  // This handles receipts logged on a date that differs from the checklist week key.
+  const withBudgets = audits.map(a => {
+    if ((a.budget || 0) > 0 || a.actual == null) return a;
+    const nearest = audits
+      .filter(b => (b.budget || 0) > 0)
+      .sort((x, y) => Math.abs(new Date(x.week) - new Date(a.week)) - Math.abs(new Date(y.week) - new Date(a.week)));
+    if (!nearest.length) return a;
+    const src = nearest[0];
+    return {
+      ...a,
+      budget:            src.budget,
+      budget_item_count: a.budget_item_count ?? src.budget_item_count ?? null,
+      item_count:        a.item_count        ?? src.item_count        ?? null,
+    };
+  });
+
+  // "Last Trip" = most recent row with a logged receipt; fall back to withBudgets[0].
+  const lastTrip = withBudgets.find(a => a.actual != null) ?? withBudgets[0];
 
   // Effective actual: receipt total if logged, else checklist estimate
   const eff   = a => a.actual ?? a.checklist_total ?? 0;
   const isEst = a => a.actual == null;
 
-  const mtd    = audits.filter(a => (a.week || '').startsWith(thisMonth));
-  const last30 = audits.filter(a => (a.week || '') >= thirtyAgo);
-  const ytd    = audits.filter(a => (a.week || '').startsWith(thisYear));
+  const mtd    = withBudgets.filter(a => (a.week || '').startsWith(thisMonth));
+  const last30 = withBudgets.filter(a => (a.week || '') >= thirtyAgo);
+  const ytd    = withBudgets.filter(a => (a.week || '').startsWith(thisYear));
 
   const sumEff = arr => arr.reduce((s, a) => s + eff(a), 0);
   const sumBgt = arr => arr.reduce((s, a) => s + (a.budget || 0), 0);
   const anyEst = arr => arr.some(isEst);
 
-  const wkAvgActual = audits.length ? sumEff(audits) / audits.length : 0;
-  const wkAvgBudget = audits.length ? sumBgt(audits) / audits.length : 0;
+  const wkAvgActual = withBudgets.length ? sumEff(withBudgets) / withBudgets.length : 0;
+  const wkAvgBudget = withBudgets.length ? sumBgt(withBudgets) / withBudgets.length : 0;
 
   const byMonth = {};
-  audits.forEach(a => {
+  withBudgets.forEach(a => {
     const mo = (a.week || '').slice(0, 7);
     if (!mo) return;
     if (!byMonth[mo]) byMonth[mo] = { actual: 0, budget: 0 };
@@ -655,20 +667,28 @@ function renderSpendReport(audits) {
   const moAvgActual = months.length ? months.reduce((s, m) => s + m.actual, 0) / months.length : 0;
   const moAvgBudget = months.length ? months.reduce((s, m) => s + m.budget, 0) / months.length : 0;
 
+  // Item counts: Last Trip uses receipt_line_items (actual) and budget_item_count (budgeted)
+  // Fall back to item_count (checked items) for budget items if budget_item_count not stored.
+  const ltBudgetItems  = lastTrip.budget_item_count  ?? lastTrip.item_count ?? null;
+  const ltActualItems  = lastTrip.receipt_line_items ?? null;
+
   const periods = [
-    { label: 'Last Trip',     actual: eff(lastTrip),  budget: lastTripBudget,       items: lastTrip.item_count, trips: 1,            est: isEst(lastTrip) },
-    { label: 'Month to Date', actual: sumEff(mtd),    budget: sumBgt(mtd),          items: null,                trips: mtd.length,    est: anyEst(mtd)     },
-    { label: 'Last 30 Days',  actual: sumEff(last30), budget: sumBgt(last30),       items: null,                trips: last30.length, est: anyEst(last30)  },
-    { label: 'Year to Date',  actual: sumEff(ytd),    budget: sumBgt(ytd),          items: null,                trips: ytd.length,    est: anyEst(ytd)     },
-    { label: 'Weekly Avg',    actual: wkAvgActual,    budget: wkAvgBudget,          items: null,                trips: null,          est: false           },
-    { label: 'Monthly Avg',   actual: moAvgActual,    budget: moAvgBudget,          items: null,                trips: null,          est: false           },
+    { label: 'Last Trip',     actual: eff(lastTrip),  budget: lastTrip.budget || 0, budgetItems: ltBudgetItems,  actualItems: ltActualItems,  trips: 1,            est: isEst(lastTrip) },
+    { label: 'Month to Date', actual: sumEff(mtd),    budget: sumBgt(mtd),          budgetItems: null,           actualItems: null,           trips: mtd.length,   est: anyEst(mtd)     },
+    { label: 'Last 30 Days',  actual: sumEff(last30), budget: sumBgt(last30),       budgetItems: null,           actualItems: null,           trips: last30.length,est: anyEst(last30)  },
+    { label: 'Year to Date',  actual: sumEff(ytd),    budget: sumBgt(ytd),          budgetItems: null,           actualItems: null,           trips: ytd.length,   est: anyEst(ytd)     },
+    { label: 'Weekly Avg',    actual: wkAvgActual,    budget: wkAvgBudget,          budgetItems: null,           actualItems: null,           trips: null,         est: false           },
+    { label: 'Monthly Avg',   actual: moAvgActual,    budget: moAvgBudget,          budgetItems: null,           actualItems: null,           trips: null,         est: false           },
   ];
 
-  const fmtCell = (p, val) => fmt(val) + (p.est ? '<span class="sr-est"> est.</span>' : '');
-  const varRow  = periods.map(p => {
+  const itemSub  = n => n != null ? `<span class="sr-items">${n} items</span>` : '';
+  const fmtCell  = (_p, val) => fmt(val);
+  const varRow   = periods.map(p => {
     const v = p.actual - p.budget, sign = v >= 0 ? '+' : '';
     const cls = v > 0.005 ? 'sr-over' : v < -0.005 ? 'sr-under' : '';
-    return `<td class="${cls}">${sign}${fmt(v)}${p.est ? '<span class="sr-est"> est.</span>' : ''}</td>`;
+    const overItems = (p.actualItems != null && p.budgetItems != null)
+      ? itemSub(p.actualItems - p.budgetItems) : '';
+    return `<td class="${cls}">${sign}${fmt(v)}${overItems}</td>`;
   }).join('');
 
   let html = `
@@ -681,19 +701,15 @@ function renderSpendReport(audits) {
       <tbody>
         <tr>
           <td class="sr-row-label">Budgeted</td>
-          ${periods.map(p => `<td>${fmt(p.budget)}</td>`).join('')}
+          ${periods.map(p => `<td>${fmt(p.budget)}${itemSub(p.budgetItems)}</td>`).join('')}
         </tr>
         <tr class="sr-actual-row">
           <td class="sr-row-label">Actual</td>
-          ${periods.map(p => `<td>${fmtCell(p, p.actual)}</td>`).join('')}
+          ${periods.map(p => `<td>${fmtCell(p, p.actual)}${itemSub(p.actualItems)}</td>`).join('')}
         </tr>
         <tr>
           <td class="sr-row-label">Overage</td>
           ${varRow}
-        </tr>
-        <tr class="sr-dim-row">
-          <td class="sr-row-label">Items</td>
-          ${periods.map(p => `<td>${p.items != null ? p.items : '—'}</td>`).join('')}
         </tr>
         <tr class="sr-dim-row">
           <td class="sr-row-label">Trips</td>
@@ -726,7 +742,36 @@ function renderSpendReport(audits) {
   }
 
   // Store breakdown + recent trend chart
-  const recent4      = audits.slice(0, 4).reverse();
+  const recent4      = withBudgets.slice(0, 4).reverse();
+  // ── Manage Entries (raw list with delete buttons) ──────────────────────────
+  html += `<details class="manage-entries"><summary>Manage entries</summary><ul class="me-list">`;
+  audits.slice().sort((a, b) => b.week > a.week ? 1 : -1).forEach(a => {
+    const receiptAmt   = a.actual        != null ? fmt(a.actual)         : null;
+    const checkAmt     = a.checklist_total != null ? fmt(a.checklist_total) : null;
+    const budgetAmt    = (a.budget || 0) > 0     ? fmt(a.budget)         : null;
+    const stores       = a.by_store ? Object.entries(a.by_store).map(([s, v]) => `${s}: ${fmt(v)}`).join(', ') : '';
+    const lineItems    = a.receipt_line_items != null ? `${a.receipt_line_items} items` : '';
+    const summary      = receiptAmt ? `${receiptAmt} receipt` : (checkAmt ? `${checkAmt} est.` : 'no data');
+    const detailParts  = [
+      budgetAmt    ? `Budget: ${budgetAmt}` : '',
+      checkAmt     ? `Checklist: ${checkAmt}` : '',
+      receiptAmt   ? `Receipt: ${receiptAmt}` : '',
+      lineItems,
+      stores       ? `Stores: ${stores}` : '',
+    ].filter(Boolean).join(' · ');
+    html += `<li class="me-row">
+      <details class="me-details">
+        <summary class="me-summary">
+          <span class="me-date">${a.week}</span>
+          <span class="me-label">${summary}</span>
+          <button class="me-del" data-date="${a.week}" aria-label="Delete ${a.week}">✕</button>
+        </summary>
+        <div class="me-detail-body">${detailParts || 'No detail available'}</div>
+      </details>
+    </li>`;
+  });
+  html += `</ul></details>`;
+
   const storeEntries = lastTrip.by_store ? Object.entries(lastTrip.by_store) : [];
   const storeTotal   = storeEntries.reduce((s, [, v]) => s + v, 0);
 
@@ -762,6 +807,23 @@ function renderSpendReport(audits) {
   }
 
   report.innerHTML = html;
+
+  // Wire delete buttons in Manage Entries
+  report.querySelectorAll('.me-del').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const date = btn.dataset.date;
+      if (!confirm(`Delete the entry for ${date}? This cannot be undone.`)) return;
+      btn.disabled = true;
+      try {
+        const r = await fetch(`/api/audits/${encodeURIComponent(date)}`, { method: 'DELETE' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        await loadSpendReport();
+      } catch (err) {
+        alert('Delete failed: ' + err.message);
+        btn.disabled = false;
+      }
+    });
+  });
 
   if ($('trendChart') && recent4.length >= 1) {
     if (_spendChart) _spendChart.destroy();
@@ -1152,26 +1214,34 @@ function clSync() {
 }
 function clComputeAudit() {
   if (!_clWeekKey || _clItems.length === 0) return null;
-  let budget = 0, checklist_total = 0, itemCount = 0;
+  let budget = 0, budget_item_count = 0, checklist_total = 0, item_count = 0;
   _clItems.forEach((item, idx) => {
     const p = item.price || 0;
-    budget += p;
+    const isSkipped = _clState.s.includes(idx);
+    if (!isSkipped) {
+      budget += p;
+      budget_item_count++;
+    }
     if (_clState.c.includes(idx)) {
       checklist_total += p;
-      itemCount++;
+      item_count++;
     }
   });
   _clState.x.forEach(item => {
+    // All custom extras count toward budget (there's no skip for extras, only remove)
+    budget += (item.p || 0);
+    budget_item_count++;
     if (item.st === 'c') {
       checklist_total += (item.p || 0);
-      itemCount++;
+      item_count++;
     }
   });
   return {
-    week:            _clWeekKey,
-    budget:          parseFloat(budget.toFixed(2)),
-    checklist_total: parseFloat(checklist_total.toFixed(2)),
-    item_count:      itemCount,
+    week:               _clWeekKey,
+    budget:             parseFloat(budget.toFixed(2)),
+    budget_item_count,
+    checklist_total:    parseFloat(checklist_total.toFixed(2)),
+    item_count,
   };
 }
 function clSaveAudit() {

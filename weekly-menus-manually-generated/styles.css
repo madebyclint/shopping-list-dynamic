@@ -665,6 +665,98 @@ button {
   color: #6b5000;
 }
 
+.audit-nudge {
+  margin-top: 1.25rem;
+  padding: 14px 18px;
+  background: #fffbf0;
+  border: 1px solid #f0d080;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #6b5000;
+}
+
+/* ── Manage Entries ───────────────────────────────────────────── */
+.manage-entries {
+  margin-top: 1.5rem;
+  border: 1px solid var(--border, #e8e6e1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.manage-entries summary {
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted, #888);
+  cursor: pointer;
+  user-select: none;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.manage-entries summary:hover { color: var(--text, #1a1a1a); }
+.me-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border, #e8e6e1);
+}
+.me-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border, #e8e6e1);
+  font-size: 0.875rem;
+}
+.me-row:last-child { border-bottom: none; }
+.me-date {
+  flex: 0 0 90px;
+  font-weight: 600;
+  color: var(--text, #1a1a1a);
+}
+.me-label {
+  flex: 1;
+  color: var(--muted, #888);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.me-del {
+  flex: 0 0 auto;
+  background: none;
+  border: 1px solid #e0b0b0;
+  border-radius: 6px;
+  color: #c0392b;
+  font-size: 0.8rem;
+  padding: 3px 8px;
+  cursor: pointer;
+  line-height: 1;
+}
+.me-del:hover { background: #fdecea; }
+.me-del:disabled { opacity: 0.4; cursor: default; }
+.me-details { width: 100%; }
+.me-details > summary { list-style: none; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.me-details > summary::-webkit-details-marker { display: none; }
+.me-details > summary::before { content: '▶'; font-size: 0.6rem; color: var(--muted, #888); flex: 0 0 auto; transition: transform .15s; }
+.me-details[open] > summary::before { transform: rotate(90deg); }
+.me-detail-body {
+  padding: 8px 16px 8px 22px;
+  font-size: 0.82rem;
+  color: var(--muted, #888);
+  border-top: 1px solid var(--border, #e8e6e1);
+  margin-top: 6px;
+  line-height: 1.6;
+}
+
+/* ── Table item count sub-labels ─────────────────────────────── */
+.sr-items {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted, #888);
+  font-weight: 400;
+  margin-top: 2px;
+}
+
 /* ── Markdown content ─────────────────────────────────────────── */
 .md-content {
   background: var(--surface);

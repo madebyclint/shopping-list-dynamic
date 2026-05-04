@@ -385,6 +385,7 @@ app.get('/api/audits', async (_req, res) => {
         actual:          d.actual          ?? d.total_spent         ?? null,
         checklist_total: d.checklist_total ?? d.on_list_total_est   ?? null,
         item_count:           d.item_count           ?? null,
+        budget_item_count:    d.budget_item_count    ?? null,
         receipt_line_items:   d.receipt_line_items   ?? null,
         by_store:        normByStore(d.by_store ?? {}),
         variance:        d.variance        ?? (
@@ -427,7 +428,20 @@ app.post('/api/audits', async (req, res) => {
       const actual = parseFloat(
         Object.values(by_store).reduce((s, v) => s + v, 0).toFixed(2),
       );
-      const budget = existing.budget ?? 0;
+      // If this row has no budget, pull it from the nearest row within ±14 days
+      // (handles the case where a receipt date differs from the checklist week key).
+      let budget = existing.budget || 0;
+      if (!budget) {
+        const { rows: nearby } = await pool.query(
+          `SELECT data FROM shopping_audits
+           WHERE shopping_date != $1
+             AND (data->>'budget')::numeric > 0
+           ORDER BY ABS(shopping_date::date - $1::date)
+           LIMIT 1`,
+          [week],
+        );
+        if (nearby.length > 0) budget = parseFloat(nearby[0].data?.budget) || 0;
+      }
       const lineItems = req.body.receipt_line_items != null
         ? parseInt(req.body.receipt_line_items, 10) : undefined;
       data = {
@@ -439,14 +453,16 @@ app.post('/api/audits', async (req, res) => {
       };
     } else {
       // ── Checklist auto-save mode ────────────────────────────────────────────
-      const budget          = typeof req.body.budget          === 'number' ? req.body.budget          : (existing.budget ?? 0);
-      const checklist_total = typeof req.body.checklist_total === 'number' ? req.body.checklist_total : (existing.checklist_total ?? null);
-      const item_count      = typeof req.body.item_count      === 'number' ? req.body.item_count      : (existing.item_count ?? 0);
+      const budget              = typeof req.body.budget              === 'number' ? req.body.budget              : (existing.budget ?? 0);
+      const budget_item_count   = typeof req.body.budget_item_count   === 'number' ? req.body.budget_item_count   : (existing.budget_item_count ?? null);
+      const checklist_total     = typeof req.body.checklist_total     === 'number' ? req.body.checklist_total     : (existing.checklist_total ?? null);
+      const item_count          = typeof req.body.item_count          === 'number' ? req.body.item_count          : (existing.item_count ?? 0);
       // Never overwrite receipt-entered actual / by_store
       const actual = existing.actual ?? null;
       data = {
         ...existing,
         budget,
+        budget_item_count,
         checklist_total,
         item_count,
         actual,
@@ -482,6 +498,21 @@ app.get('/api/audit-stores', async (_req, res) => {
     res.json([...stores].sort());
   } catch (err) {
     console.error('GET /api/audit-stores:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+// ── DELETE /api/audits/:date — remove a single trip record ──────────────────────
+app.delete('/api/audits/:date', async (req, res) => {
+  try {
+    const date = String(req.params.date || '').slice(0, 20).trim();
+    if (!date) return res.status(400).json({ error: 'date_required' });
+    const { rowCount } = await pool.query(
+      'DELETE FROM shopping_audits WHERE shopping_date = $1', [date],
+    );
+    res.json({ ok: true, deleted: rowCount });
+  } catch (err) {
+    console.error('DELETE /api/audits:', err.message);
     res.status(500).json({ error: 'db_error' });
   }
 });
