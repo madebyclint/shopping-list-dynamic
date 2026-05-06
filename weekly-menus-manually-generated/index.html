@@ -194,6 +194,18 @@
       <div style="display:flex;gap:0;border-bottom:2px solid var(--border,#e5e7eb);margin-bottom:20px">
         <button id="plan-tab-notes" class="plan-subtab active" onclick="planShowTab('notes')">📋 Next Week Notes</button>
         <button id="plan-tab-ideas" class="plan-subtab" onclick="planShowTab('ideas')">💡 Meal Ideas</button>
+        <button id="plan-tab-import" class="plan-subtab" onclick="planShowTab('import')">📋 Paste Import</button>
+      </div>
+
+      <!-- IMPORT pane -->
+      <div id="plan-pane-import" style="display:none">
+        <p style="font-size:0.82rem;color:var(--muted);margin:0 0 14px">Paste a checklist from Apple Notes — items are automatically sorted into Meal Ideas or Notes based on the section header.</p>
+        <textarea id="plan-import-text" rows="8" placeholder="Paste your Apple Notes checklist here…&#10;&#10;Example:&#10;Weekly Meals Next Ideas&#10;- [ ] Banh mi&#10;- [ ] Ribs and kimchi&#10;&#10;Items needed&#10;- [ ] Coffee&#10;- [ ] Apples" style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border,#d1d5db);font-size:0.83rem;resize:vertical;box-sizing:border-box;font-family:inherit;line-height:1.5"></textarea>
+        <div id="plan-import-preview"></div>
+        <div id="plan-import-actions" style="display:none;gap:8px;margin-top:12px;justify-content:flex-end">
+          <button onclick="planClearImport()" style="background:none;border:1px solid var(--border,#d1d5db);border-radius:7px;padding:7px 14px;font-size:0.82rem;cursor:pointer;color:var(--muted)">Clear</button>
+          <button id="plan-import-btn" class="plan-save-btn" onclick="planImportAll()">Import Selected</button>
+        </div>
       </div>
 
       <!-- NOTES pane -->
@@ -1011,8 +1023,9 @@ let _planIdeasFilter = 'all'; // 'all' | 'fav'
 function planShowTab(tab) {
   document.querySelectorAll('.plan-subtab').forEach(b => b.classList.remove('active'));
   $('plan-tab-' + tab).classList.add('active');
-  $('plan-pane-notes').style.display = tab === 'notes' ? '' : 'none';
-  $('plan-pane-ideas').style.display = tab === 'ideas' ? '' : 'none';
+  $('plan-pane-notes').style.display  = tab === 'notes'  ? '' : 'none';
+  $('plan-pane-ideas').style.display  = tab === 'ideas'  ? '' : 'none';
+  $('plan-pane-import').style.display = tab === 'import' ? '' : 'none';
 }
 
 function planFilterIdeas(f) {
@@ -1109,7 +1122,7 @@ function planRenderIdeas() {
         <button class="plan-del-btn" onclick="planDeleteIdea(${idea.id})" title="Delete">🗑</button>
       </div>
       ${idea.description ? `<p class="plan-idea-desc">${idea.description}</p>` : ''}
-      ${idea.notes ? `<p class="plan-idea-notes">📝 ${idea.notes}</p>` : ''}
+      ${idea.notes ? `<p class="plan-idea-notes">📝 <span>${planLinkifyNotes(idea.notes)}</span></p>` : ''}
       <div class="plan-idea-footer">
         <button class="plan-fav-btn ${idea.is_favorite ? 'active' : ''}" onclick="planToggleFav(${idea.id}, ${!idea.is_favorite})">
           ${idea.is_favorite ? '⭐ Favorited' : '☆ Favorite'}
@@ -1210,6 +1223,155 @@ $('tabNav').addEventListener('click', e => {
     planLoadNotes();
     planLoadIdeas();
   }
+});
+
+// ── Planning Prep — Paste Import ──────────────────────────────────────────────
+let _planImportData = []; // [{ header, type:'meal_idea'|'note_ingredient', items:[{content,url,selected}] }]
+
+function planLinkifyNotes(text) {
+  // Escape HTML, then wrap URLs in anchor tags
+  const parts = text.split(/(https?:\/\/\S+)/);
+  return parts.map((p, i) => {
+    const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    if (i % 2 === 1) {
+      const safe = esc(p);
+      return `<a href="${safe}" target="_blank" rel="noopener" style="color:#3b82f6;word-break:break-all;font-size:0.78rem">${safe}</a>`;
+    }
+    return esc(p);
+  }).join('');
+}
+
+function planExtractRealUrl(raw) {
+  try {
+    const u = new URL(raw);
+    if (u.hostname.includes('google.com') && u.pathname === '/url') {
+      return u.searchParams.get('q') || raw;
+    }
+    return raw;
+  } catch { return raw; }
+}
+
+function planClassifyImportSection(header) {
+  return /item|ingredient|need|grocery|shopping|pantry/i.test(header)
+    ? 'note_ingredient' : 'meal_idea';
+}
+
+function planParseImportText(text) {
+  const sections = [];
+  let current = null;
+  for (const line of text.split('\n')) {
+    const t = line.trim();
+    if (!t) continue;
+    const m = t.match(/^-\s*\[[ xX]?\]\s*(.+)/);
+    if (m) {
+      if (!current) { current = { header: '', type: 'meal_idea', items: [] }; sections.push(current); }
+      let content = m[1].trim();
+      const urlM = content.match(/(https?:\/\/\S+)/);
+      let url = null;
+      if (urlM) {
+        url = planExtractRealUrl(urlM[1]);
+        content = content.replace(urlM[1], '').replace(/[.\s,]+$/, '').trim();
+      }
+      // If the whole item was a URL with no label, derive a title from the hostname
+      if (!content && url) {
+        try { content = new URL(url).hostname.replace(/^www\./, ''); } catch { content = url; }
+      }
+      if (content) current.items.push({ content, url, selected: true });
+    } else {
+      current = { header: t, type: planClassifyImportSection(t), items: [] };
+      sections.push(current);
+    }
+  }
+  return sections.filter(s => s.items.length > 0);
+}
+
+function planRenderImportPreview(sections) {
+  const el = $('plan-import-preview');
+  const actEl = $('plan-import-actions');
+  if (!sections.length) { el.innerHTML = ''; actEl.style.display = 'none'; return; }
+
+  const total = sections.reduce((s, sec) => s + sec.items.length, 0);
+  let html = `<div style="margin-top:12px;padding:12px;background:var(--surface,#f9fafb);border:1px solid var(--border,#e5e7eb);border-radius:10px">
+    <div style="font-size:0.82rem;font-weight:700;margin-bottom:10px;color:var(--text)">Found ${total} item${total !== 1 ? 's' : ''}</div>`;
+
+  sections.forEach((sec, si) => {
+    const isMeal = sec.type === 'meal_idea';
+    const typeLabel = isMeal ? '💡 → Meal Ideas' : '📝 → Ingredient Note';
+    const [bg, fg] = isMeal ? ['#dbeafe', '#1d4ed8'] : ['#dcfce7', '#15803d'];
+    html += `<div style="margin-bottom:12px">`;
+    if (sec.header) {
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap">
+        <span style="font-size:0.79rem;font-weight:700;color:var(--muted)">${sec.header}</span>
+        <span style="font-size:0.71rem;font-weight:700;padding:2px 8px;border-radius:10px;background:${bg};color:${fg}">${typeLabel}</span>
+        <button style="margin-left:auto;font-size:0.71rem;background:none;border:1px solid var(--border,#d1d5db);border-radius:5px;padding:2px 7px;cursor:pointer;color:var(--muted)" onclick="planToggleImportSectionType(${si})">Switch</button>
+      </div>`;
+    }
+    sec.items.forEach((item, ii) => {
+      html += `<label style="display:flex;align-items:flex-start;gap:8px;padding:4px 0;cursor:pointer">
+        <input type="checkbox" ${item.selected ? 'checked' : ''} onchange="_planImportData[${si}].items[${ii}].selected=this.checked" style="margin-top:3px;flex-shrink:0" />
+        <span style="font-size:0.84rem;line-height:1.4">${item.content}${item.url ? ` <a href="${item.url}" target="_blank" rel="noopener" style="font-size:0.71rem;color:#3b82f6;margin-left:4px">🔗</a>` : ''}</span>
+      </label>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+  actEl.style.display = 'flex';
+}
+
+function planToggleImportSectionType(si) {
+  const sec = _planImportData[si];
+  sec.type = sec.type === 'meal_idea' ? 'note_ingredient' : 'meal_idea';
+  planRenderImportPreview(_planImportData);
+}
+
+function planClearImport() {
+  $('plan-import-text').value = '';
+  $('plan-import-preview').innerHTML = '';
+  $('plan-import-actions').style.display = 'none';
+  _planImportData = [];
+}
+
+async function planImportAll() {
+  const selected = _planImportData.flatMap(sec =>
+    sec.items.filter(i => i.selected).map(i => ({ ...i, type: sec.type }))
+  );
+  if (!selected.length) return;
+  const hasMealIdeas = selected.some(i => i.type === 'meal_idea');
+  const btn = $('plan-import-btn');
+  btn.disabled = true; btn.textContent = 'Importing…';
+  try {
+    await Promise.all(selected.map(item => {
+      if (item.type === 'meal_idea') {
+        return fetch('/api/meal-ideas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: item.content, notes: item.url ? `Recipe: ${item.url}` : null }),
+        });
+      } else {
+        const content = item.url ? `${item.content} — ${item.url}` : item.content;
+        return fetch('/api/next-week-notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content, note_type: 'must_use_ingredient' }),
+        });
+      }
+    }));
+    planClearImport();
+    await Promise.all([planLoadNotes(), planLoadIdeas()]);
+    planShowTab(hasMealIdeas ? 'ideas' : 'notes');
+  } catch (err) {
+    alert('Import failed: ' + err.message);
+    btn.disabled = false; btn.textContent = 'Import Selected';
+  }
+}
+
+// Wire up paste listener
+$('plan-import-text').addEventListener('input', () => {
+  const text = $('plan-import-text').value;
+  if (!text.trim()) { $('plan-import-preview').innerHTML = ''; $('plan-import-actions').style.display = 'none'; _planImportData = []; return; }
+  _planImportData = planParseImportText(text);
+  planRenderImportPreview(_planImportData);
 });
 
 // ── Live Checklist ────────────────────────────────────────────────────────────
