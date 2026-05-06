@@ -24,6 +24,7 @@
       <button class="tab-btn" data-tab="list">🛒 Shopping List</button>
       <button class="tab-btn" data-tab="audit">📊 Audit</button>
       <button class="tab-btn" data-tab="history">📅 History</button>
+      <button class="tab-btn" data-tab="planning">🍽️ Planning</button>
       <button class="tab-btn" data-tab="prices">💰 Price List</button>
       <button class="tab-btn" data-tab="archive">📚 Archive</button>
     </nav>
@@ -179,6 +180,81 @@
         <div id="archive-content" class="md-content">
           <div style="padding:40px;text-align:center;color:var(--muted);font-size:0.9rem">← Select a week to read the menu</div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MEAL PLANNING PREP ──────────────────────────────────────────────────── -->
+  <section id="tab-planning" class="page">
+    <div style="max-width:720px;margin:0 auto;padding:0 4px 40px">
+      <h2 style="margin:0 0 4px;font-size:1.3rem">🍽️ Meal Planning Prep</h2>
+      <p style="margin:0 0 20px;font-size:0.85rem;color:var(--muted)">Capture ideas &amp; notes. These feed into AI meal generation.</p>
+
+      <!-- Sub-tabs -->
+      <div style="display:flex;gap:0;border-bottom:2px solid var(--border,#e5e7eb);margin-bottom:20px">
+        <button id="plan-tab-notes" class="plan-subtab active" onclick="planShowTab('notes')">📋 Next Week Notes</button>
+        <button id="plan-tab-ideas" class="plan-subtab" onclick="planShowTab('ideas')">💡 Meal Ideas</button>
+      </div>
+
+      <!-- NOTES pane -->
+      <div id="plan-pane-notes">
+        <p style="font-size:0.82rem;color:var(--muted);margin:0 0 14px">These are included in the AI prompt when you generate a plan. Click ✓ Used to hide after applying.</p>
+        <form id="plan-note-form" style="background:var(--surface,#f9fafb);border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:14px;margin-bottom:18px">
+          <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <select id="plan-note-type" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border,#d1d5db);font-size:0.82rem;background:#fff">
+              <option value="meal_request">🍽️ Meal Request</option>
+              <option value="must_use_ingredient">🥦 Must-Use Ingredient</option>
+              <option value="dietary_note">💚 Dietary Note</option>
+              <option value="constraint">🚫 Constraint</option>
+              <option value="general" selected>📝 General</option>
+            </select>
+            <input type="date" id="plan-note-week" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border,#d1d5db);font-size:0.82rem" title="Week this applies to (optional)" />
+          </div>
+          <textarea id="plan-note-content" rows="2" placeholder="e.g. Use the salmon in the freezer · Want tacos this week · No cooking Thursday" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border,#d1d5db);font-size:0.84rem;resize:vertical;box-sizing:border-box"></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:8px">
+            <button type="submit" class="plan-save-btn" id="plan-note-submit">+ Add Note</button>
+          </div>
+        </form>
+        <div id="plan-notes-list"><div class="loading"><div class="spinner"></div> Loading…</div></div>
+      </div>
+
+      <!-- IDEAS pane -->
+      <div id="plan-pane-ideas" style="display:none">
+        <p style="font-size:0.82rem;color:var(--muted);margin:0 0 14px">⭐ Favorites are automatically included in every AI generation.</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="display:flex;gap:6px">
+            <button class="plan-filter-btn active" id="plan-filter-all" onclick="planFilterIdeas('all')">All</button>
+            <button class="plan-filter-btn" id="plan-filter-fav" onclick="planFilterIdeas('fav')">⭐ Favorites</button>
+          </div>
+          <button class="plan-save-btn" onclick="planToggleIdeaForm()">+ New Idea</button>
+        </div>
+        <form id="plan-idea-form" style="display:none;background:var(--surface,#f9fafb);border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:14px;margin-bottom:18px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div>
+              <label style="font-size:0.77rem;font-weight:600;display:block;margin-bottom:3px">Meal Name *</label>
+              <input type="text" id="plan-idea-title" placeholder="e.g. Thai Basil Chicken" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border,#d1d5db);font-size:0.83rem;box-sizing:border-box" required />
+            </div>
+            <div>
+              <label style="font-size:0.77rem;font-weight:600;display:block;margin-bottom:3px">Cuisine</label>
+              <input type="text" id="plan-idea-cuisine" placeholder="e.g. Thai, Mexican" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border,#d1d5db);font-size:0.83rem;box-sizing:border-box" />
+            </div>
+          </div>
+          <div style="margin-bottom:8px">
+            <label style="font-size:0.77rem;font-weight:600;display:block;margin-bottom:3px">Description / Key Ingredients</label>
+            <input type="text" id="plan-idea-desc" placeholder="e.g. Ground chicken, Thai basil, fish sauce, rice" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border,#d1d5db);font-size:0.83rem;box-sizing:border-box" />
+          </div>
+          <div style="margin-bottom:10px">
+            <label style="font-size:0.77rem;font-weight:600;display:block;margin-bottom:3px">Notes</label>
+            <textarea id="plan-idea-notes" rows="2" placeholder="Kids loved it · needs dairy-free swap…" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border,#d1d5db);font-size:0.83rem;resize:vertical;box-sizing:border-box"></textarea>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <label style="font-size:0.83rem;display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="plan-idea-fav" /> ⭐ Favorite (AI uses weekly)
+            </label>
+            <button type="submit" class="plan-save-btn" id="plan-idea-submit">Save Idea</button>
+          </div>
+        </form>
+        <div id="plan-ideas-list"><div class="loading"><div class="spinner"></div> Loading…</div></div>
       </div>
     </div>
   </section>
@@ -449,6 +525,7 @@ function handleInitialHash() {
     switchTab(hash, false);
     if (hash === 'archive') loadArchive();
     if (hash === 'audit') loadSpendReport();
+    if (hash === 'planning') { planLoadNotes(); planLoadIdeas(); }
   }
 }
 
@@ -473,6 +550,7 @@ window.addEventListener('popstate', () => {
     switchTab(hash, false);
     if (hash === 'archive') loadArchive();
     if (hash === 'audit') loadSpendReport();
+    if (hash === 'planning') { planLoadNotes(); planLoadIdeas(); }
   }
 });
 
@@ -925,6 +1003,214 @@ function setupPriceSearch() {
     noRes.style.display = anyVisible ? 'none' : 'block';
   });
 }
+
+// ── Meal Planning Prep ────────────────────────────────────────────────────────
+let _planIdeas = [];
+let _planIdeasFilter = 'all'; // 'all' | 'fav'
+
+function planShowTab(tab) {
+  document.querySelectorAll('.plan-subtab').forEach(b => b.classList.remove('active'));
+  $('plan-tab-' + tab).classList.add('active');
+  $('plan-pane-notes').style.display = tab === 'notes' ? '' : 'none';
+  $('plan-pane-ideas').style.display = tab === 'ideas' ? '' : 'none';
+}
+
+function planFilterIdeas(f) {
+  _planIdeasFilter = f;
+  document.querySelectorAll('.plan-filter-btn').forEach(b => b.classList.remove('active'));
+  $('plan-filter-' + (f === 'fav' ? 'fav' : 'all')).classList.add('active');
+  planRenderIdeas();
+}
+
+function planToggleIdeaForm() {
+  const form = $('plan-idea-form');
+  form.style.display = form.style.display === 'none' ? '' : 'none';
+  if (form.style.display !== 'none') $('plan-idea-title').focus();
+}
+
+function planNoteTypeLabel(t) {
+  const map = { meal_request: '🍽️ Meal Request', must_use_ingredient: '🥦 Must-Use', dietary_note: '💚 Dietary', constraint: '🚫 Constraint', general: '📝 General' };
+  return map[t] || t;
+}
+
+async function planLoadNotes() {
+  const el = $('plan-notes-list');
+  try {
+    const data = await fetchJSON('/api/next-week-notes');
+    planRenderNotes(data.notes || []);
+  } catch {
+    el.innerHTML = '<div style="color:var(--muted);padding:12px">⚠️ Could not load notes.</div>';
+  }
+}
+
+function planRenderNotes(notes) {
+  const el = $('plan-notes-list');
+  if (!notes.length) {
+    el.innerHTML = '<div style="color:var(--muted);padding:12px;font-size:0.85rem">No notes yet. Add one above to guide AI meal generation.</div>';
+    return;
+  }
+  el.innerHTML = notes.map(n => {
+    const dateStr = n.week_date ? ` · <span>${n.week_date.slice(0, 10)}</span>` : '';
+    return `<div class="plan-note-card">
+      <div>
+        <span class="plan-badge plan-badge-${n.note_type}">${planNoteTypeLabel(n.note_type)}</span>
+      </div>
+      <div class="plan-note-body">
+        <p class="plan-note-content">${n.content}</p>
+        <div class="plan-note-meta">Added ${new Date(n.created_at).toLocaleDateString()}${dateStr}</div>
+      </div>
+      <div class="plan-note-actions">
+        <button onclick="planArchiveNote(${n.id})" title="Mark as used">✓ Used</button>
+        <button onclick="planDeleteNote(${n.id})" title="Delete">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function planArchiveNote(id) {
+  try {
+    await fetch(`/api/next-week-notes/${id}`, { method: 'PATCH' });
+    planLoadNotes();
+  } catch { alert('Could not archive note.'); }
+}
+
+async function planDeleteNote(id) {
+  if (!confirm('Delete this note?')) return;
+  try {
+    await fetch(`/api/next-week-notes/${id}`, { method: 'DELETE' });
+    planLoadNotes();
+  } catch { alert('Could not delete note.'); }
+}
+
+async function planLoadIdeas() {
+  const el = $('plan-ideas-list');
+  try {
+    const data = await fetchJSON('/api/meal-ideas');
+    _planIdeas = data.ideas || [];
+    planRenderIdeas();
+  } catch {
+    el.innerHTML = '<div style="color:var(--muted);padding:12px">⚠️ Could not load ideas.</div>';
+  }
+}
+
+function planRenderIdeas() {
+  const el = $('plan-ideas-list');
+  let ideas = _planIdeas;
+  if (_planIdeasFilter === 'fav') ideas = ideas.filter(i => i.is_favorite);
+  if (!ideas.length) {
+    el.innerHTML = '<div style="color:var(--muted);padding:12px;font-size:0.85rem">No ideas yet. Add meals you want to try again!</div>';
+    return;
+  }
+  el.innerHTML = ideas.map(idea => `
+    <div class="plan-idea-card">
+      <div class="plan-idea-header">
+        <p class="plan-idea-title">${idea.title}</p>
+        ${idea.cuisine_type ? `<span class="plan-idea-cuisine">${idea.cuisine_type}</span>` : ''}
+        <button class="plan-del-btn" onclick="planDeleteIdea(${idea.id})" title="Delete">🗑</button>
+      </div>
+      ${idea.description ? `<p class="plan-idea-desc">${idea.description}</p>` : ''}
+      ${idea.notes ? `<p class="plan-idea-notes">📝 ${idea.notes}</p>` : ''}
+      <div class="plan-idea-footer">
+        <button class="plan-fav-btn ${idea.is_favorite ? 'active' : ''}" onclick="planToggleFav(${idea.id}, ${!idea.is_favorite})">
+          ${idea.is_favorite ? '⭐ Favorited' : '☆ Favorite'}
+        </button>
+        ${idea.usage_count > 0 ? `<span class="plan-usage">Used ${idea.usage_count}×</span>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+async function planToggleFav(id, fav) {
+  try {
+    await fetch(`/api/meal-ideas/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_favorite: fav }),
+    });
+    planLoadIdeas();
+  } catch { alert('Could not update.'); }
+}
+
+async function planDeleteIdea(id) {
+  if (!confirm('Delete this meal idea?')) return;
+  try {
+    await fetch(`/api/meal-ideas/${id}`, { method: 'DELETE' });
+    _planIdeas = _planIdeas.filter(i => i.id !== id);
+    planRenderIdeas();
+  } catch { alert('Could not delete.'); }
+}
+
+// Init note form
+(function() {
+  $('plan-note-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = $('plan-note-submit');
+    const content = $('plan-note-content').value.trim();
+    const note_type = $('plan-note-type').value;
+    const week_date = $('plan-note-week').value || null;
+    if (!content) return;
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    try {
+      const r = await fetch('/api/next-week-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, note_type, week_date }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      $('plan-note-content').value = '';
+      planLoadNotes();
+    } catch (err) {
+      alert('Save failed: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '+ Add Note';
+    }
+  });
+
+  $('plan-idea-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = $('plan-idea-submit');
+    const title = $('plan-idea-title').value.trim();
+    if (!title) return;
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    try {
+      const r = await fetch('/api/meal-ideas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          description: $('plan-idea-desc').value.trim() || null,
+          cuisine_type: $('plan-idea-cuisine').value.trim() || null,
+          notes: $('plan-idea-notes').value.trim() || null,
+          is_favorite: $('plan-idea-fav').checked,
+        }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      $('plan-idea-title').value = '';
+      $('plan-idea-desc').value = '';
+      $('plan-idea-cuisine').value = '';
+      $('plan-idea-notes').value = '';
+      $('plan-idea-fav').checked = false;
+      $('plan-idea-form').style.display = 'none';
+      planLoadIdeas();
+    } catch (err) {
+      alert('Save failed: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save Idea';
+    }
+  });
+})();
+
+// Load planning data when tab is opened via click
+$('tabNav').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn');
+  if (btn && btn.dataset.tab === 'planning') {
+    planLoadNotes();
+    planLoadIdeas();
+  }
+});
 
 // ── Live Checklist ────────────────────────────────────────────────────────────
 let _clItems        = [];

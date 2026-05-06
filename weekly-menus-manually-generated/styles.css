@@ -1609,6 +1609,122 @@ button {
   font-size: 0.84rem;
   margin-bottom: 20px;
 }
+/* ── Planning tab ────────────────────────────────────────────────────── */
+.plan-subtab {
+  padding: 8px 18px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  color: var(--muted, #6b7280);
+  transition: color 0.15s, border-color 0.15s;
+}
+.plan-subtab.active {
+  color: var(--navy, #1e3a5f);
+  border-bottom-color: var(--navy, #1e3a5f);
+}
+.plan-save-btn {
+  background: var(--navy, #1e3a5f);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 7px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.plan-save-btn:hover { opacity: 0.85; }
+.plan-save-btn:disabled { opacity: 0.5; cursor: default; }
+.plan-filter-btn {
+  padding: 5px 13px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 20px;
+  border: 1.5px solid var(--border, #d1d5db);
+  background: #fff;
+  color: var(--text, #1a1a1a);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.plan-filter-btn.active {
+  background: var(--navy, #1e3a5f);
+  border-color: var(--navy, #1e3a5f);
+  color: #fff;
+}
+.plan-note-card, .plan-idea-card {
+  background: #fff;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.plan-note-card .plan-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.plan-badge-meal_request    { background: #dbeafe; color: #1d4ed8; }
+.plan-badge-must_use_ingredient { background: #dcfce7; color: #15803d; }
+.plan-badge-dietary_note    { background: #d1fae5; color: #065f46; }
+.plan-badge-constraint      { background: #fee2e2; color: #b91c1c; }
+.plan-badge-general         { background: #f3f4f6; color: #374151; }
+.plan-note-body { flex: 1; min-width: 0; }
+.plan-note-content { font-size: 0.88rem; margin: 0 0 4px; line-height: 1.5; }
+.plan-note-meta { font-size: 0.74rem; color: var(--muted, #9ca3af); }
+.plan-note-actions { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
+.plan-note-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 3px 6px;
+  font-size: 0.8rem;
+  border-radius: 5px;
+  color: var(--muted, #6b7280);
+  transition: background 0.12s;
+}
+.plan-note-actions button:hover { background: var(--surface, #f3f4f6); }
+.plan-idea-card {
+  flex-direction: column;
+  gap: 6px;
+}
+.plan-idea-header { display: flex; align-items: flex-start; gap: 8px; }
+.plan-idea-title { font-size: 0.93rem; font-weight: 700; margin: 0; flex: 1; }
+.plan-idea-cuisine { font-size: 0.74rem; color: var(--muted, #6b7280); background: var(--surface, #f3f4f6); padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+.plan-idea-desc { font-size: 0.82rem; color: var(--muted, #6b7280); margin: 0; }
+.plan-idea-notes { font-size: 0.8rem; color: var(--text, #374151); margin: 0; }
+.plan-idea-footer { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+.plan-usage { font-size: 0.74rem; color: var(--muted, #9ca3af); }
+.plan-fav-btn {
+  background: none;
+  border: 1.5px solid var(--border, #d1d5db);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.plan-fav-btn.active { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+.plan-del-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 3px 7px;
+  font-size: 0.8rem;
+  color: var(--muted, #9ca3af);
+  border-radius: 5px;
+  transition: background 0.12s;
+}
+.plan-del-btn:hover { background: #fee2e2; color: #b91c1c; }
+
 /* ── Archive tab ─────────────────────────────────────────────────────── */
 .archive-layout {
   display: grid;

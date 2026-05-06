@@ -1,11 +1,12 @@
 {
   "name": "brooklyn-kitchen",
-  "version": "1.0.29",
+  "version": "1.0.30",
   "scripts": {
     "start": "node server.mjs",
     "dev": "node --env-file=../.env.local server.mjs",
     "prompt": "node generate-prompt.mjs",
-    "migrate": "node scripts/migrate-to-db.mjs"
+    "migrate": "node scripts/migrate-to-db.mjs",
+    "migrate:ideas": "node --env-file=../.env.local scripts/create-meal-ideas-tables.mjs"
   },
   "dependencies": {
     "express": "^4.22.1",

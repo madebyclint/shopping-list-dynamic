@@ -545,6 +545,140 @@ app.get('/api/cart/events', (req, res) => {
   });
 });
 
+// ── Meal Ideas API ────────────────────────────────────────────────────────────
+
+async function ensureMealIdeasTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS meal_ideas (
+      id SERIAL PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      description TEXT,
+      cuisine_type VARCHAR(100),
+      notes TEXT,
+      is_favorite BOOLEAN DEFAULT false,
+      usage_count INTEGER DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS next_week_notes (
+      id SERIAL PRIMARY KEY,
+      content TEXT NOT NULL,
+      note_type VARCHAR(50) NOT NULL DEFAULT 'general',
+      week_date DATE,
+      is_active BOOLEAN DEFAULT true,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+}
+ensureMealIdeasTables().catch(e => console.error('meal_ideas table init error:', e));
+
+app.get('/api/meal-ideas', async (req, res) => {
+  try {
+    const favOnly = req.query.favorites === 'true';
+    const q = favOnly
+      ? 'SELECT * FROM meal_ideas WHERE is_favorite = true ORDER BY created_at DESC'
+      : 'SELECT * FROM meal_ideas ORDER BY is_favorite DESC, created_at DESC';
+    const { rows } = await pool.query(q);
+    res.json({ ideas: rows });
+  } catch (err) {
+    console.error('GET /api/meal-ideas:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+app.post('/api/meal-ideas', async (req, res) => {
+  try {
+    const { title, description, cuisine_type, notes, is_favorite } = req.body;
+    if (!title?.trim()) return res.status(400).json({ error: 'title required' });
+    const { rows } = await pool.query(
+      `INSERT INTO meal_ideas (title, description, cuisine_type, notes, is_favorite)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [title.trim(), description || null, cuisine_type || null, notes || null, !!is_favorite]
+    );
+    res.status(201).json({ idea: rows[0] });
+  } catch (err) {
+    console.error('POST /api/meal-ideas:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+app.patch('/api/meal-ideas/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const allowed = ['title','description','cuisine_type','notes','is_favorite'];
+    const fields = [], vals = [];
+    for (const [k, v] of Object.entries(req.body)) {
+      if (allowed.includes(k)) { fields.push(`${k} = $${fields.length + 1}`); vals.push(v); }
+    }
+    if (!fields.length) return res.status(400).json({ error: 'no valid fields' });
+    vals.push(id);
+    const { rows } = await pool.query(
+      `UPDATE meal_ideas SET ${fields.join(', ')} WHERE id = $${vals.length} RETURNING *`, vals
+    );
+    res.json({ idea: rows[0] });
+  } catch (err) {
+    console.error('PATCH /api/meal-ideas:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+app.delete('/api/meal-ideas/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM meal_ideas WHERE id = $1', [parseInt(req.params.id, 10)]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('DELETE /api/meal-ideas:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+// ── Next Week Notes API ───────────────────────────────────────────────────────
+
+app.get('/api/next-week-notes', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM next_week_notes WHERE is_active = true ORDER BY created_at DESC`
+    );
+    res.json({ notes: rows });
+  } catch (err) {
+    console.error('GET /api/next-week-notes:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+app.post('/api/next-week-notes', async (req, res) => {
+  try {
+    const { content, note_type, week_date } = req.body;
+    if (!content?.trim()) return res.status(400).json({ error: 'content required' });
+    const { rows } = await pool.query(
+      `INSERT INTO next_week_notes (content, note_type, week_date)
+       VALUES ($1,$2,$3) RETURNING *`,
+      [content.trim(), note_type || 'general', week_date || null]
+    );
+    res.status(201).json({ note: rows[0] });
+  } catch (err) {
+    console.error('POST /api/next-week-notes:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+app.patch('/api/next-week-notes/:id', async (req, res) => {
+  try {
+    await pool.query('UPDATE next_week_notes SET is_active = false WHERE id = $1', [parseInt(req.params.id, 10)]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+app.delete('/api/next-week-notes/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM next_week_notes WHERE id = $1', [parseInt(req.params.id, 10)]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () =>
   console.log(`🥬 Brooklyn Kitchen running on http://localhost:${PORT}`),

@@ -7,7 +7,7 @@ import {
   findSimilarMenuInCache,
   saveMenuToCache,
   updateAIUsageStats,
-  getAIUsageStats
+  getAIUsageStats,
 } from '@/lib/database';
 import crypto from 'crypto';
 
@@ -46,7 +46,10 @@ interface GeneratedMeal {
 let aiUsageCount = 0;
 let totalTokensUsed = 0;
 
-function generateAIPrompt(weekStartDate: string, preferences?: string): string {
+function generateAIPrompt(
+  weekStartDate: string,
+  preferences?: string
+): string {
   const customPrefs = preferences ? ` Additional preferences: ${preferences}` : '';
   
   return `You are a family meal planning expert. Generate a weekly meal plan for a ${FAMILY_CONTEXT.location} family of ${FAMILY_CONTEXT.size}.
