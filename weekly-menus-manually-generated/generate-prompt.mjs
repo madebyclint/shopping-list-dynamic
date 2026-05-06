@@ -285,7 +285,37 @@ Rules: \`buy_these\` = every item that must appear on the shopping list for this
 
 ---
 
-**After you paste these files, run:** \`npm run migrate\` from the \`weekly-menus-manually-generated\` folder to push everything to the database. The dashboard reads from the DB — changes on disk won't show until you migrate.`;
+**FILE 7 — MACHINE-READABLE IMPORT BLOCK**
+
+After all files above, output this exact block so the dashboard can auto-import the week:
+
+\`\`\`
+<!--WEEK_IMPORT_START-->
+{
+  "weekDate": "YYYY-MM-DD",
+  "weekLabel": "Week of Mon May 11 - Fri May 16, 2026",
+  "shoppingDate": "YYYY-MM-DD",
+  "meals": [
+    { "name": "...", "day": "Monday, May 11", "emoji": "...", "time": "X min", "tag": "", "tagType": "" }
+  ],
+  "mealHistoryEntry": "## Week of ...\\n\\n### Dinners\\n- ...\\n\\n### Breakfast / Brunch\\n- ...\\n\\n### Notes\\n- ...",
+  "followingWeekIdeas": "idea 1; idea 2",
+  "menuMd": "[exact full content of FILE 1 — every character]",
+  "shoppingListMd": "[exact full content of FILE 2 — every character]",
+  "mealsIngredients": [exact JSON object from FILE 6 — not a string, embed as JSON]
+}
+<!--WEEK_IMPORT_END-->
+\`\`\`
+
+Rules for FILE 7:
+- \`weekDate\` = the Monday date in YYYY-MM-DD format
+- \`meals\` array must exactly match FILE 3 (same objects, same fields)
+- \`menuMd\` = the complete raw text from FILE 1, all newlines escaped as \\n inside the JSON string
+- \`shoppingListMd\` = the complete raw text from FILE 2, all newlines escaped as \\n inside the JSON string
+- \`mealsIngredients\` = the full JSON object from FILE 6, embedded as a JSON object (not a string)
+- \`mealHistoryEntry\` = the full text block from FILE 4, newlines escaped as \\n
+- The entire block must be valid JSON — escape all special characters inside string values
+- Do NOT truncate any field; include the full content`;
 
 console.log('\n' + '='.repeat(60));
 console.log('  WEEKLY MENU PROMPT — copy everything below the line');

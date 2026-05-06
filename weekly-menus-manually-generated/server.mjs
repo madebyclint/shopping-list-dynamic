@@ -822,7 +822,183 @@ ${ideasBlock}${notesBlock}
 
 ---
 
-Please present 5 dinners + 1 breakfast for approval first (name + key components + estimated time), label which is **Tuesday (fast/easy)** and which is **Thursday (kids prep)**, then after I confirm generate the full output.`;
+Please present 5 dinners + 1 breakfast for approval first (name + key components + estimated time), label which is **Tuesday (fast/easy)** and which is **Thursday (kids prep)**, then after I confirm generate the full output in these sections:
+
+**FILE 1 — \`menus/YYYY-MM-DD-menu.md\`**
+
+Use the Monday date for the filename. Structure:
+\`\`\`
+# Menu — [Week Label]
+
+## Quick Glance Meals
+
+### Sun–Fri Plan
+- [emoji] [Meal Name] *([DAY LABEL, Date])* — [key components] — [fruit side] — [X] min
+...
+
+### For Following Week
+(optional ideas)
+
+[One short narrative paragraph summarizing the week's theme/flow]
+
+---
+
+## Deeper View
+
+**[Meal Name]** *([Day, Date])*
+Total time: ~X min · Approx calories: ~XXX per adult
+
+> [1–2 sentence flavor/background note]
+
+**Ingredients Used**
+
+- Ingredient
+- [Fruit] (served on the side)
+
+**Cooking Overview**
+
+1. Step
+2. Step
+
+---
+\`\`\`
+Format rules: title + day on same line; blank line after bold labels before lists; numbered steps only; fruit in both Quick Glance and Ingredients Used.
+
+**FILE 2 — \`shopping-lists/YYYY-MM-DD-shopping-list.md\`**
+
+\`\`\`
+# Shopping List — [Date Range] — ~$XXX
+
+> [Notes blurb: where to find specialty items, substitutes, tips]
+
+---
+
+🥬 **PRODUCE**
+- Item (qty) — Meal Name — ~$price ea — **~$total**
+...
+Produce Subtotal: **~$XX.XX**
+
+🥩 **PROTEINS**
+...
+
+🧀 **DAIRY & REFRIGERATED**
+...
+
+🛒 **PANTRY & DRY GOODS**
+...
+
+🧻 **HOUSEHOLD**
+...
+
+🛍 **WEEKLY STAPLES**
+...
+
+---
+| Category | Est. Total |
+|---|---|
+| Produce | $XX |
+| **GRAND TOTAL** | **~$XXX** |
+\`\`\`
+Every line item includes the meal it's for. After the grand total, add:
+\`\`\`
+## Shopping List by Trip
+
+### [Store Name]
+
+**— Produce —**
+- Item (qty) — Meal Name
+
+**— Proteins —**
+- Item (qty) — Meal Name
+
+**— Dairy —**
+- Item (qty) — Meal Name
+
+**— Aisles —**
+- Item (qty) — Meal Name or weekly
+
+**— Household —**
+- Item (qty) — weekly
+\`\`\`
+
+**FILE 3 — \`data.json\` currentWeek block**
+
+Output only the updated \`currentWeek\` JSON block:
+\`\`\`json
+"currentWeek": "YYYY-MM-DD",
+"weekLabel": "Sun Mon D - Fri Mon D, YYYY",
+"shoppingDate": "YYYY-MM-DD",
+"files": {
+  "menu": "menus/YYYY-MM-DD-menu.md",
+  "shoppingList": "shopping-lists/YYYY-MM-DD-shopping-list.md"
+},
+"meals": [
+  { "name": "...", "day": "Sunday, Mon D", "emoji": "...", "time": "X min", "tag": "", "tagType": "" }
+]
+\`\`\`
+tagType values: "fast" (Tuesday), "teen" (Thursday), "special", "" (none).
+
+**FILE 4 — \`meal-history.md\` entry**
+
+\`\`\`
+## [Week Label]
+
+### Dinners
+- [emoji] [Meal Name] *([DAY LABEL])* — key components — X min
+
+### Breakfast / Brunch
+- [emoji] [Meal Name] *([DAY LABEL])* — key components — X min
+
+### Notes
+- Any substitutions or "For Following Week" ideas
+\`\`\`
+
+**FILE 5 — \`menus/index.json\` entry**
+
+\`\`\`json
+{ "filename": "YYYY-MM-DD-menu.md", "date": "YYYY-MM-DD", "label": "Week of Month D, YYYY" }
+\`\`\`
+
+**FILE 6 — \`meals-ingredients.json\` (FULL FILE REPLACEMENT)**
+
+\`\`\`json
+{
+  "week": "YYYY-MM-DD",
+  "meals": [
+    {
+      "name": "Exact Meal Name from data.json",
+      "day": "Monday",
+      "emoji": "🍽",
+      "buy_these": ["Every ingredient from the shopping list for this meal"],
+      "pantry": ["Oil, salt, garlic, broth, pantry spices assumed at home"]
+    }
+  ]
+}
+\`\`\`
+
+**FILE 7 — MACHINE-READABLE IMPORT BLOCK**
+
+After all files above, output this exact block so the dashboard can auto-import the week:
+
+\`\`\`
+<!--WEEK_IMPORT_START-->
+{
+  "weekDate": "YYYY-MM-DD",
+  "weekLabel": "Week of Mon May 11 - Fri May 16, 2026",
+  "shoppingDate": "YYYY-MM-DD",
+  "meals": [
+    { "name": "...", "day": "Monday, May 11", "emoji": "...", "time": "X min", "tag": "", "tagType": "" }
+  ],
+  "mealHistoryEntry": "## Week of ...\\n\\n### Dinners\\n- ...\\n\\n### Breakfast / Brunch\\n- ...\\n\\n### Notes\\n- ...",
+  "followingWeekIdeas": "idea 1; idea 2",
+  "menuMd": "[exact full content of FILE 1 — every character]",
+  "shoppingListMd": "[exact full content of FILE 2 — every character]",
+  "mealsIngredients": [exact JSON object from FILE 6 — embed as JSON not a string]
+}
+<!--WEEK_IMPORT_END-->
+\`\`\`
+
+Rules for FILE 7: weekDate = Monday in YYYY-MM-DD; meals exactly match FILE 3; menuMd/shoppingListMd = complete raw text with newlines escaped as \\n; mealsIngredients = full JSON object from FILE 6 embedded as JSON; mealHistoryEntry = full FILE 4 text with newlines escaped. The block must be valid JSON — do NOT truncate any field.`;
 
     res.json({ prompt, weekDate, recentMeals, includedIdeas: includedIdeas.map(i => i.title), activeNotes });
   } catch (err) {
@@ -864,6 +1040,111 @@ app.get('/api/search-past-meals', (_req, res) => {
   }
 
   res.json({ results });
+});
+
+// ── POST /api/import-week — save a full AI-generated week to the database ─────
+app.post('/api/import-week', async (req, res) => {
+  try {
+    const {
+      weekDate, weekLabel, shoppingDate,
+      meals, mealHistoryEntry, followingWeekIdeas,
+      menuMd, shoppingListMd, mealsIngredients,
+    } = req.body;
+
+    // Validate required fields
+    if (!weekDate || !/^\d{4}-\d{2}-\d{2}$/.test(weekDate)) {
+      return res.status(400).json({ error: 'invalid_week_date', detail: 'weekDate must be YYYY-MM-DD' });
+    }
+    if (!menuMd || typeof menuMd !== 'string' || menuMd.trim().length < 10) {
+      return res.status(400).json({ error: 'menu_md_required' });
+    }
+    if (!shoppingListMd || typeof shoppingListMd !== 'string' || shoppingListMd.trim().length < 10) {
+      return res.status(400).json({ error: 'shopping_list_md_required' });
+    }
+    if (!Array.isArray(meals) || !meals.length) {
+      return res.status(400).json({ error: 'meals_array_required' });
+    }
+
+    const effectiveShoppingDate = (shoppingDate && /^\d{4}-\d{2}-\d{2}$/.test(shoppingDate))
+      ? shoppingDate : weekDate;
+    const effectiveLabel = (weekLabel && typeof weekLabel === 'string')
+      ? weekLabel.trim() : `Week of ${weekDate}`;
+
+    // 1. Upsert weekly_menus
+    await pool.query(
+      `INSERT INTO weekly_menus (week_date, label, content_md, updated_at)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (week_date)
+       DO UPDATE SET label = EXCLUDED.label, content_md = EXCLUDED.content_md, updated_at = NOW()`,
+      [weekDate, effectiveLabel, menuMd.trim()],
+    );
+
+    // 2. Upsert shopping_lists
+    await pool.query(
+      `INSERT INTO shopping_lists (week_date, content_md, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (week_date)
+       DO UPDATE SET content_md = EXCLUDED.content_md, updated_at = NOW()`,
+      [weekDate, shoppingListMd.trim()],
+    );
+
+    // 3. Update manifest (preserve all existing top-level keys, overwrite currentWeek block)
+    const { rows: manifestRows } = await pool.query('SELECT data FROM manifest WHERE id = 1');
+    const existingManifest = manifestRows[0]?.data || {};
+    const updatedManifest = {
+      ...existingManifest,
+      currentWeek:  weekDate,
+      weekLabel:    effectiveLabel,
+      shoppingDate: effectiveShoppingDate,
+      files: {
+        menu:         `menus/${weekDate}-menu.md`,
+        shoppingList: `shopping-lists/${weekDate}-shopping-list.md`,
+      },
+      meals,
+    };
+    await pool.query(
+      `INSERT INTO manifest (id, data, updated_at)
+       VALUES (1, $1, NOW())
+       ON CONFLICT (id)
+       DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()`,
+      [JSON.stringify(updatedManifest)],
+    );
+
+    // 4. Prepend mealHistoryEntry to meal-history document
+    if (mealHistoryEntry && typeof mealHistoryEntry === 'string' && mealHistoryEntry.trim()) {
+      const { rows: histRows } = await pool.query(
+        "SELECT content FROM documents WHERE key = 'meal-history'",
+      );
+      const existing = histRows[0]?.content || '';
+      const updated  = mealHistoryEntry.trim() + '\n\n' + existing;
+      await pool.query(
+        `INSERT INTO documents (key, content, updated_at)
+         VALUES ('meal-history', $1, NOW())
+         ON CONFLICT (key)
+         DO UPDATE SET content = EXCLUDED.content, updated_at = NOW()`,
+        [updated],
+      );
+    }
+
+    // 5. Replace meals-ingredients document
+    if (mealsIngredients && typeof mealsIngredients === 'object') {
+      await pool.query(
+        `INSERT INTO documents (key, content, updated_at)
+         VALUES ('meals-ingredients', $1, NOW())
+         ON CONFLICT (key)
+         DO UPDATE SET content = EXCLUDED.content, updated_at = NOW()`,
+        [JSON.stringify(mealsIngredients)],
+      );
+    }
+
+    // 6. Clear include_in_prompt flag on all meal ideas (they've been used)
+    await pool.query('UPDATE meal_ideas SET include_in_prompt = false WHERE include_in_prompt = true');
+
+    res.json({ ok: true, weekDate, weekLabel: effectiveLabel });
+  } catch (err) {
+    console.error('POST /api/import-week:', err.message);
+    res.status(500).json({ error: 'db_error', detail: err.message });
+  }
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────

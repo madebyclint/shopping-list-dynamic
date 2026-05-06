@@ -205,6 +205,29 @@
         <button id="plan-tab-ideas" class="plan-subtab" onclick="planShowTab('ideas')">💡 Meal Ideas</button>
         <button id="plan-tab-import" class="plan-subtab" onclick="planShowTab('import')">📋 Paste Import</button>
         <button id="plan-tab-prompt" class="plan-subtab" onclick="planShowTab('prompt')">📝 Prompt</button>
+        <button id="plan-tab-newweek" class="plan-subtab" onclick="planShowTab('newweek')">📥 New Week</button>
+      </div>
+
+      <!-- NEW WEEK pane -->
+      <div id="plan-pane-newweek" style="display:none">
+        <p style="font-size:0.82rem;color:var(--muted);margin:0 0 14px">Paste the full AI response (including FILE 7 block) to import a new week directly to the dashboard.</p>
+        <textarea id="nw-paste-text" rows="12" placeholder="Paste the entire AI response here — it must contain a <!--WEEK_IMPORT_START--> block at the end." style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border,#d1d5db);font-size:0.82rem;resize:vertical;box-sizing:border-box;font-family:monospace;line-height:1.5"></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
+          <button onclick="nwClear()" style="background:none;border:1px solid var(--border,#d1d5db);border-radius:7px;padding:7px 14px;font-size:0.82rem;cursor:pointer;color:var(--muted)">Clear</button>
+          <button class="plan-save-btn" onclick="nwParse()">🔍 Parse Response</button>
+        </div>
+        <div id="nw-preview" style="display:none;margin-top:18px">
+          <div style="background:var(--surface,#f9fafb);border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:14px 16px;margin-bottom:14px">
+            <div style="font-size:0.83rem;font-weight:600;margin-bottom:10px">Parsed successfully ✓</div>
+            <div id="nw-preview-content" style="font-size:0.82rem;line-height:1.6"></div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button onclick="nwClear()" style="background:none;border:1px solid var(--border,#d1d5db);border-radius:7px;padding:7px 14px;font-size:0.82rem;cursor:pointer;color:var(--muted)">Cancel</button>
+            <button id="nw-import-btn" class="plan-save-btn" onclick="nwImport()">📥 Import to Dashboard</button>
+          </div>
+        </div>
+        <div id="nw-error" style="display:none;margin-top:12px;padding:10px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:0.82rem;color:#b91c1c"></div>
+        <div id="nw-status" style="display:none;margin-top:12px;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:0.82rem;color:#15803d"></div>
       </div>
 
       <!-- IMPORT pane -->
@@ -1079,10 +1102,11 @@ let _planNotes = [];
 function planShowTab(tab) {
   document.querySelectorAll('.plan-subtab').forEach(b => b.classList.remove('active'));
   $('plan-tab-' + tab).classList.add('active');
-  $('plan-pane-notes').style.display  = tab === 'notes'  ? '' : 'none';
-  $('plan-pane-ideas').style.display  = tab === 'ideas'  ? '' : 'none';
-  $('plan-pane-import').style.display = tab === 'import' ? '' : 'none';
-  $('plan-pane-prompt').style.display = tab === 'prompt' ? '' : 'none';
+  $('plan-pane-notes').style.display   = tab === 'notes'   ? '' : 'none';
+  $('plan-pane-ideas').style.display   = tab === 'ideas'   ? '' : 'none';
+  $('plan-pane-import').style.display  = tab === 'import'  ? '' : 'none';
+  $('plan-pane-prompt').style.display  = tab === 'prompt'  ? '' : 'none';
+  $('plan-pane-newweek').style.display = tab === 'newweek' ? '' : 'none';
   if (tab === 'prompt') planPromptInit();
 }
 
@@ -2529,6 +2553,105 @@ $('tabNav').addEventListener('click', e => {
   const btn = e.target.closest('.tab-btn');
   if (btn && btn.dataset.tab === 'archive') loadArchive();
 });
+
+// ── New Week Import ───────────────────────────────────────────────────────────
+let _nwParsed = null;
+
+function nwClear() {
+  $('nw-paste-text').value = '';
+  $('nw-preview').style.display = 'none';
+  $('nw-error').style.display   = 'none';
+  $('nw-status').style.display  = 'none';
+  _nwParsed = null;
+}
+
+function nwShowError(msg) {
+  $('nw-error').textContent = msg;
+  $('nw-error').style.display = '';
+  $('nw-preview').style.display = 'none';
+}
+
+function nwParse() {
+  $('nw-error').style.display  = 'none';
+  $('nw-status').style.display = 'none';
+  const text = $('nw-paste-text').value;
+  if (!text.trim()) { nwShowError('Nothing pasted yet.'); return; }
+
+  const startTag = '<!--WEEK_IMPORT_START-->';
+  const endTag   = '<!--WEEK_IMPORT_END-->';
+  const si = text.indexOf(startTag);
+  const ei = text.indexOf(endTag);
+  if (si === -1 || ei === -1 || ei <= si) {
+    nwShowError('Could not find <!--WEEK_IMPORT_START--> / <!--WEEK_IMPORT_END--> block. Make sure you pasted the full AI response including FILE 7 at the bottom.');
+    return;
+  }
+
+  const jsonStr = text.slice(si + startTag.length, ei).trim();
+  let data;
+  try {
+    data = JSON.parse(jsonStr);
+  } catch (e) {
+    nwShowError('JSON parse error inside import block: ' + e.message + '\n\nTip: the AI sometimes truncates or mis-escapes long strings. Try asking it to re-output FILE 7 only.');
+    return;
+  }
+
+  // Basic validation
+  if (!data.weekDate || !/^\d{4}-\d{2}-\d{2}$/.test(data.weekDate)) {
+    nwShowError('weekDate is missing or not in YYYY-MM-DD format.'); return;
+  }
+  if (!data.menuMd || typeof data.menuMd !== 'string' || data.menuMd.trim().length < 10) {
+    nwShowError('menuMd is missing or empty.'); return;
+  }
+  if (!data.shoppingListMd || typeof data.shoppingListMd !== 'string' || data.shoppingListMd.trim().length < 10) {
+    nwShowError('shoppingListMd is missing or empty.'); return;
+  }
+  if (!Array.isArray(data.meals) || !data.meals.length) {
+    nwShowError('meals array is missing or empty.'); return;
+  }
+
+  _nwParsed = data;
+
+  // Build preview
+  const mealList = data.meals.map(m =>
+    `<li>${m.emoji || '🍽'} <strong>${m.name}</strong> — ${m.day}${m.tag ? ` <span style="font-size:0.75rem;background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:4px">${m.tag}</span>` : ''}</li>`
+  ).join('');
+
+  const histPreview = data.mealHistoryEntry
+    ? `<div style="margin-top:8px;padding:8px 10px;background:#fff;border:1px solid var(--border,#e5e7eb);border-radius:6px;font-size:0.78rem;color:var(--muted);white-space:pre-wrap;max-height:100px;overflow:auto;font-family:monospace">${data.mealHistoryEntry.slice(0, 400)}${data.mealHistoryEntry.length > 400 ? '…' : ''}</div>` : '';
+
+  $('nw-preview-content').innerHTML = `
+    <div><strong>Week:</strong> ${data.weekLabel || data.weekDate}</div>
+    <div><strong>Shopping date:</strong> ${data.shoppingDate || data.weekDate}</div>
+    <ul style="margin:8px 0 4px 16px;padding:0">${mealList}</ul>
+    <div style="margin-top:4px;font-size:0.78rem;color:var(--muted)">Menu: ${data.menuMd.length.toLocaleString()} chars &nbsp;·&nbsp; Shopping list: ${data.shoppingListMd.length.toLocaleString()} chars &nbsp;·&nbsp; Meals-ingredients: ${data.mealsIngredients ? 'included' : 'not included'}</div>
+    ${histPreview}
+  `;
+  $('nw-preview').style.display = '';
+}
+
+async function nwImport() {
+  if (!_nwParsed) return;
+  const btn = $('nw-import-btn');
+  btn.disabled = true; btn.textContent = 'Importing…';
+  $('nw-error').style.display  = 'none';
+  $('nw-status').style.display = 'none';
+  try {
+    const r = await fetch('/api/import-week', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_nwParsed),
+    });
+    const result = await r.json();
+    if (!r.ok) throw new Error(result.detail || result.error || 'Server error');
+    $('nw-status').textContent = `✓ Week of ${result.weekDate} imported! Reload the dashboard to see the new plan.`;
+    $('nw-status').style.display = '';
+    $('nw-preview').style.display = 'none';
+    _nwParsed = null;
+  } catch (err) {
+    nwShowError('Import failed: ' + err.message);
+    btn.disabled = false; btn.textContent = '📥 Import to Dashboard';
+  }
+}
 
 // ── Run ───────────────────────────────────────────────────────────────────────
 $('app-footer').textContent = 'Brooklyn Kitchen';
