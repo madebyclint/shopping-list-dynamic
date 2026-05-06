@@ -1713,6 +1713,7 @@ button {
   transition: background 0.12s, color 0.12s;
 }
 .plan-fav-btn.active { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+.plan-fav-btn.plan-include-active { background: #ede9fe; border-color: #7c3aed; color: #5b21b6; }
 .plan-del-btn {
   background: none;
   border: none;

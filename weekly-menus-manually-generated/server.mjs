@@ -25,7 +25,7 @@ import express from 'express';
 import pg      from 'pg';
 import { fileURLToPath } from 'url';
 import path    from 'path';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, readdirSync } from 'fs';
 
 // ── Load .env.local as fallback when env vars are missing (local dev) ─────────
 if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
@@ -568,6 +568,10 @@ async function ensureMealIdeasTables() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);
+  // Add include_in_prompt column if it doesn't exist yet (safe migration)
+  await pool.query(`
+    ALTER TABLE meal_ideas ADD COLUMN IF NOT EXISTS include_in_prompt BOOLEAN DEFAULT false;
+  `);
 }
 ensureMealIdeasTables().catch(e => console.error('meal_ideas table init error:', e));
 
@@ -604,7 +608,7 @@ app.post('/api/meal-ideas', async (req, res) => {
 app.patch('/api/meal-ideas/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const allowed = ['title','description','cuisine_type','notes','is_favorite'];
+    const allowed = ['title','description','cuisine_type','notes','is_favorite','include_in_prompt'];
     const fields = [], vals = [];
     for (const [k, v] of Object.entries(req.body)) {
       if (allowed.includes(k)) { fields.push(`${k} = $${fields.length + 1}`); vals.push(v); }
@@ -670,6 +674,21 @@ app.patch('/api/next-week-notes/:id', async (req, res) => {
   }
 });
 
+app.put('/api/next-week-notes/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { content, note_type, week_date } = req.body;
+    if (!content?.trim()) return res.status(400).json({ error: 'content required' });
+    const { rows } = await pool.query(
+      `UPDATE next_week_notes SET content = $1, note_type = $2, week_date = $3 WHERE id = $4 RETURNING *`,
+      [content.trim(), note_type || 'general', week_date || null, id]
+    );
+    res.json({ note: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
 app.delete('/api/next-week-notes/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM next_week_notes WHERE id = $1', [parseInt(req.params.id, 10)]);
@@ -677,6 +696,174 @@ app.delete('/api/next-week-notes/:id', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'db_error' });
   }
+});
+
+// ── Prompt Generator API ──────────────────────────────────────────────────────
+
+function pgNextMonday() {
+  const today = new Date();
+  const day = today.getDay();
+  const daysUntilMonday = day === 1 ? 7 : (8 - day) % 7;
+  const next = new Date(today);
+  next.setDate(today.getDate() + daysUntilMonday);
+  return next.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function pgGetRecentMeals(weeksBack = 6) {
+  const historyPath = path.join(__dirname, 'meal-history.md');
+  if (!existsSync(historyPath)) return [];
+  const text = readFileSync(historyPath, 'utf8');
+  const weekBlocks = text.split(/^## Week of /m).slice(1);
+  const meals = [];
+  for (const block of weekBlocks.slice(0, weeksBack)) {
+    const lines = block.split('\n');
+    let inDinners = false;
+    for (const line of lines) {
+      if (/^### Dinners/i.test(line)) { inDinners = true; continue; }
+      if (/^### /i.test(line)) { inDinners = false; continue; }
+      if (inDinners && line.startsWith('- ')) {
+        const name = line.replace(/^- /, '').split(' — ')[0].replace(/\*[^*]*\*/g, '').trim();
+        if (name && !name.startsWith('*(')) meals.push(name);
+      }
+    }
+  }
+  return meals;
+}
+
+app.get('/api/generate-prompt', async (_req, res) => {
+  try {
+    const weekDate = pgNextMonday();
+    const recentMeals = pgGetRecentMeals(6);
+
+    // Get ideas marked for prompt
+    const ideasRes = await pool.query(
+      `SELECT title, cuisine_type, notes FROM meal_ideas WHERE include_in_prompt = true ORDER BY created_at`
+    );
+    const includedIdeas = ideasRes.rows;
+
+    // Get active next-week notes
+    const notesRes = await pool.query(
+      `SELECT content, note_type FROM next_week_notes WHERE is_active = true ORDER BY created_at`
+    );
+    const activeNotes = notesRes.rows;
+
+    // Build optional context blocks
+    let ideasBlock = '';
+    if (includedIdeas.length) {
+      const lines = includedIdeas.map(i => {
+        let line = `- ${i.title}`;
+        if (i.cuisine_type) line += ` (${i.cuisine_type})`;
+        if (i.notes) line += `\n  Notes: ${i.notes}`;
+        return line;
+      }).join('\n');
+      ideasBlock = `\n**Meal ideas to consider this week (please include 1–3 of these where they fit):**\n${lines}\n`;
+    }
+
+    let notesBlock = '';
+    if (activeNotes.length) {
+      const grouped = {};
+      for (const n of activeNotes) (grouped[n.note_type] = grouped[n.note_type] || []).push(n.content);
+      const lines = [];
+      if (grouped.meal_request?.length)          lines.push(`Requested meals: ${grouped.meal_request.join('; ')}`);
+      if (grouped.must_use_ingredient?.length)   lines.push(`Must-use ingredients: ${grouped.must_use_ingredient.join('; ')}`);
+      if (grouped.dietary_note?.length)          lines.push(`Dietary notes: ${grouped.dietary_note.join('; ')}`);
+      if (grouped.constraint?.length)            lines.push(`Constraints: ${grouped.constraint.join('; ')}`);
+      if (grouped.general?.length)              lines.push(`Other notes: ${grouped.general.join('; ')}`);
+      notesBlock = `\n**This week's specific notes (please honor these):**\n${lines.map(l => `- ${l}`).join('\n')}\n`;
+    }
+
+    const prompt = `I need a meal plan for the next week. Here is the criteria:
+
+1. Needs to be 5 dinners to cook + 1 breakfast
+2. Keep them to under an hour to make, preferably closer to 30 min
+3. Keep them budget friendly
+4. Diversify the meals (cuisine) — don't be shy about non-mainstream, think outside the box, and **avoid repeating the same cuisine twice in one week**
+5. Rainbow plate mentality — always a serving of veggie and protein. Veggie proteins are ok too. **Every meal must include a fresh fruit as a side** — list it in both the meal summary and ingredients. Pick fruits that pair with the cuisine where possible.
+6. If we do pork, we need to do a pork portion and a non-pork portion for a couple family members.
+7. We are a family of 4 with two teens
+8. **Tuesday must be a super fast meal (≤20 min)** — we get home at 8pm. Think mac and cheese, hot dogs, quesadillas, charcuterie board, ramen, grilled cheese, etc. No-cook is fine but not required — speed is the priority.
+9. **Thursday must be a kid-friendly prep meal** — the teens make it themselves. Keep it simple with clear steps (tacos, pasta, stir fry, sheet pan, etc.)
+
+**Health goals to keep in mind (soft guidelines, not hard rules):**
+- Reduce bloating: pull back on high-FODMAP ingredients (onions, garlic, beans, cruciferous veggies) where possible — don't eliminate, just don't lead with them. Prefer meals that are easy to digest on weeknights.
+- Weight loss: protein at every meal, half the plate veggies, sensible portions. Ginger, lemon/lime, avocado, sweet potato, and banana are all good additions where they fit naturally.
+- Lighter weeknight dinners preferred — the family does a short walk after dinner.
+
+**Context:**
+- Week of ${weekDate}
+- Recent meals to avoid repeating (last 6 weeks): ${recentMeals.join(', ')}
+- We are in Brooklyn buying at small markets (higher prices than chain stores)
+${ideasBlock}${notesBlock}
+**Pantry staples — do NOT add these to the shopping list:**
+- Olive oil, vegetable oil, canola oil, butter
+- Soy sauce, fish sauce, rice vinegar, sesame oil
+- Chicken broth, vegetable broth
+- Salt, black pepper, red pepper flakes
+- Cumin, paprika, chili powder, garlic powder, oregano, turmeric, coriander, cinnamon, bay leaves
+- Jasmine rice, all-purpose flour, sugar
+- Canned tomatoes, tomato paste, canned chickpeas, black beans, kidney beans
+- Couscous, pasta
+- Hot sauce, Worcestershire sauce, ketchup
+- Fresh garlic, fresh ginger
+
+**Weekly recurring items — always include in the shopping list:**
+- Chips (2 bags — always specify type, e.g. tortilla, salt & vinegar; note the meal if applicable)
+- Cereal (2 boxes)
+- Lactaid whole milk (1 half-gallon)
+- Almond milk (1 gallon)
+- Eggs (1 dozen)
+- Assorted fresh fruit (~$10–$15)
+- Ice cream (1 container)
+- Trail mix (1 bag)
+- Mango juice (1 bottle/carton)
+- Condensed milk (1 can)
+- Toilet paper (1 pack)
+- Paper towels (1 pack)
+
+---
+
+Please present 5 dinners + 1 breakfast for approval first (name + key components + estimated time), label which is **Tuesday (fast/easy)** and which is **Thursday (kids prep)**, then after I confirm generate the full output.`;
+
+    res.json({ prompt, weekDate, recentMeals, includedIdeas: includedIdeas.map(i => i.title), activeNotes });
+  } catch (err) {
+    console.error('GET /api/generate-prompt:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+// ── Past Meal Search API ──────────────────────────────────────────────────────
+app.get('/api/search-past-meals', (_req, res) => {
+  const q = ((_req.query.q) || '').toLowerCase().trim();
+  if (!q || q.length < 2) return res.json({ results: [] });
+
+  const menusDir = path.join(__dirname, 'menus');
+  const results = [];
+
+  let files = [];
+  try { files = readdirSync(menusDir).filter(f => f.endsWith('.md') && f !== 'README.md').sort().reverse(); }
+  catch { return res.json({ results: [] }); }
+
+  for (const file of files) {
+    const text = readFileSync(path.join(menusDir, file), 'utf8');
+    // Split by the bold meal name pattern: **Meal Name** *(Day...)*
+    const mealBlocks = text.split(/^(?=\*\*[^*]+\*\*\s*\*\()/m).slice(1);
+    for (const block of mealBlocks) {
+      const titleMatch = block.match(/^\*\*([^*]+)\*\*/);
+      if (!titleMatch) continue;
+      const title = titleMatch[1].trim();
+      if (!title.toLowerCase().includes(q)) continue;
+      // Extract cooking overview steps
+      const overviewMatch = block.match(/\*\*Cooking Overview\*\*\s*\n([\s\S]*?)(?=\n---|\n\*\*[A-Z]|\n##|$)/);
+      const cookingSteps = overviewMatch ? overviewMatch[1].trim() : null;
+      // Get week date from filename
+      const weekDate = file.replace('-menu.md', '');
+      results.push({ title, weekDate, cookingSteps, file });
+      if (results.length >= 8) break;
+    }
+    if (results.length >= 8) break;
+  }
+
+  res.json({ results });
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────

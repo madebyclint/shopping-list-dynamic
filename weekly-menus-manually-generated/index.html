@@ -195,6 +195,7 @@
         <button id="plan-tab-notes" class="plan-subtab active" onclick="planShowTab('notes')">📋 Next Week Notes</button>
         <button id="plan-tab-ideas" class="plan-subtab" onclick="planShowTab('ideas')">💡 Meal Ideas</button>
         <button id="plan-tab-import" class="plan-subtab" onclick="planShowTab('import')">📋 Paste Import</button>
+        <button id="plan-tab-prompt" class="plan-subtab" onclick="planShowTab('prompt')">📝 Prompt</button>
       </div>
 
       <!-- IMPORT pane -->
@@ -205,6 +206,42 @@
         <div id="plan-import-actions" style="display:none;gap:8px;margin-top:12px;justify-content:flex-end">
           <button onclick="planClearImport()" style="background:none;border:1px solid var(--border,#d1d5db);border-radius:7px;padding:7px 14px;font-size:0.82rem;cursor:pointer;color:var(--muted)">Clear</button>
           <button id="plan-import-btn" class="plan-save-btn" onclick="planImportAll()">Import Selected</button>
+        </div>
+      </div>
+
+      <!-- PROMPT pane -->
+      <div id="plan-pane-prompt" style="display:none">
+        <!-- Included ideas summary -->
+        <div id="plan-prompt-included-bar" style="background:var(--surface,#f9fafb);border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:0.83rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <strong>Ideas marked "In Prompt":</strong>
+            <button onclick="planClearAllIncludes()" style="background:none;border:1px solid #d1d5db;border-radius:6px;padding:4px 10px;font-size:0.78rem;cursor:pointer;color:var(--muted)">Clear all</button>
+          </div>
+          <div id="plan-prompt-included-list" style="color:var(--muted)">Loading…</div>
+        </div>
+
+        <!-- Past meal search -->
+        <div style="background:var(--surface,#f9fafb);border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:12px 14px;margin-bottom:16px">
+          <label style="font-size:0.83rem;font-weight:600;display:block;margin-bottom:8px">🔍 Search past meals for cooking method</label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="plan-meal-search-input" placeholder="e.g. ribs, salmon, tacos…" style="flex:1;padding:7px 10px;border-radius:7px;border:1px solid var(--border,#d1d5db);font-size:0.84rem" oninput="planSearchDebounce(this.value)" />
+          </div>
+          <div id="plan-meal-search-results" style="margin-top:10px"></div>
+        </div>
+
+        <!-- Generate button -->
+        <div style="text-align:right;margin-bottom:14px">
+          <button class="plan-save-btn" onclick="planGeneratePrompt()" id="plan-gen-btn">✨ Generate Prompt</button>
+        </div>
+
+        <!-- Output -->
+        <div id="plan-prompt-output" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-size:0.83rem;font-weight:600;color:var(--text)">Generated Prompt</span>
+            <button onclick="planCopyPrompt()" style="background:none;border:1px solid #d1d5db;border-radius:6px;padding:5px 12px;font-size:0.8rem;cursor:pointer">📋 Copy</button>
+          </div>
+          <textarea id="plan-prompt-text" rows="20" readonly style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border,#d1d5db);font-size:0.82rem;resize:vertical;box-sizing:border-box;font-family:monospace;line-height:1.55;background:#fff"></textarea>
+          <div id="plan-prompt-meta" style="margin-top:8px;font-size:0.78rem;color:var(--muted)"></div>
         </div>
       </div>
 
@@ -241,15 +278,21 @@
           <button class="plan-save-btn" onclick="planToggleIdeaForm()">+ New Idea</button>
         </div>
         <form id="plan-idea-form" style="display:none;background:var(--surface,#f9fafb);border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:14px;margin-bottom:18px">
+          <input type="hidden" id="plan-idea-edit-id" value="" />
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
             <div>
               <label style="font-size:0.77rem;font-weight:600;display:block;margin-bottom:3px">Meal Name *</label>
-              <input type="text" id="plan-idea-title" placeholder="e.g. Thai Basil Chicken" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border,#d1d5db);font-size:0.83rem;box-sizing:border-box" required />
+              <input type="text" id="plan-idea-title" placeholder="e.g. Thai Basil Chicken" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border,#d1d5db);font-size:0.83rem;box-sizing:border-box" required oninput="planIdeaFormPastMealSearch(this.value)" />
             </div>
             <div>
               <label style="font-size:0.77rem;font-weight:600;display:block;margin-bottom:3px">Cuisine</label>
               <input type="text" id="plan-idea-cuisine" placeholder="e.g. Thai, Mexican" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border,#d1d5db);font-size:0.83rem;box-sizing:border-box" />
             </div>
+          </div>
+          <!-- Past meal suggestions from menus -->  
+          <div id="plan-idea-past-results" style="display:none;margin-bottom:8px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:8px 10px;font-size:0.8rem">
+            <div style="font-weight:600;color:#5b21b6;margin-bottom:5px">Past meals found — click to pre-fill notes:</div>
+            <div id="plan-idea-past-list"></div>
           </div>
           <div style="margin-bottom:8px">
             <label style="font-size:0.77rem;font-weight:600;display:block;margin-bottom:3px">Description / Key Ingredients</label>
@@ -263,7 +306,10 @@
             <label style="font-size:0.83rem;display:flex;align-items:center;gap:6px;cursor:pointer">
               <input type="checkbox" id="plan-idea-fav" /> ⭐ Favorite (AI uses weekly)
             </label>
-            <button type="submit" class="plan-save-btn" id="plan-idea-submit">Save Idea</button>
+            <div style="display:flex;gap:8px">
+              <button type="button" onclick="planCancelIdeaEdit()" id="plan-idea-cancel" style="display:none;background:none;border:1px solid var(--border,#d1d5db);border-radius:7px;padding:7px 14px;font-size:0.82rem;cursor:pointer">Cancel</button>
+              <button type="submit" class="plan-save-btn" id="plan-idea-submit">Save Idea</button>
+            </div>
           </div>
         </form>
         <div id="plan-ideas-list"><div class="loading"><div class="spinner"></div> Loading…</div></div>
@@ -1019,6 +1065,7 @@ function setupPriceSearch() {
 // ── Meal Planning Prep ────────────────────────────────────────────────────────
 let _planIdeas = [];
 let _planIdeasFilter = 'all'; // 'all' | 'fav'
+let _planNotes = [];
 
 function planShowTab(tab) {
   document.querySelectorAll('.plan-subtab').forEach(b => b.classList.remove('active'));
@@ -1026,6 +1073,8 @@ function planShowTab(tab) {
   $('plan-pane-notes').style.display  = tab === 'notes'  ? '' : 'none';
   $('plan-pane-ideas').style.display  = tab === 'ideas'  ? '' : 'none';
   $('plan-pane-import').style.display = tab === 'import' ? '' : 'none';
+  $('plan-pane-prompt').style.display = tab === 'prompt' ? '' : 'none';
+  if (tab === 'prompt') planPromptInit();
 }
 
 function planFilterIdeas(f) {
@@ -1037,8 +1086,14 @@ function planFilterIdeas(f) {
 
 function planToggleIdeaForm() {
   const form = $('plan-idea-form');
-  form.style.display = form.style.display === 'none' ? '' : 'none';
-  if (form.style.display !== 'none') $('plan-idea-title').focus();
+  const showing = form.style.display !== 'none';
+  if (showing) {
+    planCancelIdeaEdit();
+  } else {
+    planCancelIdeaEdit(); // ensure clean state
+    form.style.display = '';
+    $('plan-idea-title').focus();
+  }
 }
 
 function planNoteTypeLabel(t) {
@@ -1050,7 +1105,8 @@ async function planLoadNotes() {
   const el = $('plan-notes-list');
   try {
     const data = await fetchJSON('/api/next-week-notes');
-    planRenderNotes(data.notes || []);
+    _planNotes = data.notes || [];
+    planRenderNotes(_planNotes);
   } catch {
     el.innerHTML = '<div style="color:var(--muted);padding:12px">⚠️ Could not load notes.</div>';
   }
@@ -1062,17 +1118,18 @@ function planRenderNotes(notes) {
     el.innerHTML = '<div style="color:var(--muted);padding:12px;font-size:0.85rem">No notes yet. Add one above to guide AI meal generation.</div>';
     return;
   }
-  el.innerHTML = notes.map(n => {
+  el.innerHTML = notes.map((n, idx) => {
     const dateStr = n.week_date ? ` · <span>${n.week_date.slice(0, 10)}</span>` : '';
-    return `<div class="plan-note-card">
+    return `<div class="plan-note-card" id="plan-note-card-${n.id}">
       <div>
         <span class="plan-badge plan-badge-${n.note_type}">${planNoteTypeLabel(n.note_type)}</span>
       </div>
       <div class="plan-note-body">
-        <p class="plan-note-content">${n.content}</p>
+        <p class="plan-note-content" id="plan-note-text-${n.id}">${n.content}</p>
         <div class="plan-note-meta">Added ${new Date(n.created_at).toLocaleDateString()}${dateStr}</div>
       </div>
       <div class="plan-note-actions">
+        <button onclick="planEditNote(${idx})" title="Edit">✏️ Edit</button>
         <button onclick="planArchiveNote(${n.id})" title="Mark as used">✓ Used</button>
         <button onclick="planDeleteNote(${n.id})" title="Delete">🗑</button>
       </div>
@@ -1094,6 +1151,48 @@ async function planDeleteNote(id) {
     planLoadNotes();
   } catch { alert('Could not delete note.'); }
 }
+
+function planEditNote(idx) {
+  const n = _planNotes[idx];
+  if (!n) return;
+  const card = $('plan-note-card-' + n.id);
+  if (!card) return;
+  // Replace card content with an inline edit form
+  const typeOptions = [
+    ['meal_request', '🍽️ Meal Request'],
+    ['must_use_ingredient', '🥦 Must-Use Ingredient'],
+    ['dietary_note', '💚 Dietary Note'],
+    ['constraint', '🚫 Constraint'],
+    ['general', '📝 General'],
+  ].map(([v, l]) => `<option value="${v}" ${n.note_type === v ? 'selected' : ''}>${l}</option>`).join('');
+  card.innerHTML = `
+    <div style="width:100%;display:flex;flex-direction:column;gap:7px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="plan-note-edit-type-${n.id}" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border,#d1d5db);font-size:0.82rem;background:#fff">${typeOptions}</select>
+      </div>
+      <textarea id="plan-note-edit-content-${n.id}" rows="2" style="width:100%;padding:7px 10px;border-radius:6px;border:1.5px solid #7c3aed;font-size:0.84rem;resize:vertical;box-sizing:border-box">${n.content}</textarea>
+      <div style="display:flex;justify-content:flex-end;gap:7px">
+        <button onclick="planLoadNotes()" style="background:none;border:1px solid var(--border,#d1d5db);border-radius:6px;padding:5px 12px;font-size:0.8rem;cursor:pointer">Cancel</button>
+        <button onclick="planSaveNoteEdit(${n.id})" class="plan-save-btn" style="padding:5px 14px;font-size:0.8rem">Save</button>
+      </div>
+    </div>`;
+}
+
+async function planSaveNoteEdit(id) {
+  const content = $('plan-note-edit-content-' + id)?.value.trim();
+  const note_type = $('plan-note-edit-type-' + id)?.value;
+  if (!content) return;
+  try {
+    const r = await fetch(`/api/next-week-notes/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, note_type }),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    planLoadNotes();
+  } catch (err) { alert('Save failed: ' + err.message); }
+}
+
 
 async function planLoadIdeas() {
   const el = $('plan-ideas-list');
@@ -1119,6 +1218,7 @@ function planRenderIdeas() {
       <div class="plan-idea-header">
         <p class="plan-idea-title">${idea.title}</p>
         ${idea.cuisine_type ? `<span class="plan-idea-cuisine">${idea.cuisine_type}</span>` : ''}
+        <button class="plan-fav-btn" onclick="planStartEditIdea(${idea.id})" title="Edit idea" style="margin-left:auto">✏️</button>
         <button class="plan-del-btn" onclick="planDeleteIdea(${idea.id})" title="Delete">🗑</button>
       </div>
       ${idea.description ? `<p class="plan-idea-desc">${idea.description}</p>` : ''}
@@ -1126,6 +1226,9 @@ function planRenderIdeas() {
       <div class="plan-idea-footer">
         <button class="plan-fav-btn ${idea.is_favorite ? 'active' : ''}" onclick="planToggleFav(${idea.id}, ${!idea.is_favorite})">
           ${idea.is_favorite ? '⭐ Favorited' : '☆ Favorite'}
+        </button>
+        <button class="plan-fav-btn ${idea.include_in_prompt ? 'plan-include-active' : ''}" onclick="planToggleInclude(${idea.id}, ${!idea.include_in_prompt})" title="${idea.include_in_prompt ? 'Remove from next prompt' : 'Include in next prompt'}">
+          ${idea.include_in_prompt ? '📝 In Prompt' : '📝 Add to Prompt'}
         </button>
         ${idea.usage_count > 0 ? `<span class="plan-usage">Used ${idea.usage_count}×</span>` : ''}
       </div>
@@ -1143,6 +1246,144 @@ async function planToggleFav(id, fav) {
   } catch { alert('Could not update.'); }
 }
 
+async function planToggleInclude(id, val) {
+  try {
+    await fetch(`/api/meal-ideas/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ include_in_prompt: val }),
+    });
+    planLoadIdeas();
+    // Refresh included bar if prompt tab is visible
+    if ($('plan-pane-prompt').style.display !== 'none') planRenderIncludedBar();
+  } catch { alert('Could not update.'); }
+}
+
+// ── Prompt Generator ─────────────────────────────────────────────────────────
+let _planSearchTimer = null;
+let _planSearchResults = [];
+
+function planPromptInit() {
+  planRenderIncludedBar();
+  $('plan-meal-search-results').innerHTML = '';
+  $('plan-meal-search-input').value = '';
+}
+
+function planRenderIncludedBar() {
+  const el = $('plan-prompt-included-list');
+  const included = _planIdeas.filter(i => i.include_in_prompt);
+  if (!included.length) {
+    el.textContent = 'None — go to Meal Ideas tab and click "Add to Prompt" on ideas you want included.';
+    return;
+  }
+  el.innerHTML = included.map(i =>
+    `<span style="display:inline-block;background:#ede9fe;color:#5b21b6;border-radius:5px;padding:2px 9px;margin:2px 4px 2px 0;font-size:0.8rem">${i.title} <button onclick="planToggleInclude(${i.id}, false)" style="background:none;border:none;cursor:pointer;color:#7c3aed;font-size:0.9em;padding:0 0 0 2px">×</button></span>`
+  ).join('');
+}
+
+async function planClearAllIncludes() {
+  const included = _planIdeas.filter(i => i.include_in_prompt);
+  if (!included.length) return;
+  if (!confirm(`Remove all ${included.length} ideas from the prompt?`)) return;
+  for (const idea of included) {
+    await fetch(`/api/meal-ideas/${idea.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ include_in_prompt: false }),
+    });
+  }
+  await planLoadIdeas();
+  planRenderIncludedBar();
+}
+
+async function planGeneratePrompt() {
+  const btn = $('plan-gen-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Building…';
+  try {
+    const data = await fetchJSON('/api/generate-prompt');
+    const ta = $('plan-prompt-text');
+    ta.value = data.prompt;
+    $('plan-prompt-output').style.display = '';
+    const meta = [];
+    if (data.recentMeals?.length) meta.push(`Avoiding ${data.recentMeals.length} recent meals`);
+    if (data.includedIdeas?.length) meta.push(`${data.includedIdeas.length} idea(s) included`);
+    if (data.activeNotes?.length) meta.push(`${data.activeNotes.length} note(s) included`);
+    $('plan-prompt-meta').textContent = meta.join(' · ') || 'Prompt generated.';
+    ta.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    alert('Could not generate prompt: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ Generate Prompt';
+  }
+}
+
+function planCopyPrompt() {
+  const ta = $('plan-prompt-text');
+  navigator.clipboard.writeText(ta.value).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+}
+
+function planSearchDebounce(q) {
+  clearTimeout(_planSearchTimer);
+  if (!q.trim()) { $('plan-meal-search-results').innerHTML = ''; return; }
+  _planSearchTimer = setTimeout(() => planSearchPastMeals(q.trim()), 350);
+}
+
+async function planSearchPastMeals(q) {
+  const el = $('plan-meal-search-results');
+  el.innerHTML = '<span style="font-size:0.8rem;color:var(--muted)">Searching…</span>';
+  try {
+    const data = await fetchJSON('/api/search-past-meals?q=' + encodeURIComponent(q));
+    if (!data.results?.length) {
+      el.innerHTML = '<span style="font-size:0.8rem;color:var(--muted)">No past meals found for "' + q + '".</span>';
+      return;
+    }
+    _planSearchResults = data.results;
+    el.innerHTML = data.results.map((r, i) => `
+      <div style="border:1px solid var(--border,#e5e7eb);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:#fff">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div>
+            <strong style="font-size:0.87rem">${r.title}</strong>
+            <span style="font-size:0.77rem;color:var(--muted);margin-left:8px">${r.weekDate}</span>
+          </div>
+          ${r.cookingSteps ? `<button id="plan-inject-btn-${i}" onclick="planInjectPastMeal(${i})" style="background:none;border:1px solid #7c3aed;color:#7c3aed;border-radius:6px;padding:4px 10px;font-size:0.78rem;cursor:pointer;white-space:nowrap;flex-shrink:0">+ Add to Prompt</button>` : ''}
+        </div>
+        ${r.cookingSteps ? `<details style="margin-top:6px"><summary style="font-size:0.78rem;color:var(--muted);cursor:pointer">Show cooking steps</summary><pre style="font-size:0.78rem;white-space:pre-wrap;margin:6px 0 0;color:var(--text)">${r.cookingSteps}</pre></details>` : '<span style="font-size:0.78rem;color:var(--muted)">No cooking steps found in menu file.</span>'}
+      </div>`).join('');
+  } catch (e) {
+    el.innerHTML = '<span style="font-size:0.8rem;color:red">Search error.</span>';
+  }
+}
+
+function planInjectPastMeal(idx) {
+  const r = _planSearchResults[idx];
+  if (!r) return;
+  const ta = $('plan-prompt-text');
+  if (!ta.value) {
+    alert('Generate the prompt first, then add past meal context.');
+    return;
+  }
+  const block = `\n\n---\n**Past cooking reference for "${r.title}":**\nUse the following cooking method as a base if you include "${r.title}" this week (adapt sides as needed):\n${r.cookingSteps}\n---`;
+  ta.value += block;
+  $('plan-prompt-output').style.display = '';
+  ta.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  // Visual feedback
+  const btn = $('plan-inject-btn-' + idx);
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = '✅ Added';
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1500);
+  }
+}
+
+
 async function planDeleteIdea(id) {
   if (!confirm('Delete this meal idea?')) return;
   try {
@@ -1152,7 +1393,75 @@ async function planDeleteIdea(id) {
   } catch { alert('Could not delete.'); }
 }
 
-// Init note form
+function planStartEditIdea(id) {
+  const idea = _planIdeas.find(i => i.id === id);
+  if (!idea) return;
+  const form = $('plan-idea-form');
+  $('plan-idea-edit-id').value = id;
+  $('plan-idea-title').value = idea.title;
+  $('plan-idea-cuisine').value = idea.cuisine_type || '';
+  $('plan-idea-desc').value = idea.description || '';
+  $('plan-idea-notes').value = idea.notes || '';
+  $('plan-idea-fav').checked = !!idea.is_favorite;
+  $('plan-idea-submit').textContent = 'Save Changes';
+  $('plan-idea-cancel').style.display = '';
+  $('plan-idea-past-results').style.display = 'none';
+  form.style.display = '';
+  form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  $('plan-idea-title').focus();
+}
+
+function planCancelIdeaEdit() {
+  $('plan-idea-edit-id').value = '';
+  $('plan-idea-title').value = '';
+  $('plan-idea-cuisine').value = '';
+  $('plan-idea-desc').value = '';
+  $('plan-idea-notes').value = '';
+  $('plan-idea-fav').checked = false;
+  $('plan-idea-submit').textContent = 'Save Idea';
+  $('plan-idea-cancel').style.display = 'none';
+  $('plan-idea-past-results').style.display = 'none';
+  $('plan-idea-form').style.display = 'none';
+}
+
+let _ideaFormSearchTimer = null;
+function planIdeaFormPastMealSearch(q) {
+  clearTimeout(_ideaFormSearchTimer);
+  const resultsBox = $('plan-idea-past-results');
+  if (!q || q.length < 2) { resultsBox.style.display = 'none'; return; }
+  _ideaFormSearchTimer = setTimeout(async () => {
+    try {
+      const data = await fetchJSON('/api/search-past-meals?q=' + encodeURIComponent(q));
+      if (!data.results?.length) { resultsBox.style.display = 'none'; return; }
+      $('plan-idea-past-list').innerHTML = data.results.map((r, i) => `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:4px 0;border-bottom:1px solid #ede9fe;font-size:0.8rem">
+          <div>
+            <strong>${r.title}</strong>
+            <span style="color:#7c3aed;margin-left:6px">${r.weekDate}</span>
+          </div>
+          ${r.cookingSteps ? `<button type="button" onclick="planIdeaFillFromPast(${i})" style="background:none;border:1px solid #7c3aed;color:#7c3aed;border-radius:5px;padding:2px 9px;font-size:0.77rem;cursor:pointer;white-space:nowrap;flex-shrink:0">Use this</button>` : ''}
+        </div>`).join('');
+      // Store for index lookup
+      window._ideaFormPastResults = data.results;
+      resultsBox.style.display = '';
+    } catch { resultsBox.style.display = 'none'; }
+  }, 350);
+}
+
+function planIdeaFillFromPast(idx) {
+  const r = window._ideaFormPastResults?.[idx];
+  if (!r) return;
+  // Only fill notes if empty; always offer cooking steps
+  if (!$('plan-idea-notes').value.trim() && r.cookingSteps) {
+    $('plan-idea-notes').value = r.cookingSteps;
+  } else if (r.cookingSteps) {
+    const existing = $('plan-idea-notes').value;
+    $('plan-idea-notes').value = existing + (existing ? '\n---\n' : '') + r.cookingSteps;
+  }
+  $('plan-idea-past-results').style.display = 'none';
+  $('plan-idea-notes').focus();
+}
+
 (function() {
   $('plan-note-form').addEventListener('submit', async e => {
     e.preventDefault();
@@ -1185,33 +1494,46 @@ async function planDeleteIdea(id) {
     const btn = $('plan-idea-submit');
     const title = $('plan-idea-title').value.trim();
     if (!title) return;
+    const editId = $('plan-idea-edit-id').value;
     btn.disabled = true;
     btn.textContent = 'Saving…';
     try {
-      const r = await fetch('/api/meal-ideas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          description: $('plan-idea-desc').value.trim() || null,
-          cuisine_type: $('plan-idea-cuisine').value.trim() || null,
-          notes: $('plan-idea-notes').value.trim() || null,
-          is_favorite: $('plan-idea-fav').checked,
-        }),
-      });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      $('plan-idea-title').value = '';
-      $('plan-idea-desc').value = '';
-      $('plan-idea-cuisine').value = '';
-      $('plan-idea-notes').value = '';
-      $('plan-idea-fav').checked = false;
-      $('plan-idea-form').style.display = 'none';
+      if (editId) {
+        // Edit mode
+        const r = await fetch(`/api/meal-ideas/${editId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            description: $('plan-idea-desc').value.trim() || null,
+            cuisine_type: $('plan-idea-cuisine').value.trim() || null,
+            notes: $('plan-idea-notes').value.trim() || null,
+            is_favorite: $('plan-idea-fav').checked,
+          }),
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+      } else {
+        // Create mode
+        const r = await fetch('/api/meal-ideas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            description: $('plan-idea-desc').value.trim() || null,
+            cuisine_type: $('plan-idea-cuisine').value.trim() || null,
+            notes: $('plan-idea-notes').value.trim() || null,
+            is_favorite: $('plan-idea-fav').checked,
+          }),
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+      }
+      planCancelIdeaEdit();
       planLoadIdeas();
     } catch (err) {
       alert('Save failed: ' + err.message);
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Save Idea';
+      btn.textContent = editId ? 'Save Changes' : 'Save Idea';
     }
   });
 })();
