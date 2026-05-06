@@ -21,10 +21,31 @@
 
 <body>
 
+<!-- ── Nav Drawer (mobile) ──────────────────────────────────────────────────── -->
+<div class="nav-drawer-overlay" id="navOverlay"></div>
+<div class="nav-drawer" id="navDrawer" role="navigation" aria-label="Main navigation">
+  <div class="nav-drawer-header">
+    <span class="nav-drawer-title">Menu</span>
+    <button class="nav-drawer-close" id="navDrawerClose" aria-label="Close menu">✕</button>
+  </div>
+  <div class="nav-drawer-list" id="navDrawerList">
+    <button class="tab-btn active" data-tab="home">🏠 This Week</button>
+    <button class="tab-btn" data-tab="last">⬅️ Last Week</button>
+    <button class="tab-btn" data-tab="menu">🥗 Menu</button>
+    <button class="tab-btn" data-tab="list">🛒 Shopping List</button>
+    <button class="tab-btn" data-tab="audit">📊 Audit</button>
+    <button class="tab-btn" data-tab="history">📅 History</button>
+    <button class="tab-btn" data-tab="planning">🍽️ Planning</button>
+    <button class="tab-btn" data-tab="prices">💰 Price List</button>
+    <button class="tab-btn" data-tab="archive">📚 Archive</button>
+  </div>
+</div>
+
 <!-- ── Header ──────────────────────────────────────────────────────────────── -->
 <header class="app-header">
   <div class="header-inner">
     <a class="app-logo" href="." style="text-decoration:none;color:inherit;cursor:pointer;">&#x1F96C; <span>Brooklyn</span> Kitchen</a>
+    <span class="nav-active-label" id="navActiveLabel">🏠 This Week</span>
     <div class="tab-nav-wrap" id="tabNavWrap">
     <nav class="tab-nav" id="tabNav">
       <button class="tab-btn active" data-tab="home">🏠 This Week</button>
@@ -38,6 +59,11 @@
       <button class="tab-btn" data-tab="archive">📚 Archive</button>
     </nav>
     </div>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+      <span class="hb-bar"></span>
+      <span class="hb-bar"></span>
+      <span class="hb-bar"></span>
+    </button>
   </div>
 </header>
 
@@ -411,16 +437,49 @@ window.addEventListener('resize', _updateNavFade);
 _updateNavFade();
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
+function switchToTab(tab) {
+  switchTab(tab);
+  if (tab === 'audit') loadSpendReport();
+}
+
 $('tabNav').addEventListener('click', e => {
   const btn = e.target.closest('.tab-btn');
   if (!btn) return;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  $('tab-' + btn.dataset.tab).classList.add('active');
-  history.pushState(null, '', '#' + btn.dataset.tab);
-  // Load spend report when tab becomes visible
-  if (btn.dataset.tab === 'audit') loadSpendReport();
+  switchToTab(btn.dataset.tab);
+});
+
+// ── Drawer nav ────────────────────────────────────────────────────────────────
+function navDrawerOpen() {
+  $('navDrawer').classList.add('open');
+  $('navOverlay').classList.add('open');
+  $('navHamburger').classList.add('open');
+  $('navHamburger').setAttribute('aria-expanded', 'true');
+  document.body.style.overflow = 'hidden';
+}
+function navDrawerClose() {
+  $('navDrawer').classList.remove('open');
+  $('navOverlay').classList.remove('open');
+  $('navHamburger').classList.remove('open');
+  $('navHamburger').setAttribute('aria-expanded', 'false');
+  document.body.style.overflow = '';
+}
+
+$('navHamburger').addEventListener('click', navDrawerOpen);
+$('navDrawerClose').addEventListener('click', navDrawerClose);
+$('navOverlay').addEventListener('click', navDrawerClose);
+
+$('navDrawerList').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  switchToTab(btn.dataset.tab);
+  if (btn.dataset.tab === 'archive') loadArchive();
+  if (btn.dataset.tab === 'planning') { planLoadNotes(); planLoadIdeas(); }
+  navDrawerClose();
+});
+
+// Close drawer on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') navDrawerClose();
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -645,11 +704,7 @@ window.addEventListener('popstate', () => {
 });
 
 function switchToMenuMeal(mealName) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelector('.tab-btn[data-tab="menu"]').classList.add('active');
-  $('tab-menu').classList.add('active');
-
+  switchTab('menu');
   const slug = slugify(mealName);
   history.pushState(null, '', '#meal-' + slug);
   const target = $('meal-' + slug);
@@ -659,13 +714,16 @@ function switchToMenuMeal(mealName) {
 }
 
 function switchTab(tabId, updateHash = true) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tabId);
+  });
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const navBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
-  if (navBtn) navBtn.classList.add('active');
   const page = $('tab-' + tabId);
   if (page) page.classList.add('active');
   if (updateHash) history.pushState(null, '', '#' + tabId);
+  // Sync active label in mobile header
+  const navBtn = document.querySelector(`#tabNav .tab-btn[data-tab="${tabId}"]`);
+  if (navBtn && $('navActiveLabel')) $('navActiveLabel').textContent = navBtn.textContent;
   window.scrollTo(0, 0);
 }
 
@@ -2547,11 +2605,12 @@ async function loadArchive() {
   }
 }
 
-// Extend tab switcher to lazy-load archive
+// Extend tab switcher to lazy-load archive / planning
 const _origTabNav = $('tabNav').onclick;
 $('tabNav').addEventListener('click', e => {
   const btn = e.target.closest('.tab-btn');
   if (btn && btn.dataset.tab === 'archive') loadArchive();
+  if (btn && btn.dataset.tab === 'planning') { planLoadNotes(); planLoadIdeas(); }
 });
 
 // ── New Week Import ───────────────────────────────────────────────────────────
