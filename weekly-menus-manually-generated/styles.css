@@ -144,6 +144,41 @@ button {
   font-size: 0.88em;
 }
 
+/* ── Pull-to-refresh indicator ────────────────────────────────── */
+#ptr-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--navy);
+  color: rgba(255,255,255,0.85);
+  font-size: 0.82rem;
+  font-weight: 500;
+  height: 0;
+  overflow: hidden;
+  transition: height 0.1s;
+  pointer-events: none;
+}
+#ptr-indicator .ptr-arrow {
+  font-size: 1rem;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+#ptr-indicator.ptr-ready .ptr-arrow {
+  transform: rotate(180deg);
+}
+#ptr-indicator.ptr-refreshing .ptr-arrow {
+  animation: ptr-spin 0.7s linear infinite;
+}
+@keyframes ptr-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ── Main layout ──────────────────────────────────────────────── */
 .main {
   max-width: 1080px;
