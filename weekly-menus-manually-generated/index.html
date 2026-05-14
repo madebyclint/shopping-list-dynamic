@@ -40,6 +40,7 @@
     <button class="tab-btn" data-tab="menu">🥗 Menu</button>
     <button class="tab-btn" data-tab="list">🛒 Shopping List</button>
     <button class="tab-btn" data-tab="audit">📊 Audit</button>
+    <button class="tab-btn" data-tab="events">🎉 Events</button>
     <button class="tab-btn" data-tab="history">📅 History</button>
     <button class="tab-btn" data-tab="planning">🍽️ Planning</button>
     <button class="tab-btn" data-tab="prices">💰 Price List</button>
@@ -59,6 +60,7 @@
       <button class="tab-btn" data-tab="menu">🥗 Menu</button>
       <button class="tab-btn" data-tab="list">🛒 Shopping List</button>
       <button class="tab-btn" data-tab="audit">📊 Audit</button>
+      <button class="tab-btn" data-tab="events">🎉 Events</button>
       <button class="tab-btn" data-tab="history">📅 History</button>
       <button class="tab-btn" data-tab="planning">🍽️ Planning</button>
       <button class="tab-btn" data-tab="prices">💰 Price List</button>
@@ -198,6 +200,59 @@
     <div id="audit-report" style="display:none"></div>
     <div id="audit-empty" style="display:none;padding:40px;text-align:center;color:var(--muted);font-size:0.9rem">
       No trips recorded yet. Start checking items off — the report updates automatically.
+    </div>
+  </section>
+
+  <!-- EVENTS ────────────────────────────────────────────────────────────── -->
+  <section id="tab-events" class="page">
+    <div id="ev-list-view">
+      <div class="ev-list-header">
+        <h2 class="ev-page-title">🎉 Special Events</h2>
+        <button class="ev-new-btn" id="ev-new-btn">＋ New Event</button>
+      </div>
+      <div id="ev-loading" class="loading"><div class="spinner"></div> Loading…</div>
+      <div id="ev-cards" class="ev-cards"></div>
+      <div id="ev-empty" class="ev-empty" style="display:none">
+        No special events yet. Tap <strong>＋ New Event</strong> to add one.
+      </div>
+    </div>
+    <div id="ev-detail-view" style="display:none">
+      <button class="ev-back-btn" id="ev-back-btn">← All Events</button>
+      <div id="ev-detail-header"></div>
+      <div class="ev-subtabs" id="ev-subtabs">
+        <button class="ev-subtab-btn active" data-subtab="shopping">🛒 Shopping List</button>
+        <button class="ev-subtab-btn" data-subtab="menu">🍽️ Menu</button>
+        <button class="ev-subtab-btn" data-subtab="recipes">📖 Recipes</button>
+        <button class="ev-subtab-btn" data-subtab="prep">📋 Prep</button>
+        <button class="ev-subtab-btn" data-subtab="budget">💰 Budget</button>
+        <button class="ev-subtab-btn" data-subtab="notes">📝 Notes</button>
+      </div>
+      <div id="ev-subtab-shopping" class="ev-subtab-panel"></div>
+      <div id="ev-subtab-menu"     class="ev-subtab-panel" style="display:none"></div>
+      <div id="ev-subtab-recipes"  class="ev-subtab-panel" style="display:none"></div>
+      <div id="ev-subtab-prep"     class="ev-subtab-panel" style="display:none"></div>
+      <div id="ev-subtab-budget"   class="ev-subtab-panel" style="display:none"></div>
+      <div id="ev-subtab-notes"    class="ev-subtab-panel" style="display:none"></div>
+    </div>
+    <div id="ev-form-overlay" class="ev-form-overlay" style="display:none">
+      <div class="ev-form-modal">
+        <h3 id="ev-form-title">New Special Event</h3>
+        <div class="ev-form-grid">
+          <label>Name<input type="text" id="ev-f-name" placeholder="Kamayan Feast" /></label>
+          <label>Date<input type="date" id="ev-f-date" /></label>
+          <label>Associated Week (Mon)<input type="date" id="ev-f-week" /></label>
+          <label>Budget ($)<input type="number" id="ev-f-budget" placeholder="0.00" step="0.01" min="0" /></label>
+        </div>
+        <label>Shopping List (markdown)<textarea id="ev-f-shopping" rows="6" placeholder="Paste or type your shopping list…"></textarea></label>
+        <label>Recipes (markdown)<textarea id="ev-f-recipes" rows="6" placeholder="Paste or type your recipes…"></textarea></label>
+        <label>Prep Timeline (markdown)<textarea id="ev-f-prep" rows="5" placeholder="## Day Before&#10;- [ ] Task…"></textarea></label>
+        <label>Notes<textarea id="ev-f-notes" rows="3" placeholder="Any extra notes…"></textarea></label>
+        <div class="ev-form-actions">
+          <button class="ev-form-cancel" id="ev-form-cancel">Cancel</button>
+          <button class="ev-form-save" id="ev-form-save">Save Event</button>
+        </div>
+        <div id="ev-form-status" class="ev-form-status"></div>
+      </div>
     </div>
   </section>
 
@@ -1086,6 +1141,9 @@ function renderSpendReport(audits) {
 
   report.innerHTML = html;
 
+  // Append special events sub-section
+  renderEventsAuditSection(report);
+
   // Wire delete buttons in Manage Entries
   report.querySelectorAll('.me-del').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -1907,7 +1965,29 @@ function clParseMd(md) {
   }
   // Parse store-grouped items from ## Shopping List by Trip
   const tripMatch = md.match(/## Shopping List by Trip([\s\S]*)/);
-  if (!tripMatch) return;
+  if (!tripMatch) {
+    // Fallback: event-style shopping list with emoji+bold category headers and bullet items
+    // Ignore any ## section headers (like "## Shopping by Store" which has summaries, not individual items)
+    let subgroup = '';
+    let inSummarySection = false;
+    md.split('\n').forEach(line => {
+      const t = line.trim();
+      if (!t || t === '---') return;
+      if (t.startsWith('## ')) { inSummarySection = true; return; }
+      if (inSummarySection) return;
+      if (t.startsWith('>')) return;
+      // Emoji category header: "🥬 **PRODUCE & FRESH**" or just "**Category**"
+      const catMatch = t.match(/^(?:\S+\s+)?\*\*([^*]+)\*\*\s*$/);
+      if (catMatch) { subgroup = catMatch[1].trim(); return; }
+      if (!t.startsWith('- ') && !t.startsWith('* ')) return;
+      const raw = t.replace(/^[-*]\s+/, '');
+      if (!raw) return;
+      // displayName = text before " — ", strip italic sub notes like *(sub: ...)*
+      const displayName = raw.replace(/\s*—.*$/, '').replace(/\s*\*\(.*?\)\*/g, '').trim();
+      _clItems.push({ name: raw, displayName, qtyStr: '', qtyN: 1, unit: '', unitCost: null, price: null, meal: '', store: 'Groceries', subgroup });
+    });
+    return;
+  }
   tripMatch[1].split(/\n### /).filter(Boolean).forEach(block => {
     const lines = block.split('\n');
     const store = lines[0].trim();
@@ -2344,9 +2424,10 @@ function clCopyURL() {
     setTimeout(() => { btn.textContent = '📋 Copy URL'; btn.classList.remove('copied'); }, 2000);
   }).catch(() => prompt('Copy this URL:', url));
 }
-async function openChecklist() {
+async function openChecklist({ weekKey, listText } = {}) {
   history.pushState(null, '', '#checklist');
-  _clWeekKey = _manifest?.currentWeek || 'current';
+  if (listText != null) _listText = listText;
+  _clWeekKey = weekKey ?? _manifest?.currentWeek ?? 'current';
   // Try DB first for cross-device state, fall back to localStorage
   const dbState    = await clLoadFromDB(_clWeekKey);
   const localState = clLoadLocal(_clWeekKey);
@@ -2777,6 +2858,528 @@ async function nwImport() {
     startY   = 0;
   }, { passive: true });
 })();
+
+// ── Special Events — Audit section helper ─────────────────────────────────────
+async function renderEventsAuditSection(reportEl) {
+  if (!reportEl) return;
+  try {
+    const { events } = await fetchJSON('/api/special-events');
+    if (!events || !events.length) return;
+    const withData = events.filter(ev => parseFloat(ev.budget || 0) > 0 || parseFloat(ev.total_spent || 0) > 0);
+    if (!withData.length) return;
+    let html = `<details class="manage-entries" style="margin-top:1.25rem" open>
+      <summary>🎉 Special Events</summary>
+      <div style="padding:6px 0">
+      <table style="width:100%;border-collapse:collapse;font-size:0.88rem">
+        <tr style="background:var(--surface)">
+          <th style="padding:8px 14px;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Event</th>
+          <th style="padding:8px 14px;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Date</th>
+          <th style="padding:8px 14px;text-align:right;font-size:0.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Budget</th>
+          <th style="padding:8px 14px;text-align:right;font-size:0.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Spent</th>
+          <th style="padding:8px 14px;text-align:right;font-size:0.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">+/−</th>
+        </tr>`;
+    for (const ev of withData) {
+      const budget = parseFloat(ev.budget    || 0);
+      const spent  = parseFloat(ev.total_spent || 0);
+      const diff   = spent - budget;
+      const diffCls = spent > 0 && budget > 0 ? (diff > 0 ? 'color:#c0392b' : 'color:#2d6a4f') : '';
+      html += `<tr>
+        <td style="padding:8px 14px;border-top:1px solid var(--border)">
+          <a href="#" onclick="event.preventDefault();switchTab('events');setTimeout(()=>{loadEvents().then(()=>openEvent(${ev.id}))},150)" style="color:var(--primary,#2d6a4f);text-decoration:none;font-weight:600">${ev.name}</a>
+        </td>
+        <td style="padding:8px 14px;border-top:1px solid var(--border);color:var(--muted);font-size:0.83rem">${fmtDate(ev.date)}</td>
+        <td style="padding:8px 14px;border-top:1px solid var(--border);text-align:right">${budget > 0 ? fmt(budget) : '—'}</td>
+        <td style="padding:8px 14px;border-top:1px solid var(--border);text-align:right">${spent > 0 ? fmt(spent) : '—'}</td>
+        <td style="padding:8px 14px;border-top:1px solid var(--border);text-align:right;${diffCls}">${spent > 0 && budget > 0 ? (diff >= 0 ? '+' : '') + fmt(diff) : '—'}</td>
+      </tr>`;
+    }
+    html += `</table></div></details>`;
+    reportEl.insertAdjacentHTML('beforeend', html);
+  } catch { /* non-critical */ }
+}
+
+// ── Special Events Tab ────────────────────────────────────────────────────────
+let _evEvents      = [];   // cached event list
+let _evCurrentId   = null; // event currently open in detail view
+let _evCurrentSubtab = 'shopping';
+let _evEditingId   = null; // null = creating new
+
+function fmtDate(d) {
+  if (!d) return '';
+  const [y, m, day] = d.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[parseInt(m,10)-1]} ${parseInt(day,10)}, ${y}`;
+}
+
+async function loadEvents() {
+  const loading = $('ev-loading');
+  const cards   = $('ev-cards');
+  const empty   = $('ev-empty');
+  try {
+    const { events } = await fetchJSON('/api/special-events');
+    _evEvents = events || [];
+    loading.style.display = 'none';
+    if (!_evEvents.length) { empty.style.display = ''; cards.innerHTML = ''; return; }
+    empty.style.display = 'none';
+    cards.innerHTML = _evEvents.map(ev => {
+      const budget = parseFloat(ev.budget || 0);
+      const spent  = parseFloat(ev.total_spent || 0);
+      let chip = '';
+      if (spent > 0) {
+        const diff = spent - budget;
+        const cls  = diff > 0 ? 'ev-chip-over' : 'ev-chip-under';
+        const sign = diff > 0 ? '+' : '';
+        chip = `<span class="ev-card-chip ${cls}">${sign}${fmt(diff)}</span>`;
+      } else if (budget > 0) {
+        chip = `<span class="ev-card-chip ev-chip-none">Budget: ${fmt(budget)}</span>`;
+      }
+      return `<div class="ev-card" onclick="openEvent(${ev.id})">
+        <div class="ev-card-emoji">🎉</div>
+        <div class="ev-card-body">
+          <div class="ev-card-name">${ev.name}</div>
+          <div class="ev-card-date">${fmtDate(ev.date)}${ev.week ? ` · Week of ${fmtDate(ev.week)}` : ''}</div>
+        </div>
+        ${chip}
+      </div>`;
+    }).join('');
+  } catch {
+    loading.style.display = 'none';
+    cards.innerHTML = '<div class="ev-empty">⚠️ Could not load events.</div>';
+  }
+}
+
+function openEvent(id) {
+  const ev = _evEvents.find(e => e.id === id);
+  if (!ev) return;
+  _evCurrentId = id;
+  $('ev-list-view').style.display = 'none';
+  $('ev-detail-view').style.display = '';
+  // Render header
+  const budget = parseFloat(ev.budget || 0);
+  const spent  = parseFloat(ev.total_spent || 0);
+  let varHtml = '';
+  if (spent > 0) {
+    const diff = spent - budget;
+    const cls  = diff > 0 ? 'ev-chip-over' : 'ev-chip-under';
+    varHtml = `<span class="ev-card-chip ${cls}">${fmt(spent)} spent</span>`;
+  } else if (budget > 0) {
+    varHtml = `<span class="ev-card-chip ev-chip-none">Budget: ${fmt(budget)}</span>`;
+  }
+  $('ev-detail-header').innerHTML = `
+    <h2 class="ev-detail-title">🎉 ${ev.name}</h2>
+    <div class="ev-detail-meta">
+      <span>${fmtDate(ev.date)}</span>
+      ${ev.week ? `<span>Week of ${fmtDate(ev.week)}</span>` : ''}
+      ${varHtml}
+    </div>
+    <div class="ev-detail-actions">
+      <button class="ev-edit-btn" onclick="openEventForm(${ev.id})">✏️ Edit</button>
+      <button class="ev-delete-btn" onclick="deleteEvent(${ev.id})">🗑 Delete</button>
+    </div>`;
+  // Activate first sub-tab
+  _evCurrentSubtab = 'shopping';
+  document.querySelectorAll('.ev-subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.subtab === 'shopping'));
+  ['shopping','menu','recipes','prep','budget','notes'].forEach(t => {
+    $('ev-subtab-' + t).style.display = t === 'shopping' ? '' : 'none';
+  });
+  renderEvSubtab('shopping', ev);
+  window.scrollTo(0,0);
+}
+
+function switchEvSubtab(subtab) {
+  _evCurrentSubtab = subtab;
+  document.querySelectorAll('.ev-subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.subtab === subtab));
+  ['shopping','menu','recipes','prep','budget','notes'].forEach(t => {
+    $('ev-subtab-' + t).style.display = t === subtab ? '' : 'none';
+  });
+  const ev = _evEvents.find(e => e.id === _evCurrentId);
+  if (ev) renderEvSubtab(subtab, ev);
+}
+
+function renderEvSubtab(subtab, ev) {
+  const panel = $('ev-subtab-' + subtab);
+  if (subtab === 'shopping') {
+    if (ev.shopping_list_md) {
+      panel.innerHTML = `<button class="lt-save-btn" style="margin-bottom:1rem" onclick="openEventChecklist(${ev.id})">📋 Open Live Checklist</button><div class="md-content"></div>`;
+      renderMD(panel.querySelector('.md-content'), ev.shopping_list_md);
+    } else {
+      panel.innerHTML = '<div class="ev-empty">No shopping list added yet.</div>';
+    }
+  } else if (subtab === 'menu') {
+    renderEvMenu(ev);
+  } else if (subtab === 'recipes') {
+    if (ev.recipes_md) {
+      panel.innerHTML = '<div class="md-content"></div>';
+      renderMD(panel.querySelector('.md-content'), ev.recipes_md);
+    } else {
+      panel.innerHTML = '<div class="ev-empty">No recipes added yet.</div>';
+    }
+  } else if (subtab === 'prep') {
+    renderEvPrep(ev);
+  } else if (subtab === 'budget') {
+    renderEvBudget(ev);
+  } else if (subtab === 'notes') {
+    const notes = ev.notes || '';
+    panel.innerHTML = `
+      <textarea id="ev-notes-area" rows="10" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;font-family:inherit;background:var(--bg);color:var(--text);resize:vertical">${notes.replace(/</g,'&lt;')}</textarea>
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+        <button class="lt-save-btn" onclick="saveEvNotes(${ev.id})">Save Notes</button>
+        <span id="ev-notes-status" style="font-size:0.82rem"></span>
+      </div>`;
+  }
+}
+
+// ── Prep Checklist ────────────────────────────────────────────────────────────
+function parsePrep(prepMd) {
+  const groups = [];
+  let current  = null;
+  for (const line of (prepMd || '').split('\n')) {
+    const hMatch = line.match(/^##\s+(.+)/);
+    if (hMatch) { current = { title: hMatch[1].trim(), items: [] }; groups.push(current); continue; }
+    const iMatch = line.match(/^-\s+\[[ x]\]\s+(.*)/i);
+    if (iMatch && current) current.items.push(iMatch[1].trim());
+  }
+  return groups;
+}
+
+function renderEvMenu(ev) {
+  const panel = $('ev-subtab-menu');
+  if (!ev.recipes_md) { panel.innerHTML = '<div class="ev-empty">No recipes added yet.</div>'; return; }
+  let html = '<div class="ev-menu-overview">';
+  let hasCategory = false;
+  let h3Idx = 0;
+  const evId = ev.id;
+  ev.recipes_md.split('\n').forEach(line => {
+    const t = line.trim();
+    if (t.startsWith('## ')) {
+      if (hasCategory) html += '</ul>';
+      const cat = t.replace(/^##\s+/, '');
+      html += `<h3 class="ev-menu-cat">${cat}</h3><ul class="ev-menu-list">`;
+      hasCategory = true;
+    } else if (t.startsWith('### ')) {
+      const recipe = t.replace(/^###\s+/, '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const idx = h3Idx++;
+      html += `<li class="ev-menu-item"><button class="ev-menu-recipe-btn" data-h3idx="${idx}" onclick="openRecipeFromMenu(${evId},${idx})">${recipe}</button></li>`;
+    }
+  });
+  if (hasCategory) html += '</ul>';
+  html += '</div>';
+  panel.innerHTML = html;
+}
+
+function openRecipeFromMenu(evId, h3Idx) {
+  switchEvSubtab('recipes');
+  requestAnimationFrame(() => {
+    const panel = $('ev-subtab-recipes');
+    const headings = panel.querySelectorAll('h3');
+    const h = headings[h3Idx];
+    if (h) {
+      h.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      h.classList.add('ev-recipe-highlight');
+      setTimeout(() => h.classList.remove('ev-recipe-highlight'), 2000);
+    }
+  });
+}
+
+async function renderEvPrep(ev) {
+  const panel = $('ev-subtab-prep');
+  if (!ev.prep_md) { panel.innerHTML = '<div class="ev-empty">No prep timeline added yet.</div>'; return; }
+  const groups = parsePrep(ev.prep_md);
+  if (!groups.length) { panel.innerHTML = '<div class="ev-empty">No prep tasks found.</div>'; return; }
+
+  // Load saved state from cart_state
+  const prepKey = `event:${ev.id}:prep`;
+  let checked = [];
+  try {
+    const state = await fetchJSON(`/api/cart?week=${encodeURIComponent(prepKey)}`);
+    checked = state?.c || [];
+  } catch { checked = []; }
+
+  let html = '';
+  let idx  = 0;
+  for (const group of groups) {
+    html += `<div class="ev-prep-group"><div class="ev-prep-group-title">${group.title}</div>`;
+    for (const item of group.items) {
+      const id      = String(idx);
+      const isDone  = checked.includes(id);
+      html += `<div class="ev-prep-item${isDone ? ' done' : ''}" id="ev-prep-row-${idx}">
+        <input type="checkbox" id="ev-prep-${idx}" data-prep-idx="${idx}"${isDone ? ' checked' : ''} />
+        <label for="ev-prep-${idx}">${item}</label>
+      </div>`;
+      idx++;
+    }
+    html += '</div>';
+  }
+  panel.innerHTML = html;
+  // Store total count for save
+  panel.dataset.prepTotal = String(idx);
+  panel.dataset.prepKey   = prepKey;
+  panel.dataset.evId      = String(ev.id);
+}
+
+async function saveEvPrepState(evId) {
+  const panel   = $('ev-subtab-prep');
+  if (!panel || panel.dataset.evId !== String(evId)) return;
+  const prepKey = panel.dataset.prepKey;
+  const checked = [];
+  panel.querySelectorAll('input[data-prep-idx]:checked').forEach(cb => {
+    checked.push(cb.dataset.prepIdx);
+  });
+  try {
+    await fetch('/api/cart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ week: prepKey, state: { v: 1, c: checked, s: [], x: [] } }),
+    });
+  } catch { /* non-critical */ }
+}
+
+// Delegate prep checkbox clicks
+document.addEventListener('change', async e => {
+  const cb = e.target.closest('input[data-prep-idx]');
+  if (!cb || !_evCurrentId) return;
+  const row = cb.closest('.ev-prep-item');
+  if (row) row.classList.toggle('done', cb.checked);
+  await saveEvPrepState(_evCurrentId);
+});
+
+// ── Budget sub-tab ─────────────────────────────────────────────────────────────
+function renderEvBudget(ev) {
+  const panel  = $('ev-subtab-budget');
+  const budget = parseFloat(ev.budget || 0);
+  const spent  = parseFloat(ev.total_spent || 0);
+  const diff   = spent - budget;
+  const hasSpend = spent > 0;
+
+  let varianceHtml = '';
+  if (hasSpend) {
+    const cls  = diff > 0 ? 'ev-chip-over' : 'ev-chip-under';
+    const sign = diff > 0 ? '+' : '';
+    varianceHtml = `<div class="ev-variance-chip ${cls}">
+      Budget: ${fmt(budget)} · Spent: ${fmt(spent)} · ${sign}${fmt(diff)}
+    </div>`;
+  } else if (budget > 0) {
+    varianceHtml = `<div class="ev-variance-chip ev-chip-none">Budget: ${fmt(budget)} — no receipts logged yet</div>`;
+  }
+
+  // By-store table
+  let storeRows = '';
+  const bs = ev.by_store || {};
+  const storeEntries = Object.entries(bs);
+  if (storeEntries.length) {
+    storeRows = storeEntries.map(([store, amt]) =>
+      `<tr><td>${store}</td><td>${fmt(amt)}</td></tr>`
+    ).join('');
+  }
+  const storeTable = storeRows
+    ? `<div class="ev-by-store" style="margin-bottom:1rem"><table>
+        <tr><th>Store</th><th style="text-align:right">Amount</th></tr>
+        ${storeRows}
+        <tr><td><strong>Total</strong></td><td><strong>${fmt(spent)}</strong></td></tr>
+       </table></div>`
+    : '';
+
+  panel.innerHTML = `
+    ${varianceHtml}
+    ${storeTable}
+    <div class="log-trip-card">
+      <h3 class="lt-title">Log a Receipt</h3>
+      <div class="lt-grid ev-budget-grid">
+        <div class="lt-field">
+          <label for="ev-lf-store">Store</label>
+          <input type="text" id="ev-lf-store" list="ev-lf-stores" placeholder="H Mart…" autocomplete="off" />
+          <datalist id="ev-lf-stores"></datalist>
+        </div>
+        <div class="lt-field">
+          <label for="ev-lf-amount">Receipt Total</label>
+          <input type="number" id="ev-lf-amount" placeholder="0.00" step="0.01" min="0" />
+        </div>
+        <button class="lt-save-btn" id="ev-lf-save" onclick="saveEvReceipt(${ev.id})">✓ Save</button>
+      </div>
+      <div id="ev-lf-status" class="lt-status"></div>
+    </div>`;
+
+  // Populate store suggestions from existing audit stores
+  fetchJSON('/api/audit-stores').then(stores => {
+    const dl = $('ev-lf-stores');
+    if (dl) dl.innerHTML = (stores || []).map(s => `<option value="${s.replace(/"/g,'&quot;')}">`).join('');
+  }).catch(() => {});
+  $('ev-lf-amount')?.addEventListener('keydown', e => { if (e.key === 'Enter') $('ev-lf-save')?.click(); });
+}
+
+async function saveEvReceipt(evId) {
+  const store  = ($('ev-lf-store')?.value  || '').trim();
+  const amount = parseFloat($('ev-lf-amount')?.value);
+  const status = $('ev-lf-status');
+  if (!store || isNaN(amount) || amount <= 0) {
+    if (status) { status.textContent = '⚠️ Please fill in store and a valid amount.'; status.className = 'lt-status lt-err'; }
+    return;
+  }
+  const btn = $('ev-lf-save');
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch(`/api/special-events/${evId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ store, receipt_amount: amount }),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const { event: updated } = await r.json();
+    // Update cache
+    const idx = _evEvents.findIndex(e => e.id === evId);
+    if (idx >= 0) _evEvents[idx] = updated;
+    if (status) { status.textContent = `✓ Saved — ${store} ${fmt(amount)}`; status.className = 'lt-status lt-ok'; }
+    $('ev-lf-amount').value = '';
+    renderEvBudget(updated);
+    // Also refresh the detail header to show new totals
+    openEvent(evId);
+  } catch (err) {
+    if (status) { status.textContent = '⚠️ Save failed — ' + err.message; status.className = 'lt-status lt-err'; }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function saveEvNotes(evId) {
+  const area   = $('ev-notes-area');
+  const status = $('ev-notes-status');
+  if (!area) return;
+  try {
+    const r = await fetch(`/api/special-events/${evId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes: area.value }),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const { event: updated } = await r.json();
+    const idx = _evEvents.findIndex(e => e.id === evId);
+    if (idx >= 0) _evEvents[idx] = updated;
+    if (status) { status.textContent = '✓ Saved'; status.className = 'lt-ok'; }
+    setTimeout(() => { if (status) status.textContent = ''; }, 2000);
+  } catch (err) {
+    if (status) { status.textContent = '⚠️ Save failed'; status.className = 'lt-err'; }
+  }
+}
+
+async function deleteEvent(evId) {
+  const ev = _evEvents.find(e => e.id === evId);
+  if (!ev || !confirm(`Delete "${ev.name}"? This cannot be undone.`)) return;
+  try {
+    await fetch(`/api/special-events/${evId}`, { method: 'DELETE' });
+    _evEvents = _evEvents.filter(e => e.id !== evId);
+    closeEvDetail();
+    loadEvents();
+  } catch { alert('Delete failed.'); }
+}
+
+function openEventChecklist(evId) {
+  const ev = _evEvents.find(e => e.id === evId);
+  if (!ev) return;
+  openChecklist({ weekKey: `event:${evId}`, listText: ev.shopping_list_md || '' });
+}
+
+// ── Event form ────────────────────────────────────────────────────────────────
+function openEventForm(evId = null) {
+  _evEditingId = evId;
+  $('ev-form-title').textContent = evId ? 'Edit Event' : 'New Special Event';
+  $('ev-form-status').textContent = '';
+  const ev = evId ? _evEvents.find(e => e.id === evId) : null;
+  $('ev-f-name').value     = ev?.name     || '';
+  $('ev-f-date').value     = ev?.date     || '';
+  $('ev-f-week').value     = ev?.week     || '';
+  $('ev-f-budget').value   = ev?.budget   || '';
+  $('ev-f-shopping').value = ev?.shopping_list_md || '';
+  $('ev-f-recipes').value  = ev?.recipes_md       || '';
+  $('ev-f-prep').value     = ev?.prep_md           || '';
+  $('ev-f-notes').value    = ev?.notes            || '';
+  $('ev-form-overlay').style.display = '';
+}
+
+function closeEvForm() {
+  $('ev-form-overlay').style.display = 'none';
+}
+
+function closeEvDetail() {
+  _evCurrentId = null;
+  $('ev-detail-view').style.display = 'none';
+  $('ev-list-view').style.display   = '';
+}
+
+// Auto-fill week from date
+$('ev-f-date')?.addEventListener('change', () => {
+  const d = $('ev-f-date').value;
+  if (!d) return;
+  const dt = new Date(d + 'T12:00:00');
+  const day = dt.getDay(); // 0=Sun,1=Mon
+  const diff = day === 0 ? -6 : 1 - day;
+  const mon = new Date(dt);
+  mon.setDate(dt.getDate() + diff);
+  $('ev-f-week').value = mon.toISOString().slice(0, 10);
+});
+
+$('ev-form-cancel')?.addEventListener('click', closeEvForm);
+$('ev-form-save')?.addEventListener('click', async () => {
+  const name  = ($('ev-f-name')?.value || '').trim();
+  const date  = ($('ev-f-date')?.value || '').trim();
+  const week  = ($('ev-f-week')?.value || '').trim() || null;
+  const budget = parseFloat($('ev-f-budget')?.value) || 0;
+  const shopping_list_md = $('ev-f-shopping')?.value || null;
+  const recipes_md       = $('ev-f-recipes')?.value  || null;
+  const prep_md          = $('ev-f-prep')?.value      || null;
+  const notes            = $('ev-f-notes')?.value    || null;
+  const status = $('ev-form-status');
+  if (!name || !date) {
+    if (status) { status.textContent = '⚠️ Name and date are required.'; status.style.color = 'var(--err, #c0392b)'; }
+    return;
+  }
+  const btn = $('ev-form-save');
+  btn.disabled = true;
+  try {
+    let r, updated;
+    if (_evEditingId) {
+      r = await fetch(`/api/special-events/${_evEditingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, date, week, budget, shopping_list_md, recipes_md, prep_md, notes }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      updated = (await r.json()).event;
+      const idx = _evEvents.findIndex(e => e.id === _evEditingId);
+      if (idx >= 0) _evEvents[idx] = updated;
+    } else {
+      r = await fetch('/api/special-events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, date, week, budget, shopping_list_md, recipes_md, prep_md, notes }),
+      });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        throw new Error(err.detail || 'HTTP ' + r.status);
+      }
+      updated = (await r.json()).event;
+      _evEvents.unshift(updated);
+    }
+    closeEvForm();
+    loadEvents();
+    if (_evEditingId) openEvent(updated.id);
+  } catch (err) {
+    if (status) { status.textContent = '⚠️ ' + err.message; status.style.color = 'var(--err, #c0392b)'; }
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ── Events tab wiring ─────────────────────────────────────────────────────────
+$('ev-new-btn')?.addEventListener('click',  () => openEventForm(null));
+$('ev-back-btn')?.addEventListener('click', closeEvDetail);
+$('ev-subtabs')?.addEventListener('click', e => {
+  const btn = e.target.closest('.ev-subtab-btn[data-subtab]');
+  if (btn) switchEvSubtab(btn.dataset.subtab);
+});
+// Load events when Events tab is activated
+document.querySelectorAll('.tab-btn[data-tab="events"]').forEach(btn => {
+  btn.addEventListener('click', () => loadEvents());
+});
 
 // ── Run ───────────────────────────────────────────────────────────────────────
 $('app-footer').textContent = 'Brooklyn Kitchen';

@@ -106,10 +106,27 @@ async function initDb() {
       price      NUMERIC     NOT NULL,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS special_events (
+      id               SERIAL PRIMARY KEY,
+      name             TEXT NOT NULL,
+      date             TEXT NOT NULL,
+      slug             TEXT UNIQUE NOT NULL,
+      week             TEXT,
+      budget           NUMERIC(10,2) DEFAULT 0,
+      total_spent      NUMERIC(10,2) DEFAULT 0,
+      by_store         JSONB DEFAULT '{}',
+      shopping_list_md TEXT,
+      recipes_md       TEXT,
+      prep_md          TEXT,
+      notes            TEXT,
+      created_at       TIMESTAMPTZ DEFAULT NOW()
+    );
   `);
 }
 
-initDb().catch(err => console.error('DB init error:', err));
+initDb()
+  .then(() => seedKamayanFeast())
+  .catch(err => console.error('DB init error:', err));
 
 // ── DB status diagnostic ──────────────────────────────────────────────────────
 app.get('/api/db-status', async (_req, res) => {
@@ -370,16 +387,19 @@ function normByStore(bs) {
   return out;
 }
 
-// ── GET /api/audits — all trips for reporting ─────────────────────────────────
+// ── GET /api/audits — all trips for reporting (includes special event spend) ───
 app.get('/api/audits', async (_req, res) => {
   try {
-    const { rows } = await pool.query(
-      'SELECT week_date, data FROM shopping_audits ORDER BY week_date DESC',
-    );
-    // Normalize old format (total_spent / list_estimate) to new (actual / budget)
-    res.json(rows.map(r => {
+    const [auditsResult, eventsResult] = await Promise.all([
+      pool.query('SELECT week_date, data FROM shopping_audits ORDER BY week_date DESC'),
+      pool.query('SELECT id, name, week, budget, total_spent, by_store FROM special_events WHERE total_spent > 0 ORDER BY week DESC'),
+    ]);
+
+    // Build week map from audit rows
+    const weekMap = new Map();
+    for (const r of auditsResult.rows) {
       const d = r.data || {};
-      return {
+      weekMap.set(r.week_date, {
         week:            r.week_date,
         budget:          d.budget          ?? d.list_estimate       ?? 0,
         actual:          d.actual          ?? d.total_spent         ?? null,
@@ -393,8 +413,37 @@ app.get('/api/audits', async (_req, res) => {
             ? (d.actual ?? d.total_spent) - (d.budget ?? d.list_estimate ?? 0)
             : null
         ),
-      };
-    }));
+      });
+    }
+
+    // Merge special event spend into matching week rows (or create synthetic rows)
+    for (const ev of eventsResult.rows) {
+      const spent    = parseFloat(ev.total_spent || 0);
+      const weekKey  = ev.week || '';
+      const storeKey = `🎉 ${ev.name}`;
+      if (weekMap.has(weekKey)) {
+        const row = weekMap.get(weekKey);
+        row.by_store[storeKey] = spent;
+        row.actual = parseFloat(((row.actual || 0) + spent).toFixed(2));
+        row.variance = parseFloat((row.actual - row.budget).toFixed(2));
+      } else if (weekKey) {
+        weekMap.set(weekKey, {
+          week:            weekKey,
+          budget:          parseFloat(ev.budget || 0),
+          actual:          spent,
+          checklist_total: null,
+          item_count:      null,
+          budget_item_count: null,
+          receipt_line_items: null,
+          by_store:        { [storeKey]: spent },
+          variance:        parseFloat((spent - parseFloat(ev.budget || 0)).toFixed(2)),
+          special_event_only: true,
+        });
+      }
+    }
+
+    const result = [...weekMap.values()].sort((a, b) => b.week.localeCompare(a.week));
+    res.json(result);
   } catch (err) {
     console.error('GET /api/audits:', err.message);
     res.status(500).json({ error: 'db_error' });
@@ -1148,6 +1197,563 @@ app.post('/api/import-week', async (req, res) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
+
+// ── Special Events API ────────────────────────────────────────────────────────
+
+function evSlug(name, date) {
+  return date + '-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+// GET /api/special-events — list all events
+app.get('/api/special-events', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM special_events ORDER BY date DESC',
+    );
+    res.json({ events: rows });
+  } catch (err) {
+    console.error('GET /api/special-events:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+// GET /api/special-events/:id
+app.get('/api/special-events/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { rows } = await pool.query('SELECT * FROM special_events WHERE id = $1', [id]);
+    if (!rows[0]) return res.status(404).json({ error: 'not_found' });
+    res.json({ event: rows[0] });
+  } catch (err) {
+    console.error('GET /api/special-events/:id:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+// POST /api/special-events — create a new event
+app.post('/api/special-events', async (req, res) => {
+  try {
+    const { name, date, week, budget, shopping_list_md, recipes_md, prep_md, notes } = req.body;
+    if (!name?.trim() || !date?.trim()) {
+      return res.status(400).json({ error: 'name and date are required' });
+    }
+    const slug = evSlug(name.trim(), date.trim());
+    const { rows } = await pool.query(
+      `INSERT INTO special_events (name, date, slug, week, budget, shopping_list_md, recipes_md, prep_md, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [name.trim(), date.trim(), slug,
+       week || null,
+       parseFloat(budget) || 0,
+       shopping_list_md || null, recipes_md || null, prep_md || null, notes || null],
+    );
+    res.status(201).json({ event: rows[0] });
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'slug_conflict', detail: 'An event with this name and date already exists.' });
+    console.error('POST /api/special-events:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+// PATCH /api/special-events/:id — update fields OR log a receipt
+// Receipt mode: { store, receipt_amount }
+// Update mode: any of { name, date, week, budget, shopping_list_md, recipes_md, prep_md, notes }
+app.patch('/api/special-events/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { rows: existing } = await pool.query('SELECT * FROM special_events WHERE id = $1', [id]);
+    if (!existing[0]) return res.status(404).json({ error: 'not_found' });
+    const ev = existing[0];
+
+    if (req.body.store != null && req.body.receipt_amount != null) {
+      // ── Receipt mode ─────────────────────────────────────────────────────────
+      const store  = normalizeStore(String(req.body.store).slice(0, 150));
+      const amount = parseFloat(req.body.receipt_amount);
+      if (!store || isNaN(amount) || amount < 0) {
+        return res.status(400).json({ error: 'invalid_params' });
+      }
+      const by_store = normByStore(ev.by_store || {});
+      by_store[store] = parseFloat(amount.toFixed(2));
+      const total_spent = parseFloat(
+        Object.values(by_store).reduce((s, v) => s + v, 0).toFixed(2),
+      );
+      const { rows } = await pool.query(
+        `UPDATE special_events SET by_store=$1, total_spent=$2 WHERE id=$3 RETURNING *`,
+        [JSON.stringify(by_store), total_spent, id],
+      );
+      return res.json({ event: rows[0] });
+    }
+
+    // ── Field update mode ───────────────────────────────────────────────────
+    const allowed = ['name','date','week','budget','shopping_list_md','recipes_md','prep_md','notes'];
+    const fields = [], vals = [];
+    for (const [k, v] of Object.entries(req.body)) {
+      if (allowed.includes(k)) { fields.push(`${k} = $${fields.length + 1}`); vals.push(v); }
+    }
+    if (!fields.length) return res.status(400).json({ error: 'no_valid_fields' });
+    vals.push(id);
+    const { rows } = await pool.query(
+      `UPDATE special_events SET ${fields.join(', ')} WHERE id = $${vals.length} RETURNING *`, vals,
+    );
+    res.json({ event: rows[0] });
+  } catch (err) {
+    console.error('PATCH /api/special-events/:id:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+// DELETE /api/special-events/:id
+app.delete('/api/special-events/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { rowCount } = await pool.query('DELETE FROM special_events WHERE id = $1', [id]);
+    res.json({ ok: true, deleted: rowCount });
+  } catch (err) {
+    console.error('DELETE /api/special-events/:id:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+// ── Seed Kamayan Feast on first run ───────────────────────────────────────────
+const KAMAYAN_SHOPPING_LIST = `# Kamayan Feast — Shopping List (Serves 6)
+
+> **Notes:** Most items available at any supermarket. Kecap manis, bagoong, bihon noodles, white cane vinegar, kangkung, calamansi, green mangoes, banana leaves, and palm sugar → Asian grocery (H Mart, 99 Ranch, Seafood City). Pick up rotisserie chickens and ice the day of the feast.
+
+---
+
+🥬 **PRODUCE & FRESH**
+
+> Most at any supermarket. Kangkung and calamansi at Asian grocery.
+
+- 2 whole Rotisserie chickens — pick up day-of
+- 800g (1.75 lbs) Beef sirloin or flank steak — sliced thin; Beef Tapa
+- 800g (1.75 lbs) Chicken thighs — boneless; Chicken Satay
+- 3 Green (unripe) mangoes — Ensaladang Mangga *(sub: Granny Smith apple)*
+- 3–4 Ripe Philippine mangoes — Ataulfo/champagne are closest
+- 1 whole Seedless watermelon — fresh slices + Rujak
+- 1 small Pineapple — Rujak
+- 3 large Cucumbers — Ensaladang Pipino + Rujak
+- 1 Jicama — Rujak (optional) *(sub: water chestnut or Asian pear)*
+- 2 bunches Kangkung (water spinach) — Adobong Kangkung *(sub: baby spinach)*
+- 2 bags Baby spinach — mix with kangkung or use solo
+- 1 small head Cabbage — Pancit Bihon
+- 2 Carrots — Pancit Bihon
+- 1 cup Green beans — Pancit Bihon
+- 2 cups Bean sprouts — Pancit Bihon
+- 2 stalks Celery — Pancit Bihon
+- 3 Tomatoes — Ensaladang Mangga + Pipino
+- 2 heads Garlic — you'll use a lot!
+- 3 Red onions — Ensaladang Mangga + Pipino
+- 2 Yellow onions — Pancit Bihon
+- 1 bunch Green onions / scallions — Sinangag garnish
+- 1 bunch Fresh cilantro — optional garnish
+- 1 bunch Fresh red chilies or bird's eye chilies
+- 4–5 stalks Lemongrass — satay marinade + ginger drink
+- 1 large piece Fresh ginger — ginger drink + marinades
+- 20–30 Calamansi — for squeezing over everything *(sub: 4–5 limes)*
+
+---
+
+🛒 **PANTRY & DRY GOODS**
+
+> Kecap manis, bagoong, bihon noodles, cane vinegar at Asian grocery. Everything else at supermarket.
+
+- 4 cups Jasmine or long-grain white rice — Sinangag (cook day before)
+- 400g (14oz) Bihon rice vermicelli noodles — Pancit Bihon *(sub: glass noodles or thin rice noodles)*
+- 1 bottle Soy sauce — regular, not low-sodium
+- 1 bottle Kecap manis — Indonesian sweet soy sauce *(sub: 2 tbsp soy + 1 tbsp brown sugar per 3 tbsp)*
+- 1 jar Sambal oelek — Huy Fong brand (red rooster) recommended
+- 1 jar Bagoong — Filipino shrimp paste *(sub: fish sauce)*
+- 1 bottle White cane vinegar — adobo and sawsawan *(sub: white wine vinegar)*
+- 1 jar/block Tamarind paste or concentrate — Rujak dressing *(sub: lime juice + Worcestershire sauce)*
+- 1 jar Oyster sauce — Pancit and Kangkung (use vegetarian version if needed)
+- 1 cup Smooth peanut butter — peanut sauce
+- 2 cans Coconut milk (14oz each) — peanut sauce
+- 1 bag Palm sugar or brown sugar — Rujak, tapa marinade, drinks
+- 1 bag White sugar — iced tea, Pipino dressing
+- 1 small jar Ground turmeric — satay marinade
+- 1 small jar Ground coriander — satay marinade
+- 1 bottle Neutral vegetable oil — frying and grilling
+- 1 bottle Sesame oil — optional, for kangkung
+
+---
+
+☕ **BEVERAGES**
+
+- 1 box Black tea bags or loose leaf — iced tea
+- Ice — large bag or make your own
+- Lemon or calamansi — iced tea garnish
+
+---
+
+🌿 **SPECIALTY ITEMS**
+
+> Filipino or Indonesian grocery store recommended.
+
+- 1 pack Banana leaves — table presentation, often in freezer section *(sub: large ti leaves or foil)*
+
+---
+
+🛍 **NON-FOOD ITEMS**
+
+- 1 pack Bamboo skewers — soak in water 30 min before grilling
+- Small bowls or ramekins — for sauces and condiments
+- Paper towels or hand towels — for hand washing (it's kamayan!)
+
+---
+
+## Shopping by Store
+
+### Regular Supermarket (Whole Foods, Stop & Shop, etc.)
+- Chicken, beef, produce (except kangkung/calamansi), coconut milk, peanut butter, soy sauce, sambal oelek, tamarind, oyster sauce, bamboo skewers, tea, sugar, oil
+
+### Asian Grocery (H Mart, 99 Ranch, Seafood City, etc.)
+- Kecap manis, bagoong, bihon noodles, white cane vinegar, kangkung, calamansi, green mangoes, banana leaves, palm sugar, lemongrass
+
+### Pick Up Day-Of
+- 2 rotisserie chickens
+- Ice`;
+
+const KAMAYAN_RECIPES = `# Kamayan Feast — Recipes (Serves 6)
+
+*Inspired by Yasmin Newman's 7000 Islands & Pat Tanumihardja's The Asian Grandmothers Cookbook*
+
+> ✓ **MAKE AHEAD** = Can be fully or partially made ahead of the day
+> ↺ **SUB** = Easy ingredient substitutions
+
+---
+
+## 🍚 Rice
+
+### 1. Sinangag — Garlic Fried Rice
+*Inspired by Yasmin Newman, 7000 Islands — Rice & Noodles chapter*
+
+> ✓ **MAKE AHEAD:** Cook plain rice the day before. Fry with garlic on the day — takes 10 minutes.
+
+**Ingredients**
+- 4 cups day-old cooked white rice
+- 8 cloves garlic, minced
+- 3 tbsp neutral oil
+- Salt to taste
+- 2 eggs (optional)
+- Green onions to garnish
+
+**Method**
+1. Use day-old rice — fresh rice is too wet and will clump.
+2. Heat oil in a large wok or wide pan over high heat. Fry garlic until golden, about 2 minutes.
+3. Add rice, breaking up any clumps. Toss and press against the wok for 5–7 minutes until lightly crispy.
+4. Season with salt. Push rice to the side, scramble in eggs if using, then fold through.
+5. Top with green onions and extra fried garlic to serve.
+
+> ↺ **SUB:** No wok? A wide non-stick skillet on the highest heat you have works fine.
+
+---
+
+## 🍗 Proteins
+
+### 2. Rotisserie Chicken
+*Store-bought — no recipe needed!*
+
+Pick up 2 whole rotisserie chickens on the day of the feast. Quarter them before laying on the banana leaf, or pull the meat and pile it. Drizzle with calamansi juice and a little kecap manis for a Filipino-Indonesian finish.
+
+> ✓ **MAKE AHEAD:** Keep warm in a 200°F oven for up to 1 hour before serving.
+
+---
+
+### 3. Chicken Satay with Peanut Sauce
+*Inspired by Pat Tanumihardja, The Asian Grandmothers Cookbook — Indonesian recipes section*
+
+> ✓ **MAKE AHEAD:** Marinate chicken overnight. Make peanut sauce up to 3 days ahead. Grill on the day.
+
+**Ingredients** (~24 skewers)
+- 800g (1.75 lbs) chicken thighs, cut into 1-inch cubes
+- 3 tbsp kecap manis (sweet soy sauce)
+- 2 tbsp soy sauce
+- 1 tbsp vegetable oil
+- 2 tsp ground turmeric
+- 2 tsp ground coriander
+- 3 cloves garlic, minced
+- 1 stalk lemongrass, white part minced
+- Bamboo skewers, soaked in water 30 min
+
+**Method**
+1. Mix all marinade ingredients. Toss chicken to coat. Marinate minimum 2 hours or overnight in the fridge.
+2. Thread 3–4 chicken pieces onto each skewer.
+3. Grill over high heat (or under broiler) 3–4 minutes per side until charred and cooked through.
+4. Serve with peanut sauce alongside.
+
+*Shortcut: Skip skewering — grill whole marinated thighs and slice to serve. Same flavor, half the work.*
+
+**Peanut Sauce**
+- 1 cup smooth peanut butter
+- 1 cup coconut milk
+- 2 tbsp kecap manis
+- 1 tbsp soy sauce
+- 1 tbsp lime juice
+- 2 tsp sambal oelek
+- 2 cloves garlic, minced
+- Water to thin as needed
+
+1. Combine all ingredients in a small saucepan over medium-low heat.
+2. Stir until smooth and warmed through, about 5 minutes.
+3. Add water a tablespoon at a time until it coats a spoon easily.
+4. Taste and adjust: more lime for tang, more kecap manis for sweetness, more sambal for heat.
+
+> ↺ **SUB:** No kecap manis? Mix 2 tbsp soy sauce + 1 tbsp brown sugar as a substitute.
+> ↺ **SUB:** Nut allergy? Sunflower seed butter works in the peanut sauce.
+
+---
+
+### 4. Beef Tapa
+*Inspired by Yasmin Newman, 7000 Islands — Everyday Food chapter*
+
+> ✓ **MAKE AHEAD:** Marinate overnight. Cook on the day — takes only 10 minutes.
+
+**Ingredients**
+- 800g (1.75 lbs) beef sirloin or flank steak, sliced very thin
+- 4 tbsp soy sauce
+- 2 tbsp sugar (white or brown)
+- 1 tbsp calamansi juice or lime juice
+- 4 cloves garlic, minced
+- 1 tsp black pepper
+- Oil for frying
+
+**Method**
+1. Combine soy sauce, sugar, calamansi, garlic, and pepper. Toss with sliced beef until fully coated.
+2. Marinate in the fridge at least 2 hours, ideally overnight.
+3. Heat a little oil in a pan over high heat. Fry beef in batches — don't crowd the pan.
+4. Cook 2–3 minutes per side until caramelized at the edges.
+5. Fan out on the banana leaf to serve.
+
+> ↺ **SUB:** No calamansi? Regular lime juice is a perfect substitute.
+> ↺ **SUB:** No sirloin? Ribeye works beautifully and stays tender.
+
+---
+
+## 🥬 Vegetables & Noodles
+
+### 5. Vegetarian Pancit Bihon
+*Inspired by Pat Tanumihardja and Yasmin Newman*
+
+> ✓ **MAKE AHEAD:** Make up to 4 hours ahead. Cover and keep at room temperature. Reheat in a wok with a splash of water if needed.
+
+**Ingredients**
+- 400g (14oz) bihon rice vermicelli noodles
+- 2 cups cabbage, shredded
+- 2 carrots, julienned
+- 1 cup green beans, halved
+- 1 cup bean sprouts
+- 1 cup celery, sliced
+- 6 cloves garlic, minced
+- 1 onion, sliced
+- 4 tbsp soy sauce
+- 2 tbsp oyster sauce (or vegetarian oyster sauce)
+- 1 cup vegetable broth
+- Oil for cooking
+- Calamansi or lime to serve
+
+**Method**
+1. Soak noodles in cold water 10 minutes until pliable. Drain and set aside.
+2. Heat oil in a large wok over high heat. Sauté garlic and onion until soft.
+3. Add carrots, green beans, and celery first. Stir-fry 3 minutes.
+4. Add cabbage and bean sprouts. Toss.
+5. Add noodles, soy sauce, oyster sauce, and broth. Toss everything over high heat until noodles absorb the liquid, about 5 minutes.
+6. Taste and adjust seasoning. Serve with calamansi halves for squeezing.
+
+> ↺ **SUB:** No bihon? Glass noodles or thin rice noodles are good substitutes.
+
+---
+
+### 6. Adobong Kangkung with Spinach
+*Inspired by Yasmin Newman, 7000 Islands — Vegetables & Salads chapter*
+
+> ✓ **MAKE AHEAD:** Prep garlic and mix the sauce a day ahead. Cook the greens just before serving — 10 minutes.
+
+**Ingredients**
+- 2 large bunches kangkung (water spinach) OR all baby spinach
+- 2 cups baby spinach
+- 6 cloves garlic, minced
+- 3 tbsp soy sauce
+- 2 tbsp white vinegar
+- 1 tbsp oyster sauce
+- 1 tsp black pepper
+- 2 tbsp oil
+- Optional: 1 red chili, sliced
+
+**Method**
+1. Wash and trim kangkung into 3-inch pieces. If using kale instead, blanch 1 minute first.
+2. Heat oil in a wok over high heat. Add garlic (and chili if using). Stir-fry 30 seconds.
+3. Add kangkung stems first, then leaves and spinach. Toss quickly.
+4. Pour in soy sauce, vinegar, and oyster sauce. Toss 2–3 minutes until wilted but still bright green.
+5. Season with pepper. Serve immediately.
+
+> ↺ **SUB:** Can't find kangkung? Use all baby spinach, or spinach and kale combined.
+> ↺ **SUB:** Vegetarian? Skip oyster sauce and add a dash of sesame oil instead.
+
+---
+
+## 🥗 Salads
+
+### 7. Ensaladang Pipino — Cucumber Salad
+*Inspired by Yasmin Newman, 7000 Islands — Vegetables & Salads chapter*
+
+> ✓ **MAKE AHEAD:** Make up to 4 hours ahead. Gets better as it sits in the fridge.
+
+**Ingredients**
+- 3 large cucumbers, thinly sliced
+- 1 small red onion, thinly sliced
+- 3 tbsp white cane vinegar or white wine vinegar
+- 1 tbsp sugar
+- 1 tsp salt
+- Optional: 2 tomatoes, sliced
+- Optional: handful of fresh cilantro
+
+**Method**
+1. Combine vinegar, sugar, and salt. Stir until dissolved.
+2. Toss cucumbers and onion in the dressing.
+3. Chill at least 30 minutes. Add tomatoes and cilantro just before serving.
+
+> ↺ **SUB:** No cane vinegar? White wine vinegar or rice vinegar both work well.
+
+---
+
+### 8. Ensaladang Mangga — Green Mango Salad
+*Inspired by Yasmin Newman, 7000 Islands — Vegetables & Salads chapter*
+
+> ✓ **MAKE AHEAD:** Prep mango and tomato a day ahead. Add bagoong dressing just before serving.
+
+**Ingredients**
+- 3 green (unripe) mangoes, peeled and julienned or coarsely grated
+- 2 tomatoes, chopped
+- 1 small red onion, thinly sliced
+- 2–3 tbsp bagoong (shrimp paste)
+- Juice of 2 calamansi or 1 lime
+- Optional: 1 red chili, sliced
+
+**Method**
+1. Combine mango, tomato, and onion in a bowl.
+2. Mix bagoong with calamansi juice. Toss through the salad.
+3. Taste — it should be sharp, salty, and a little funky. Adjust with more lime or bagoong.
+4. Garnish with chili if using. Serve chilled.
+
+> ↺ **SUB:** Can't find green mango? Granny Smith apple + extra lime is a great substitute.
+> ↺ **SUB:** No bagoong? Use 1 tbsp fish sauce, or omit for a vegetarian version.
+
+---
+
+## 🍉 Fruit
+
+### 9. Rujak — Indonesian Spiced Fruit Salad
+*Inspired by Pat Tanumihardja, The Asian Grandmothers Cookbook — Indonesian section*
+
+> ✓ **MAKE AHEAD:** Make dressing up to 3 days ahead. Cut fruit day-of. Dress just before serving.
+
+**Ingredients**
+- 1 green mango, peeled and sliced
+- 1 small pineapple, cubed
+- 1 cucumber, sliced
+- 1 cup watermelon, cubed
+- Optional: jicama, papaya, or starfruit
+- **DRESSING:** 2 tbsp tamarind paste, 2 tbsp palm sugar or brown sugar, 1–2 tsp sambal oelek, 1 tbsp lime juice, pinch of salt
+
+**Method**
+1. Mix tamarind, sugar, sambal, lime, and salt. Stir until sugar dissolves — should be sweet, sour, spicy, and a little salty.
+2. Arrange all fruit on a plate or in a bowl.
+3. Drizzle dressing over just before serving, or serve on the side.
+
+> ↺ **SUB:** No tamarind paste? Use 1 tbsp lime juice + 1 tbsp Worcestershire sauce.
+> ↺ **SUB:** No palm sugar? Brown sugar works perfectly.
+
+---
+
+### 10. Watermelon Slices & Fresh Mango
+
+Slice a whole seedless watermelon into thick wedges. Slice 3–4 ripe Philippine mangoes. Arrange around the edges of the banana leaf — the red and green are beautiful. Optional: a tiny pinch of chili flakes or tajin on the watermelon.
+
+> ✓ **MAKE AHEAD:** Slice up to 4 hours ahead and refrigerate.
+
+---
+
+## 🫙 Sauces & Condiments
+
+*Yasmin Newman devotes an entire chapter to sawsawan (dipping sauces) in 7000 Islands.*
+
+Place all sauces in small bowls directly on or alongside the banana leaf:
+
+- **Peanut sauce** — recipe above, already made for the satay
+- **Sambal oelek** — store-bought is perfect. Look for Huy Fong brand (red rooster jar)
+- **Kecap manis** — Indonesian sweet soy. Available at most Asian grocery stores
+- **Spiced Filipino vinegar** — heat ½ cup white cane vinegar with 2 sliced garlic cloves, 1 bird's eye chili, pinch of salt. Serve warm or at room temperature
+- **Calamansi halves** — for squeezing over everything. Substitute with lime
+- **Bagoong** — Filipino shrimp paste, served alongside the ensaladang mangga
+
+---
+
+## ☕ Drinks
+
+### Sweet Iced Tea
+Brew a large batch of black tea (or oolong), sweeten while hot, cool, and refrigerate. Serve over ice with lemon or calamansi slices.
+
+### Ginger & Lemongrass Hot Drink
+Simmer 3–4 inches of sliced fresh ginger and 3 bruised lemongrass stalks in 6 cups of water for 20–25 minutes. Sweeten with sugar to taste. Strain and serve hot. Fragrant and soothing — especially wonderful with the rich satay and tapa.
+
+> ✓ **MAKE AHEAD:** Make both drinks the day before and refrigerate. Reheat the ginger drink on the day.
+
+---
+
+*Kain na tayo! — Let's eat! May your table be full, your hands busy, and your family together.*`;
+
+const KAMAYAN_PREP = `## 2 Days Before
+- [ ] Make peanut sauce — refrigerate
+- [ ] Make rujak dressing — refrigerate
+- [ ] Make ginger lemongrass drink — refrigerate
+- [ ] Brew and sweeten iced tea — refrigerate
+
+## 1 Day Before
+- [ ] Marinate beef tapa overnight
+- [ ] Marinate chicken satay overnight
+- [ ] Cook rice for sinangag (must be cold for frying)
+- [ ] Prep ensaladang pipino — refrigerate
+- [ ] Julienne mango and tomato for ensaladang mangga — refrigerate
+
+## Day of Feast
+- [ ] Morning: Cut all fruit (rujak, watermelon, mango slices) — refrigerate
+- [ ] Morning: Prep all vegetable ingredients for pancit and kangkung
+- [ ] 2 hrs before: Pick up rotisserie chickens — keep warm at 200°F
+- [ ] 1 hr before: Cook pancit bihon
+- [ ] 45 min before: Grill chicken satay
+- [ ] 30 min before: Cook beef tapa
+- [ ] 20 min before: Make sinangag
+- [ ] 15 min before: Dress ensaladang mangga and rujak
+- [ ] 10 min before: Make adobong kangkung — serve immediately
+- [ ] Just before: Lay banana leaves, arrange everything, scatter calamansi & sauces
+- [ ] Reheat ginger lemongrass drink on the stove — fill iced tea glasses`;
+
+async function seedKamayanFeast() {
+  try {
+    const { rows } = await pool.query('SELECT COUNT(*) AS n FROM special_events');
+    if (parseInt(rows[0].n, 10) > 0) return; // already seeded
+    await pool.query(
+      `INSERT INTO special_events (name, date, slug, week, budget, shopping_list_md, recipes_md, prep_md, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       ON CONFLICT (slug) DO NOTHING`,
+      [
+        'Kamayan Feast',
+        '2026-05-16',
+        '2026-05-16-kamayan-feast',
+        '2026-05-11',
+        200,
+        KAMAYAN_SHOPPING_LIST,
+        KAMAYAN_RECIPES,
+        KAMAYAN_PREP,
+        'Filipino & Indonesian feast for 6. Inspired by Yasmin Newman\'s 7000 Islands & Pat Tanumihardja\'s The Asian Grandmothers Cookbook. Kamayan = eating with your hands from banana leaves.',
+      ],
+    );
+    console.log('🎉 Kamayan Feast seeded.');
+  } catch (err) {
+    console.error('Kamayan seed error:', err.message);
+  }
+}
+
 app.listen(PORT, () =>
   console.log(`🥬 Brooklyn Kitchen running on http://localhost:${PORT}`),
 );
