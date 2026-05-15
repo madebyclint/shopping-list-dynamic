@@ -1099,6 +1099,26 @@ button {
   align-items: baseline;
   gap: 6px;
 }
+.xray-item-name {
+  flex: 1;
+}
+.xray-add-btn {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--warn);
+  background: transparent;
+  color: var(--warn);
+  cursor: pointer;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.xray-add-btn:disabled {
+  border-color: var(--muted);
+  color: var(--muted);
+  cursor: default;
+}
 .xray-icon {
   font-size: 0.8rem;
   flex-shrink: 0;

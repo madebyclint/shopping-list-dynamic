@@ -6,6 +6,24 @@ Running log of weekly menus. Reference when generating new plans to avoid repeat
 
 ---
 
+## Week of Sun May 18 - Fri May 23, 2026
+
+### Dinners
+- 🍖 Simple Maggi Beef Ribs w/ Kimchi & Oranges *(SUNDAY)* — Maggi-marinated beef short ribs, kale chips, kimchi, fresh oranges — 40 min
+- 🌿🍗 Steamed Artichokes & Al Pastor Wings *(WEDNESDAY)* — Whole steamed artichokes w/ melted butter, air fryer wings w/ al pastor seasoning & arbol chili sauce, mango — 45 min
+- 🌭 Seattle-Style Hot Dogs *(THURSDAY — TEEN PREP)* — Beef uncured dogs, cream cheese, sautéed cabbage & onions, sriracha, watermelon — 15 min
+
+### Meals Out
+- 🍗 Jerk Chicken *(TUESDAY)*
+- 🥪 Deli Sandwiches *(FRIDAY)*
+
+### Notes
+- Astrid away this week — scaled down to 3 home dinners for dad + two teens
+- No breakfast planned this week
+- For Following Week: Korean Japchae, Turkish Adana Kebab bowls, Coconut lime shrimp with mango slaw
+
+---
+
 ## Mon May 4 - Fri May 9, 2026
 
 ### Dinners

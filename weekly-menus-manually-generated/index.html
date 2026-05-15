@@ -458,7 +458,8 @@
 let _manifest = null;
 let _spendChart     = null;
 let _auditSaveTimer = null;
-let _listText = '';     // raw shopping list markdown for live checklist
+let _listText = '';         // raw shopping list markdown for live checklist
+let _weeklyListText = '';   // always holds the current week's list (never overwritten by event lists)
 let _sseSource    = null;
 let _clSaveTimer  = null;
 let _clLastReqId  = null; // prevents echoing our own SSE update back
@@ -567,6 +568,7 @@ async function init() {
     fetchText(_manifest.files.shoppingList)
       .then(t => {
         _listText = t;
+        _weeklyListText = t;
         renderMD($('list-md-content'), t);
         // Auto-open checklist if navigated directly to #checklist
         if (window.location.hash === '#checklist') openChecklist();
@@ -2575,7 +2577,7 @@ async function openChecklist({ weekKey, listText } = {}) {
     }
   });
 })();
-$('checklistBtn').addEventListener('click', openChecklist);
+$('checklistBtn').addEventListener('click', () => openChecklist({ listText: _weeklyListText }));
 
 // ── X-Ray feature ────────────────────────────────────────────────────────────
 let _xrayData = null;
@@ -2599,6 +2601,22 @@ function openXray() {
 function closeXray() {
   $('xray-drawer').classList.remove('open');
   $('list-md-content').classList.remove('xray-dimmed');
+}
+
+function xrayPushToChecklist(btn, name) {
+  // Ensure checklist state is initialised for this week
+  if (!_clWeekKey) _clWeekKey = _manifest?.currentWeek ?? 'current';
+  if (!_clState)   _clState = { v: 1, c: [], s: [], x: [], prices: {}, qtys: {} };
+  if (!_clState.x) _clState.x = [];
+  // Avoid duplicates
+  if (_clState.x.some(it => it.n === name)) {
+    btn.textContent = '✓ added';
+    return;
+  }
+  _clState.x.push({ n: name, p: null, st: '' });
+  clSync();
+  btn.textContent = '✓ added';
+  btn.disabled = true;
 }
 
 function xrayCheck(item, listText) {
@@ -2629,15 +2647,15 @@ function renderXray(data, listText) {
       <div class="xray-meal-title">${meal.emoji || ''} ${meal.name} <span style="opacity:0.6;font-weight:400">&#x2014; ${meal.day}</span></div>`;
     if (found.length) {
       html += `<div class="xray-section-label">&#x2705; On the list (${found.length})</div>`;
-      found.forEach(i => html += `<div class="xray-item"><span class="xray-icon">&#x2705;</span>${i}</div>`);
+      found.forEach(i => html += `<div class="xray-item"><span class="xray-icon">&#x2705;</span><span class="xray-item-name">${i}</span></div>`);
     }
     if (missing.length) {
       html += `<div class="xray-section-label" style="color:var(--warn)">&#x26A0;&#xFE0F; Verify / missing (${missing.length})</div>`;
-      missing.forEach(i => html += `<div class="xray-item" style="color:var(--warn)"><span class="xray-icon">&#x26A0;&#xFE0F;</span>${i}</div>`);
+      missing.forEach(i => html += `<div class="xray-item" style="color:var(--warn)"><span class="xray-icon">&#x26A0;&#xFE0F;</span><span class="xray-item-name">${i}</span><button class="xray-add-btn" onclick="xrayPushToChecklist(this, ${JSON.stringify(i)})" title="Add to checklist">+ list</button></div>`);
     }
     if (pantry.length) {
       html += `<div class="xray-section-label">Pantry &#x2014; not checked (${pantry.length})</div>`;
-      pantry.forEach(i => html += `<div class="xray-item" style="color:var(--muted)"><span class="xray-icon">&#x1F3E0;</span>${i}</div>`);
+      pantry.forEach(i => html += `<div class="xray-item" style="color:var(--muted)"><span class="xray-icon">&#x1F3E0;</span><span class="xray-item-name">${i}</span><button class="xray-add-btn" style="border-color:var(--muted);color:var(--muted)" onclick="xrayPushToChecklist(this, ${JSON.stringify(i)})" title="Add to checklist">+ list</button></div>`);
     }
     html += '</div>';
   });

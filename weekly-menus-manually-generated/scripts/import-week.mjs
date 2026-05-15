@@ -18,20 +18,20 @@ if (!DB_URL) throw new Error('No POSTGRES_URL / DATABASE_URL in environment');
 
 const pool = new pg.Pool({ connectionString: DB_URL, ssl: { rejectUnauthorized: false } });
 
-const FILES_DIR = '/Users/clintbush/Downloads/files';
+const FILES_DIR = '/Users/clintbush/Downloads/files 2';
 
 function read(filename) {
   return readFileSync(path.join(FILES_DIR, filename), 'utf8');
 }
 
-const menuMd       = read('2026-05-11-menu.md');
-const shoppingMd   = read('2026-05-11-shopping-list.md');
+const menuMd       = read('2026-05-18-menu.md');
+const shoppingMd   = read('2026-05-18-shopping-list.md');
 const mealHistory  = read('meal-history.md');
 const mealsIng     = read('meals-ingredients.json');
 const dataJson     = JSON.parse(read('data.json'));
 
-const WEEK_DATE = '2026-05-11';
-const LABEL     = 'Week of May 11, 2026';
+const WEEK_DATE = '2026-05-18';
+const LABEL     = 'Week of May 18, 2026';
 
 async function run() {
   const client = await pool.connect();
@@ -95,7 +95,7 @@ async function run() {
     console.log('✓ documents[meals-ingredients] upserted');
 
     await client.query('COMMIT');
-    console.log('\n✅ All done — week 2026-05-11 is live in the DB.');
+    console.log('\n✅ All done — week 2026-05-18 is live in the DB.');
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('❌ Import failed, rolled back:', err.message);

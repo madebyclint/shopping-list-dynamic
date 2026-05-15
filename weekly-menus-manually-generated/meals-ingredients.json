@@ -1,114 +1,60 @@
 {
   "_comment": "Per-meal ingredient coverage for the X-Ray panel. Update each week alongside the menu. buy_these = items that MUST appear on the shopping list. pantry = assumed at home, not checked.",
-  "week": "2026-05-04",
+  "week": "2026-05-18",
   "meals": [
     {
-      "name": "Pepes Tahu / Banana Leaf-Wrapped Tofu Packets",
-      "day": "Monday",
-      "emoji": "🫘",
-      "buy_these": [
-        "Medium-firm tofu",
-        "Shallots",
-        "Red chilies",
-        "Sambal oelek",
-        "Red bell pepper",
-        "Green onions",
-        "Lemon basil",
-        "Banana leaves",
-        "Makrut lime leaves",
-        "Lemongrass",
-        "Mango"
-      ],
-      "pantry": [
-        "Coriander seeds",
-        "Garlic",
-        "Salt",
-        "Sugar",
-        "Black pepper",
-        "Vegetable oil",
-        "Jasmine rice",
-        "Eggs"
-      ]
-    },
-    {
-      "name": "Sushi Hand Rolls (Temaki)",
-      "day": "Tuesday",
-      "emoji": "🍣",
-      "buy_these": [
-        "Imitation crab sticks",
-        "Avocado",
-        "Cucumber",
-        "Nori sheets",
-        "Microwave rice packets",
-        "Sriracha",
-        "Mandarin oranges"
-      ],
-      "pantry": [
-        "Rice vinegar",
-        "Sugar",
-        "Salt",
-        "Soy sauce",
-        "Mayo (homemade from eggs + avocado oil)"
-      ]
-    },
-    {
-      "name": "English/Scottish Breakfast for Dinner",
-      "day": "Wednesday",
-      "emoji": "🍳",
-      "buy_these": [
-        "Eggs",
-        "Turkey sausage links",
-        "Cherry tomatoes",
-        "Mushrooms",
-        "Baked beans",
-        "Bread",
-        "Navel oranges"
-      ],
-      "pantry": [
-        "Olive oil",
-        "Butter",
-        "Salt",
-        "Black pepper"
-      ]
-    },
-    {
-      "name": "Pesto Pasta with Chicken Sausage & Cherry Tomatoes",
-      "day": "Thursday",
-      "emoji": "🍝",
-      "buy_these": [
-        "Penne or fusilli pasta",
-        "Pre-cooked chicken sausage links",
-        "Cherry tomatoes",
-        "Store-bought basil pesto",
-        "Parmesan",
-        "Strawberries"
-      ],
-      "pantry": [
-        "Olive oil",
-        "Salt",
-        "Black pepper"
-      ]
-    },
-    {
-      "name": "Maggi-Marinated Ribs + Kimchi Slaw",
-      "day": "Friday",
+      "name": "Simple Maggi Beef Ribs w/ Kimchi & Oranges",
+      "day": "Sunday",
       "emoji": "🍖",
       "buy_these": [
-        "Pork spare ribs",
-        "Beef short ribs",
-        "Maggi seasoning sauce",
-        "Napa cabbage",
-        "Carrot",
-        "Gochugaru",
-        "Navel oranges"
+        "Beef short ribs, bone-in (~3 lbs)",
+        "Maggi seasoning sauce (1 bottle)",
+        "Kimchi (1 jar, 16 oz)",
+        "Kale (1 bunch)",
+        "Oranges (4–5 navel)"
       ],
       "pantry": [
-        "Garlic powder",
-        "Black pepper",
-        "Rice vinegar",
-        "Sesame oil",
-        "Sugar",
-        "Jasmine rice"
+        "Olive oil",
+        "Salt",
+        "Black pepper"
+      ]
+    },
+    {
+      "name": "Steamed Artichokes & Al Pastor Wings",
+      "day": "Wednesday",
+      "emoji": "🌿🍗",
+      "buy_these": [
+        "Whole artichokes, large (4)",
+        "Lemon (1)",
+        "Butter (for dipping, melted)",
+        "Chicken wings, split (3–4 lbs)",
+        "Al pastor seasoning (1 packet or jar)",
+        "Arbol chili sauce (1 bottle)",
+        "Zucchini (2 medium) or corn (2 ears)",
+        "Mango (2)"
+      ],
+      "pantry": [
+        "Salt",
+        "Olive oil or vegetable oil"
+      ]
+    },
+    {
+      "name": "Seattle-Style Hot Dogs",
+      "day": "Thursday",
+      "emoji": "🌭",
+      "buy_these": [
+        "Beef uncured hot dogs (1 pack, 6 ct)",
+        "Hot dog buns (1 pack, 8 ct)",
+        "Cream cheese (8 oz block)",
+        "Green cabbage (1 small head)",
+        "Yellow onion (1 small)",
+        "Sriracha (1 bottle)",
+        "Watermelon (1 quarter or half cut)"
+      ],
+      "pantry": [
+        "Butter or oil (for sautéing cabbage)",
+        "Salt",
+        "Black pepper"
       ]
     }
   ]
