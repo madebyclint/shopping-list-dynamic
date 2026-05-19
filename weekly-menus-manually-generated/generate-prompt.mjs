@@ -64,7 +64,7 @@ const prompt = `I need a meal plan for the next week. Here is the criteria:
 
 1. Needs to be 5 dinners to cook + 1 breakfast
 2. Keep them to under an hour to make, preferably closer to 30 min
-3. Keep them budget friendly
+3. Keep them budget friendly — actively look for cost-saving opportunities: use cheaper protein cuts (thighs over breasts, ground meat over whole, eggs as protein), build meals around produce that's in season, double up an ingredient across multiple meals to reduce waste, and suggest any relevant swaps in the shopping list notes
 4. Diversify the meals (cuisine) — don't be shy about non-mainstream, think outside the box, and **avoid repeating the same cuisine twice in one week**
 5. Rainbow plate mentality — always a serving of veggie and protein. Veggie proteins are ok too. **Every meal must include a fresh fruit as a side** — list it in both the meal summary and ingredients. Pick fruits that pair with the cuisine where possible.
 6. If we do pork, we need to do a pork portion and a non-pork portion for a couple family members.
@@ -191,6 +191,8 @@ Proteins Subtotal: **~$XX.XX**
 | **GRAND TOTAL** | **~$XXX** |
 \`\`\`
 Rules: every line item includes the meal it's for; never bare "Chips" — always specify type; combine shared ingredients across meals; do a line-by-line audit against Ingredients Used before finalizing; pantry staples must not appear.
+
+After the grand total table, add a **💡 Cost-Saving Tips** section listing 3–5 specific swap suggestions or buying strategies that could reduce this week's total (e.g. "Buy chicken thighs instead of breasts — saves ~$3", "Zucchini is in season this week — substitute for any squash", "Bell peppers appear in 3 meals — buy a 3-pack bag").
 
 After the grand total table, add a section with this EXACT heading (the dashboard checklist depends on it):
 \`\`\`
