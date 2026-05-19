@@ -831,7 +831,11 @@ async function loadSpendReport() {
   empty.style.display   = 'none';
   if (!_auditStoresLoaded) { _auditStoresLoaded = true; initLogTripForm(); }
   try {
-    const audits = await fetchJSON('/api/audits');
+    const [audits, eventsData] = await Promise.all([
+      fetchJSON('/api/audits'),
+      fetchJSON('/api/special-events').catch(() => ({ events: [] })),
+    ]);
+    const events = eventsData.events || [];
     // Merge live checklist budget into the matching DB row (or prepend a synthetic one).
     // This ensures Budgeted always reflects the current in-cart state regardless of
     // whether the checklist auto-save has fired or the row was recently deleted.
@@ -853,7 +857,7 @@ async function loadSpendReport() {
         merged = [{ week: liveAudit.week, ...liveAudit, actual: null, by_store: {}, variance: null }, ...audits];
       }
     }
-    renderSpendReport(merged);
+    renderSpendReport(merged, events);
   } catch {
     loading.style.display = 'none';
     empty.style.display   = 'block';
@@ -912,7 +916,7 @@ function initLogTripForm() {
   $('lf-amount')?.addEventListener('keydown', e => { if (e.key === 'Enter') $('lf-save').click(); });
 }
 
-function renderSpendReport(audits) {
+function renderSpendReport(audits, events = []) {
   const report  = $('audit-report');
   const empty   = $('audit-empty');
   const loading = $('audit-loading');
@@ -929,6 +933,13 @@ function renderSpendReport(audits) {
   const thisMonth = now.toISOString().slice(0, 7);
   const thisYear  = String(now.getFullYear());
   const thirtyAgo = new Date(now - 30 * 86400000).toISOString().slice(0, 10);
+
+  // Event spend by period
+  const evWithSpend  = (events || []).filter(ev => parseFloat(ev.total_spent || 0) > 0);
+  const sumEvSpend   = arr => arr.reduce((s, ev) => s + parseFloat(ev.total_spent || 0), 0);
+  const evMtdTotal   = sumEvSpend(evWithSpend.filter(ev => (ev.date || '').startsWith(thisMonth)));
+  const evLast30Total= sumEvSpend(evWithSpend.filter(ev => (ev.date || '') >= thirtyAgo));
+  const evYtdTotal   = sumEvSpend(evWithSpend.filter(ev => (ev.date || '').startsWith(thisYear)));
 
   // For rows that have a receipt (actual) but no budget, borrow the nearest row's budget.
   // This handles receipts logged on a date that differs from the checklist week key.
@@ -1050,6 +1061,24 @@ function renderSpendReport(audits) {
           <td class="sr-row-label">Trips</td>
           ${periods.map(p => `<td>${p.trips != null ? p.trips : '—'}</td>`).join('')}
         </tr>
+        ${evYtdTotal > 0 ? `<tr class="sr-dim-row sr-events-row">
+          <td class="sr-row-label">Events</td>
+          <td>—</td>
+          <td>${evMtdTotal > 0 ? fmt(evMtdTotal) : '—'}</td>
+          <td>${evLast30Total > 0 ? fmt(evLast30Total) : '—'}</td>
+          <td>${fmt(evYtdTotal)}</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+        <tr class="sr-dim-row sr-events-total-row">
+          <td class="sr-row-label">Total</td>
+          <td>—</td>
+          <td>${fmt(sumEff(mtd) + evMtdTotal)}</td>
+          <td>${fmt(sumEff(last30) + evLast30Total)}</td>
+          <td>${fmt(sumEff(ytd) + evYtdTotal)}</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>` : ''}
       </tbody>
     </table>
   </div>`;
@@ -1110,17 +1139,70 @@ function renderSpendReport(audits) {
   const storeEntries = lastTrip.by_store ? Object.entries(lastTrip.by_store) : [];
   const storeTotal   = storeEntries.reduce((s, [, v]) => s + v, 0);
 
+  // Aggregate all-time store totals across all trips
+  const allStoresMap = {};
+  withBudgets.forEach(a => {
+    if (a.by_store) {
+      Object.entries(a.by_store).forEach(([store, amt]) => {
+        allStoresMap[store] = (allStoresMap[store] || 0) + amt;
+      });
+    }
+  });
+  // Split all-time stores into regular stores vs event-named entries
+  const stripLeadingEmoji = s => s.replace(/^[\p{Emoji}\s]+/u, '').trim();
+  const evNameSet = new Set((events || []).map(ev => (ev.name || '').toLowerCase().trim()));
+  const allStoreEntriesRaw = Object.entries(allStoresMap).sort((a, b) => b[1] - a[1]);
+  const regularStoreEntries = [];
+  const evStoreEntries      = [];
+  allStoreEntriesRaw.forEach(([store, amt]) => {
+    const clean = stripLeadingEmoji(store).toLowerCase().trim();
+    const isEv  = evNameSet.size > 0 && [...evNameSet].some(en => clean === en);
+    (isEv ? evStoreEntries : regularStoreEntries).push([store, amt]);
+  });
+  const regularStoreTotal = regularStoreEntries.reduce((s, [, v]) => s + v, 0);
+  const evStoreTotal      = evStoreEntries.reduce((s, [, v]) => s + v, 0);
+  const allStoreEntries   = allStoreEntriesRaw; // kept for compat
+  const showAllTime       = allStoreEntriesRaw.length > 0 && withBudgets.filter(a => a.actual != null).length > 1;
+
   html += `<div class="sr-two-col">`;
-  if (storeEntries.length) {
-    html += `<div class="chart-card"><h3>Last Trip — By Store</h3><div class="store-breakdown">`;
-    storeEntries.forEach(([store, amt]) => {
-      const pct = storeTotal > 0 ? (amt / storeTotal * 100).toFixed(0) : 0;
-      html += `<div class="sb-row">
-        <div class="sb-top"><span class="sb-store">${store}</span><span class="sb-amt">${fmt(amt)}</span></div>
-        <div class="sb-bar-wrap"><div class="sb-bar" style="width:${pct}%"></div></div>
-      </div>`;
-    });
-    html += `</div></div>`;
+  if (storeEntries.length || regularStoreEntries.length || evStoreEntries.length) {
+    html += `<div class="chart-card"><h3>By Store</h3>`;
+    if (storeEntries.length) {
+      if (showAllTime) html += `<div class="sr-store-sub">Last Trip</div>`;
+      html += `<div class="store-breakdown">`;
+      storeEntries.forEach(([store, amt]) => {
+        const pct = storeTotal > 0 ? (amt / storeTotal * 100).toFixed(0) : 0;
+        html += `<div class="sb-row">
+          <div class="sb-top"><span class="sb-store">${store}</span><span class="sb-amt">${fmt(amt)}</span></div>
+          <div class="sb-bar-wrap"><div class="sb-bar" style="width:${pct}%"></div></div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    if (showAllTime && regularStoreEntries.length) {
+      html += `<div class="sr-store-sub" style="margin-top:1rem">All Time</div><div class="store-breakdown">`;
+      regularStoreEntries.forEach(([store, amt]) => {
+        const pct = regularStoreTotal > 0 ? (amt / regularStoreTotal * 100).toFixed(0) : 0;
+        html += `<div class="sb-row">
+          <div class="sb-top"><span class="sb-store">${store}</span><span class="sb-amt">${fmt(amt)}</span></div>
+          <div class="sb-bar-wrap"><div class="sb-bar" style="width:${pct}%"></div></div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    if (showAllTime && evStoreEntries.length) {
+      html += `<div class="sr-store-sub" style="margin-top:1rem">Events</div><div class="store-breakdown">`;
+      evStoreEntries.forEach(([store, amt]) => {
+        const pct = evStoreTotal > 0 ? (amt / evStoreTotal * 100).toFixed(0) : 0;
+        const displayName = stripLeadingEmoji(store);
+        html += `<div class="sb-row">
+          <div class="sb-top"><span class="sb-store">🎉 ${displayName}</span><span class="sb-amt">${fmt(amt)}</span></div>
+          <div class="sb-bar-wrap"><div class="sb-bar sb-bar-event" style="width:${pct}%"></div></div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    html += `</div>`;
   }
   if (recent4.length >= 1) {
     html += `<div class="chart-card"><h3>Recent Trips</h3><canvas id="trendChart"></canvas></div>`;

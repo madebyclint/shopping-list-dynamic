@@ -636,6 +636,18 @@ button {
 }
 .sr-actual-row td { font-weight: 600; }
 .sr-dim-row td    { color: var(--muted); font-size: 0.82rem; }
+.sr-events-row td { color: var(--muted); font-size: 0.82rem; border-top: 1px dashed var(--border); }
+.sr-events-row .sr-row-label { font-style: italic; }
+.sr-events-total-row td { color: var(--text); font-size: 0.82rem; font-weight: 600; border-top: 1px solid var(--border); }
+.sb-bar-event { background: #7b5ea7; }
+.sr-store-sub {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  margin: 8px 0 4px;
+}
 .sr-over  { color: #c0392b; font-weight: 600; }
 .sr-under { color: #27ae60; font-weight: 600; }
 .sr-two-col {
