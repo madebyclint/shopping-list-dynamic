@@ -18,17 +18,14 @@ if (!DB_URL) throw new Error('No POSTGRES_URL / DATABASE_URL in environment');
 
 const pool = new pg.Pool({ connectionString: DB_URL, ssl: { rejectUnauthorized: false } });
 
-const FILES_DIR = '/Users/clintbush/Downloads/files 2';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const WEEKLY_DIR = path.join(__dirname, '..');
 
-function read(filename) {
-  return readFileSync(path.join(FILES_DIR, filename), 'utf8');
-}
-
-const menuMd       = read('2026-05-18-menu.md');
-const shoppingMd   = read('2026-05-18-shopping-list.md');
-const mealHistory  = read('meal-history.md');
-const mealsIng     = read('meals-ingredients.json');
-const dataJson     = JSON.parse(read('data.json'));
+const menuMd       = readFileSync(path.join(WEEKLY_DIR, 'menus', '2026-05-18-menu.md'), 'utf8');
+const shoppingMd   = readFileSync(path.join(WEEKLY_DIR, 'shopping-lists', '2026-05-18-shopping-list.md'), 'utf8');
+const mealHistory  = readFileSync(path.join(WEEKLY_DIR, 'meal-history.md'), 'utf8');
+const mealsIng     = readFileSync(path.join(WEEKLY_DIR, 'meals-ingredients.json'), 'utf8');
+const dataJson     = JSON.parse(readFileSync(path.join(WEEKLY_DIR, 'data.json'), 'utf8'));
 
 const WEEK_DATE = '2026-05-18';
 const LABEL     = 'Week of May 18, 2026';

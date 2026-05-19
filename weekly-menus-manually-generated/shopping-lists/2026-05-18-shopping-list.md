@@ -1,6 +1,6 @@
-# Shopping List — May 18–23, 2026 — ~$185
+# Shopping List — May 18–23, 2026 — ~$215
 
-> **Notes:** Maggi sauce is at most Caribbean and Latin markets in Brooklyn — check the international aisle. Al pastor seasoning is at any Latin market (Goya makes one, or ask at the spice section). Beef uncured hot dogs — look for Applegate or similar at the deli/meat section. Kimchi — grab from the refrigerated section; most Brooklyn markets carry it now. Artichokes — get the largest ones you can find, they're more forgiving to steam and more satisfying to eat. If watermelon is sold whole, a quarter or half cut is fine.
+> **Notes:** Maggi sauce is at most Caribbean and Latin markets in Brooklyn — check the international aisle. Al pastor seasoning is at any Latin market (Goya makes one, or ask at the spice section). Beef uncured hot dogs — look for Applegate or similar at the deli/meat section. Kimchi — grab from the refrigerated section; most Brooklyn markets carry it now. Artichokes — get the largest ones you can find, they’re more forgiving to steam and more satisfying to eat. If watermelon is sold whole, a quarter or half cut is fine. Rice vermicelli / pancit bihon noodles are at any Asian market (also check the Asian aisle at Key Food). Oyster sauce and fish sauce are in the Asian/international aisle.
 
 ---
 
@@ -12,12 +12,16 @@
 - Lemon (1) — Artichokes & Wings (steaming) — ~$0.75 — **~$0.75**
 - Zucchini (2 medium) or corn (2 ears) — Artichokes & Wings (side) — ~$1.25 ea — **~$2.50**
 - Mango (2) — Artichokes & Wings (side) — ~$1.50 ea — **~$3.00**
-- Green cabbage (1 small head) — Seattle Dogs — ~$2.00 — **~$2.00**
-- Yellow onion (1 small) — Seattle Dogs — ~$0.75 — **~$0.75**
+- Green cabbage (1 medium head) — Seattle Dogs + Pancit Bihon — ~$2.50 — **~$2.50**
+- Yellow onion (2) — Seattle Dogs + Pancit Bihon — ~$0.75 ea — **~$1.50**
 - Watermelon (1 quarter or half cut) — Seattle Dogs — ~$5.00 — **~$5.00**
-- Assorted fresh fruit (~$10–$15) — Weekly staple — **~$12.00**
+- Carrots (2 medium) — Pancit Bihon — ~$0.75 ea — **~$1.50**
+- Celery (1 small bunch) — Pancit Bihon — ~$2.00 — **~$2.00**
+- Sugar snap peas (1 small bag) — Pancit Bihon — ~$2.50 — **~$2.50**
+- Green onions (1 bunch) — Pancit Bihon (garnish) — ~$1.00 — **~$1.00**
+- Assorted fresh fruit (~$10–15) — Weekly staple — **~$12.00**
 
-Produce Subtotal: **~$42.50**
+Produce Subtotal: **~$50.75**
 
 ---
 
@@ -26,8 +30,10 @@ Produce Subtotal: **~$42.50**
 - Beef short ribs, bone-in (~3 lbs) — Maggi Ribs — ~$7.00/lb — **~$21.00**
 - Chicken wings, split (3–4 lbs) — Artichokes & Wings — ~$3.50/lb — **~$12.25**
 - Beef uncured hot dogs (1 pack, 6 ct) — Seattle Dogs — ~$7.00 — **~$7.00**
+- Boneless chicken thighs (~1 lb) — Pancit Bihon — ~$5.50/lb — **~$5.50**
+- Pork shoulder (~8 oz) — Pancit Bihon — ~$4.00 — **~$4.00**
 
-Proteins Subtotal: **~$40.25**
+Proteins Subtotal: **~$49.75**
 
 ---
 
@@ -57,8 +63,12 @@ Dairy & Refrigerated Subtotal: **~$31.00**
 - Ice cream (1 container) — Weekly staple — ~$7.00 — **~$7.00**
 - Chips — tortilla chips (1 bag, for snacking) — Weekly staple — ~$5.00 — **~$5.00**
 - Chips — salt & vinegar (1 bag, for snacking) — Weekly staple — ~$4.50 — **~$4.50**
+- Rice vermicelli noodles / pancit bihon (8 oz) — Pancit Bihon — ~$2.50 — **~$2.50**
+- Oyster sauce (1 bottle) — Pancit Bihon — ~$3.50 — **~$3.50**
+- Fish sauce (1 bottle) — Pancit Bihon — ~$3.50 — **~$3.50**
+- Chicken stock (2 cartons, 32 oz ea) — Pancit Bihon — ~$2.50 ea — **~$5.00**
 
-Pantry & Dry Goods Subtotal: **~$57.50**
+Pantry & Dry Goods Subtotal: **~$72.00**
 
 ---
 
@@ -73,12 +83,12 @@ Household Subtotal: **~$14.00**
 
 | Category | Est. Total |
 |---|---|
-| Produce | ~$42.50 |
-| Proteins | ~$40.25 |
+| Produce | ~$50.75 |
+| Proteins | ~$49.75 |
 | Dairy & Refrigerated | ~$31.00 |
-| Pantry & Dry Goods | ~$57.50 |
+| Pantry & Dry Goods | ~$72.00 |
 | Household | ~$14.00 |
-| **GRAND TOTAL** | **~$185.25** |
+| **GRAND TOTAL** | **~$217.50** |
 
 ---
 
@@ -93,15 +103,21 @@ Household Subtotal: **~$14.00**
 - Lemon, 1 — Artichokes & Wings
 - Zucchini, 2 medium (or corn, 2 ears) — Artichokes & Wings
 - Mango, 2 — Artichokes & Wings
-- Green cabbage, 1 small head — Seattle Dogs
-- Yellow onion, 1 small — Seattle Dogs
+- Green cabbage, 1 medium head — Seattle Dogs + Pancit Bihon
+- Yellow onion, 2 — Seattle Dogs + Pancit Bihon
 - Watermelon, 1 quarter/half — Seattle Dogs
+- Carrots, 2 medium — Pancit Bihon
+- Celery, 1 small bunch — Pancit Bihon
+- Sugar snap peas, 1 small bag — Pancit Bihon
+- Green onions, 1 bunch — Pancit Bihon
 - Assorted fresh fruit — weekly staple
 
 **— Proteins —**
 - Beef short ribs, bone-in, ~3 lbs — Maggi Ribs
 - Chicken wings, split, 3–4 lbs — Artichokes & Wings
 - Beef uncured hot dogs, 1 pack — Seattle Dogs
+- Boneless chicken thighs, ~1 lb — Pancit Bihon
+- Pork shoulder, ~8 oz — Pancit Bihon
 
 **— Dairy —**
 - Cream cheese, 8 oz — Seattle Dogs
@@ -116,6 +132,10 @@ Household Subtotal: **~$14.00**
 - Hot dog buns, 1 pack — Seattle Dogs
 - Sriracha — Seattle Dogs
 - Arbol chili sauce — Artichokes & Wings
+- Rice vermicelli noodles (pancit bihon), 8 oz — Pancit Bihon
+- Oyster sauce — Pancit Bihon
+- Fish sauce — Pancit Bihon
+- Chicken stock, 2 cartons — Pancit Bihon
 - Cereal, 2 boxes — weekly
 - Trail mix, 1 bag — weekly
 - Mango juice — weekly
@@ -132,3 +152,9 @@ Household Subtotal: **~$14.00**
 **— Aisles —**
 - Al pastor seasoning, 1 packet or jar — Artichokes & Wings
 - Maggi seasoning sauce — Maggi Ribs (if not at main store)
+
+### Asian Market (or Asian aisle — if Key Food doesn’t carry)
+
+**— Aisles —**
+- Rice vermicelli / pancit bihon noodles, 8 oz — Pancit Bihon
+- Oyster sauce, fish sauce — Pancit Bihon

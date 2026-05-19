@@ -20,6 +20,32 @@
       ]
     },
     {
+      "name": "Pancit Bihon",
+      "day": "Monday",
+      "emoji": "🍜",
+      "buy_these": [
+        "Boneless chicken thighs (~1 lb)",
+        "Pork shoulder (~8 oz)",
+        "Carrots (2 medium)",
+        "Celery (1 small bunch)",
+        "Sugar snap peas (1 small bag)",
+        "Green onions (1 bunch)",
+        "Rice vermicelli noodles / pancit bihon (8 oz)",
+        "Oyster sauce (1 bottle)",
+        "Fish sauce (1 bottle)",
+        "Chicken stock (2 cartons)"
+      ],
+      "pantry": [
+        "Yellow onion",
+        "Garlic",
+        "Soy sauce",
+        "Neutral oil",
+        "Salt",
+        "Black pepper",
+        "Lemon or lime"
+      ]
+    },
+    {
       "name": "Steamed Artichokes & Al Pastor Wings",
       "day": "Wednesday",
       "emoji": "🌿🍗",
