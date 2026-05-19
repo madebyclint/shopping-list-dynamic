@@ -2127,19 +2127,22 @@ function clItemRow({ name, displayName, qtyN, unit, price, meals, idx }) {
         ${unit ? `<span class="cl-qty-unit">${unit}</span>` : ''}
        </div>` : '';
   const mealsHtml = meals && meals.length
-    ? `<span class="cl-item-meals">${meals.map(ml =>
+    ? `<div class="cl-item-meals">${meals.map(ml =>
         `<button class="cl-meal-chip" data-goto-meal="${ml.nameForLink.replace(/"/g, '&quot;')}" title="Go to meal">${ml.display}</button>`
-      ).join('')}</span>`
+      ).join('')}</div>`
     : '';
   return `
     <div class="cl-item" data-idx="${idx}" data-state="${clGetState(idx)}">
-      <button class="cl-item-toggle" data-idx="${idx}">
-        <span class="cl-checkbox"></span>
-        <span class="cl-item-name">${dn}${mealsHtml}</span>
-      </button>
-      ${qtyHtml}
-      <span class="cl-item-price" data-price-idx="${idx}" title="Click to edit price">${price != null ? clFmtP(price) : ''}</span>
-      <button class="cl-skip-btn" data-skip="${idx}" title="Skip">⏭</button>
+      <div class="cl-item-main-row">
+        <button class="cl-item-toggle" data-idx="${idx}">
+          <span class="cl-checkbox"></span>
+          <span class="cl-item-name">${dn}</span>
+        </button>
+        ${qtyHtml}
+        <span class="cl-item-price" data-price-idx="${idx}" title="Click to edit price">${price != null ? clFmtP(price) : ''}</span>
+        <button class="cl-skip-btn" data-skip="${idx}" title="Skip">⏭</button>
+      </div>
+      ${mealsHtml}
     </div>`;
 }
 function clRenderList() {

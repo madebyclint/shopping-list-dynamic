@@ -1241,9 +1241,13 @@ button {
 }
 .cl-item {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
+}
+.cl-item-main-row {
+  display: flex;
+  align-items: center;
 }
 .cl-item-toggle {
   flex: 1;
@@ -1295,6 +1299,9 @@ button {
   flex: 1;
   min-width: 0;
 }
+.cl-item-dn {
+  display: block;
+}
 .cl-item-meal {
   display: block;
   font-size: 0.71rem;
@@ -1306,7 +1313,7 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-top: 4px;
+  padding: 0 12px 10px 52px;
 }
 .cl-meal-chip {
   display: inline-flex;
@@ -1346,12 +1353,18 @@ button {
   text-decoration: none;
   color: #bbb;
 }
-.cl-item[data-state='checked'] .cl-item-name {
+.cl-item[data-state='checked'] .cl-item-name .cl-item-dn {
   text-decoration: line-through;
   color: var(--muted);
 }
-.cl-item[data-state='skipped'] .cl-item-name {
+.cl-item[data-state='skipped'] .cl-item-name .cl-item-dn {
   text-decoration: line-through;
+  color: #bbb;
+}
+.cl-item[data-state='checked'] .cl-item-name {
+  color: var(--muted);
+}
+.cl-item[data-state='skipped'] .cl-item-name {
   color: #bbb;
 }
 .cl-item-price {
