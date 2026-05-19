@@ -1302,6 +1302,45 @@ button {
   margin-top: 2px;
   font-style: italic;
 }
+.cl-item-meals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.cl-meal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  padding: 2px 7px;
+  border-radius: 10px;
+  border: 1px solid var(--accent, #4a7c59);
+  background: transparent;
+  color: var(--accent, #4a7c59);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, color 0.12s;
+}
+.cl-meal-chip::before { content: '🍽 '; font-style: normal; }
+.cl-meal-chip:hover, .cl-meal-chip:focus-visible {
+  background: var(--accent, #4a7c59);
+  color: #fff;
+  outline: none;
+}
+/* Meal chips should never be struck through even when parent item is checked */
+.cl-item-name .cl-item-meals { text-decoration: none; }
+.cl-item[data-state='checked'] .cl-meal-chip,
+.cl-item[data-state='skipped'] .cl-meal-chip {
+  border-color: #bbb;
+  color: #bbb;
+}
+.cl-item[data-state='checked'] .cl-meal-chip:hover,
+.cl-item[data-state='skipped'] .cl-meal-chip:hover {
+  background: #bbb;
+  color: #fff;
+}
 .cl-item[data-state='checked'] .cl-item-meal,
 .cl-item[data-state='skipped'] .cl-item-meal {
   text-decoration: none;

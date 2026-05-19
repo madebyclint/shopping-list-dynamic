@@ -1916,6 +1916,8 @@ function clNorm(text) {
 function clNormMeal(meal) {
   // If item spans multiple meals (e.g. "Persian Kofta Bowls / Lomo Saltado"), take first
   meal = meal.split(/\s*\/\s*/)[0];
+  // Also take first from " + " separated list for grouping purposes
+  meal = meal.split(/\s*\+\s*/)[0];
   // Strip trailing single-word fillers after " & " (e.g. "Grilled Cheese & Soup")
   meal = meal.replace(/\s*&\s+(\S+)\s*$/, (match, w) => {
     const fillers = ['soup','side','sides','extra','extras','sauce','dessert','drink','snack','topping','toppings'];
@@ -1924,6 +1926,20 @@ function clNormMeal(meal) {
   // Strip trailing adjectival suffixes (e.g. "Simple Maggi Beef Ribs side")
   meal = meal.replace(/\s+(side|sides|extra|extras|addition|topping|toppings)\s*$/i, '');
   return meal.trim();
+}
+// Parse a raw meal string like "Seattle Dogs + Pancit Bihon" or "Maggi Ribs (kale chips)"
+// into an array of { display, nameForLink } objects for rendering as chips.
+function clParseMeals(rawMeal) {
+  if (!rawMeal) return [];
+  // Split on " + " and also on " / " to handle both separators
+  const parts = rawMeal.split(/\s*[+/]\s*/);
+  return parts.map(part => {
+    part = part.trim();
+    if (!part) return null;
+    // Strip trailing note in parens for the link target (e.g. "(kale chips)", "(steaming)")
+    const nameForLink = part.replace(/\s*\([^)]*\)\s*$/, '').trim();
+    return { display: part, nameForLink };
+  }).filter(Boolean);
 }
 function clLookupPrice(name) {
   const norm = clNorm(name);
@@ -1953,6 +1969,7 @@ function clFmtP(n) { return n != null ? '$' + parseFloat(n).toFixed(2) : ''; }
 function clParseMd(md) {
   _priceMap = {}; _clItems = [];
   const _mealMap = {};
+  const _rawMealMap = {}; // raw (unsimplified) meal text keyed by normalised item name
   // Build price+meal map from the detailed section (before ## Shopping List by Trip)
   const detailed = md.split(/^## Shopping List by Trip/m)[0];
   const re = /^[-*]\s+(.+?)\s*—\s*([^—]+?)\s*—.*\*\*~?\$?([\d.]+)\*\*/gm;
@@ -1963,6 +1980,7 @@ function clParseMd(md) {
     if (k) {
       if (!isNaN(p)) _priceMap[k] = p;
       _mealMap[k] = clNormMeal(meal);
+      _rawMealMap[k] = meal; // keep raw for multi-meal display
     }
   }
   // Parse store-grouped items from ## Shopping List by Trip
@@ -1986,7 +2004,11 @@ function clParseMd(md) {
       if (!raw) return;
       // displayName = text before " — ", strip italic sub notes like *(sub: ...)*
       const displayName = raw.replace(/\s*—.*$/, '').replace(/\s*\*\(.*?\)\*/g, '').trim();
-      _clItems.push({ name: raw, displayName, qtyStr: '', qtyN: 1, unit: '', unitCost: null, price: null, meal: '', store: 'Groceries', subgroup });
+      // Extract meal from the line: text between first and second " — " that starts with a letter
+      const mealFromLine = raw.match(/—\s*([A-Za-z][^—]{0,80}?)\s*—/)?.[1]?.trim() || '';
+      const rawMealStr = mealFromLine || _rawMealMap[clNorm(displayName)] || '';
+      _clItems.push({ name: raw, displayName, qtyStr: '', qtyN: 1, unit: '', unitCost: null, price: null,
+        meal: clNormMeal(rawMealStr), meals: clParseMeals(rawMealStr), store: 'Groceries', subgroup });
     });
     return;
   }
@@ -2017,9 +2039,15 @@ function clParseMd(md) {
       const unit = qtyStr.replace(/^[\d.\s\u2013\u2014~-]+/, '').match(/^([\w]+)/)?.[1] || '';
       // Display name: clean name without parenthetical or meal annotation
       const displayName = name.replace(/\s*\(.*?\)/g, '').replace(/\s*—.*$/, '').trim();
+      // Extract meal directly from the line (e.g. "Beef short ribs — Maggi Ribs") falling back to map
+      const mealFromLine = name.match(/—\s*(.+)$/)?.[1]?.trim() || '';
+      const rawMealStr = mealFromLine || _rawMealMap[normClean] || '';
       const price = clLookupPrice(clean);
       const unitCost = (price != null && qtyN > 0) ? price / qtyN : null;
-      _clItems.push({ name, displayName, qtyStr, qtyN, unit, unitCost, price, meal: _mealMap[normClean] || '', store, subgroup });
+      _clItems.push({ name, displayName, qtyStr, qtyN, unit, unitCost, price,
+        meal: clNormMeal(rawMealStr) || _mealMap[normClean] || '',
+        meals: clParseMeals(rawMealStr),
+        store, subgroup });
     });
   });
 }
@@ -2089,7 +2117,7 @@ function clGetState(idx) {
   return _clState.c.includes(idx) ? 'checked' : _clState.s.includes(idx) ? 'skipped' : 'unchecked';
 }
 function clFmtN(n) { const v = parseFloat(n); if (isNaN(v)) return '1'; return v % 1 === 0 ? String(v) : v.toFixed(1); }
-function clItemRow({ name, displayName, qtyN, unit, price, meal, idx }, showMeal) {
+function clItemRow({ name, displayName, qtyN, unit, price, meals, idx }) {
   const dn = displayName || name;
   const qtyHtml = qtyN != null
     ? `<div class="cl-qty-stepper">
@@ -2098,11 +2126,16 @@ function clItemRow({ name, displayName, qtyN, unit, price, meal, idx }, showMeal
         <button class="cl-qty-btn" data-inc="${idx}">+</button>
         ${unit ? `<span class="cl-qty-unit">${unit}</span>` : ''}
        </div>` : '';
+  const mealsHtml = meals && meals.length
+    ? `<span class="cl-item-meals">${meals.map(ml =>
+        `<button class="cl-meal-chip" data-goto-meal="${ml.nameForLink.replace(/"/g, '&quot;')}" title="Go to meal">${ml.display}</button>`
+      ).join('')}</span>`
+    : '';
   return `
     <div class="cl-item" data-idx="${idx}" data-state="${clGetState(idx)}">
       <button class="cl-item-toggle" data-idx="${idx}">
         <span class="cl-checkbox"></span>
-        <span class="cl-item-name">${dn}${showMeal && meal ? `<span class="cl-item-meal">${meal}</span>` : ''}</span>
+        <span class="cl-item-name">${dn}${mealsHtml}</span>
       </button>
       ${qtyHtml}
       <span class="cl-item-price" data-price-idx="${idx}" title="Click to edit price">${price != null ? clFmtP(price) : ''}</span>
@@ -2124,7 +2157,7 @@ function clRenderList() {
         out += `<div class="cl-subgroup-label">${item.subgroup}</div>`;
         lastSubgroup = item.subgroup;
       }
-      out += clItemRow(item, false);
+      out += clItemRow(item);
       return out;
     }).join('');
     return `
@@ -2147,7 +2180,7 @@ function clRenderByMeal() {
   let html = order.map(meal => `
     <div class="cl-store-section">
       <div class="cl-store-label">🍽 ${meal}</div>
-      ${byMeal[meal].map(item => clItemRow(item, false)).join('')}
+      ${byMeal[meal].map(item => clItemRow(item)).join('')}
     </div>`).join('');
   html += '<div id="cl-custom-list"></div>';
   $('cl-body').innerHTML = html;
@@ -2476,6 +2509,25 @@ async function openChecklist({ weekKey, listText } = {}) {
     if (e.target.closest('#cl-copy-btn'))  { clCopyURL(); return; }
     if (e.target.closest('#cl-search-clear')) {
       $('cl-search').value = ''; $('cl-search-clear').classList.remove('show'); clApplySearch(); return;
+    }
+    // Meal chip — navigate to the meal in the menu tab (or event menu subtab for event checklists)
+    const mealChip = e.target.closest('.cl-meal-chip[data-goto-meal]');
+    if (mealChip) {
+      e.stopPropagation();
+      const mealName = mealChip.dataset.gotoMeal;
+      ov.classList.remove('show');
+      if (_sseSource) { _sseSource.close(); _sseSource = null; }
+      if (_clWeekKey && _clWeekKey.startsWith('event:')) {
+        // Navigate back to the event detail and switch to the menu subtab
+        switchTab('events', true);
+        requestAnimationFrame(() => {
+          const menuBtn = document.querySelector('.ev-subtab-btn[data-subtab="menu"]');
+          if (menuBtn) menuBtn.click();
+        });
+      } else {
+        switchToMenuMeal(mealName);
+      }
+      return;
     }
     const sortBtn = e.target.closest('.cl-sort-btn[data-sort]');
     if (sortBtn) {
