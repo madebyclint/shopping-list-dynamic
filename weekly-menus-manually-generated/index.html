@@ -41,6 +41,7 @@
     <button class="tab-btn" data-tab="list">🛒 Shopping List</button>
     <button class="tab-btn" data-tab="audit">📊 Audit</button>
     <button class="tab-btn" data-tab="events">🎉 Events</button>
+    <button class="tab-btn" data-tab="pantry">🏺 Pantry</button>
     <button class="tab-btn" data-tab="history">📅 History</button>
     <button class="tab-btn" data-tab="planning">🍽️ Planning</button>
     <button class="tab-btn" data-tab="prices">💰 Price List</button>
@@ -61,6 +62,7 @@
       <button class="tab-btn" data-tab="list">🛒 Shopping List</button>
       <button class="tab-btn" data-tab="audit">📊 Audit</button>
       <button class="tab-btn" data-tab="events">🎉 Events</button>
+      <button class="tab-btn" data-tab="pantry">🏺 Pantry</button>
       <button class="tab-btn" data-tab="history">📅 History</button>
       <button class="tab-btn" data-tab="planning">🍽️ Planning</button>
       <button class="tab-btn" data-tab="prices">💰 Price List</button>
@@ -224,6 +226,7 @@
         <button class="ev-subtab-btn" data-subtab="menu">🍽️ Menu</button>
         <button class="ev-subtab-btn" data-subtab="recipes">📖 Recipes</button>
         <button class="ev-subtab-btn" data-subtab="prep">📋 Prep</button>
+        <button class="ev-subtab-btn" data-subtab="packing">🎒 Packing</button>
         <button class="ev-subtab-btn" data-subtab="budget">💰 Budget</button>
         <button class="ev-subtab-btn" data-subtab="notes">📝 Notes</button>
       </div>
@@ -231,6 +234,7 @@
       <div id="ev-subtab-menu"     class="ev-subtab-panel" style="display:none"></div>
       <div id="ev-subtab-recipes"  class="ev-subtab-panel" style="display:none"></div>
       <div id="ev-subtab-prep"     class="ev-subtab-panel" style="display:none"></div>
+      <div id="ev-subtab-packing"  class="ev-subtab-panel" style="display:none"></div>
       <div id="ev-subtab-budget"   class="ev-subtab-panel" style="display:none"></div>
       <div id="ev-subtab-notes"    class="ev-subtab-panel" style="display:none"></div>
     </div>
@@ -246,6 +250,7 @@
         <label>Shopping List (markdown)<textarea id="ev-f-shopping" rows="6" placeholder="Paste or type your shopping list…"></textarea></label>
         <label>Recipes (markdown)<textarea id="ev-f-recipes" rows="6" placeholder="Paste or type your recipes…"></textarea></label>
         <label>Prep Timeline (markdown)<textarea id="ev-f-prep" rows="5" placeholder="## Day Before&#10;- [ ] Task…"></textarea></label>
+        <label>Packing List (markdown)<textarea id="ev-f-packing" rows="5" placeholder="## Gear&#10;- [ ] Tent&#10;## Food…"></textarea></label>
         <label>Notes<textarea id="ev-f-notes" rows="3" placeholder="Any extra notes…"></textarea></label>
         <div class="ev-form-actions">
           <button class="ev-form-cancel" id="ev-form-cancel">Cancel</button>
@@ -256,12 +261,52 @@
     </div>
   </section>
 
+  <!-- PANTRY ─────────────────────────────────────────────────────────────── -->
+  <section id="tab-pantry" class="page">
+    <div id="pantry-list-view">
+      <div class="ev-list-header">
+        <h2 class="ev-page-title">🏺 Homemade Pantry</h2>
+        <button class="ev-new-btn" id="pantry-new-btn">＋ New Recipe</button>
+      </div>
+      <p style="margin:0 0 16px;font-size:0.82rem;color:var(--muted)">Things you make at home and keep stocked — condiments, sauces, spice blends, etc.</p>
+      <div id="pantry-loading" class="loading"><div class="spinner"></div> Loading…</div>
+      <div id="pantry-cards" class="ev-cards"></div>
+      <div id="pantry-empty" class="ev-empty" style="display:none">
+        No pantry recipes yet. Tap <strong>＋ New Recipe</strong> to add one.
+      </div>
+    </div>
+    <div id="pantry-detail-view" style="display:none">
+      <button class="ev-back-btn" id="pantry-back-btn">← All Pantry Items</button>
+      <div id="pantry-detail-header"></div>
+      <div id="pantry-detail-body" class="md-content"></div>
+    </div>
+    <div id="pantry-form-overlay" class="ev-form-overlay" style="display:none">
+      <div class="ev-form-modal">
+        <h3 id="pantry-form-title">New Pantry Recipe</h3>
+        <div class="ev-form-grid">
+          <label>Name<input type="text" id="pantry-f-name" placeholder="Salsa Macha" /></label>
+          <label>Category<input type="text" id="pantry-f-category" placeholder="Condiment" /></label>
+          <label>Yield<input type="text" id="pantry-f-yield" placeholder="~1 cup" /></label>
+          <label>Keeps<input type="text" id="pantry-f-keeps" placeholder="6 weeks refrigerated" /></label>
+        </div>
+        <label>Recipe (markdown)<textarea id="pantry-f-recipe" rows="10" placeholder="## Ingredients&#10;- 1 cup oil&#10;&#10;## Instructions&#10;1. Step one…"></textarea></label>
+        <label>Notes<textarea id="pantry-f-notes" rows="3" placeholder="Tips, variations, source…"></textarea></label>
+        <div class="ev-form-actions">
+          <button class="ev-form-cancel" id="pantry-form-cancel">Cancel</button>
+          <button class="ev-form-save" id="pantry-form-save">Save Recipe</button>
+        </div>
+        <div id="pantry-form-status" class="ev-form-status"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- HISTORY ───────────────────────────────────────────────────────────── -->
   <section id="tab-history" class="page">
     <div id="history-content" class="md-content">
       <div class="loading"><div class="spinner"></div> Loading meal history…</div>
     </div>
   </section>
+
 
   <!-- ARCHIVE ───────────────────────────────────────────────────────────── -->
   <section id="tab-archive" class="page">
@@ -3144,7 +3189,7 @@ function openEvent(id) {
 function switchEvSubtab(subtab) {
   _evCurrentSubtab = subtab;
   document.querySelectorAll('.ev-subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.subtab === subtab));
-  ['shopping','menu','recipes','prep','budget','notes'].forEach(t => {
+  ['shopping','menu','recipes','prep','packing','budget','notes'].forEach(t => {
     $('ev-subtab-' + t).style.display = t === subtab ? '' : 'none';
   });
   const ev = _evEvents.find(e => e.id === _evCurrentId);
@@ -3171,6 +3216,8 @@ function renderEvSubtab(subtab, ev) {
     }
   } else if (subtab === 'prep') {
     renderEvPrep(ev);
+  } else if (subtab === 'packing') {
+    renderEvPacking(ev);
   } else if (subtab === 'budget') {
     renderEvBudget(ev);
   } else if (subtab === 'notes') {
@@ -3182,6 +3229,29 @@ function renderEvSubtab(subtab, ev) {
         <span id="ev-notes-status" style="font-size:0.82rem"></span>
       </div>`;
   }
+}
+
+function renderEvPacking(ev) {
+  const panel = $('ev-subtab-packing');
+  if (ev.packing_list_md) {
+    panel.innerHTML = '<div class="md-content"></div><div style="margin-top:12px"><button class="lt-save-btn" onclick="editEvPacking(' + ev.id + ')">✏️ Edit Packing List</button></div>';
+    renderMD(panel.querySelector('.md-content'), ev.packing_list_md);
+  } else {
+    panel.innerHTML = `<div class="ev-empty">No packing list yet.</div><button class="ev-new-btn" style="margin-top:12px" onclick="editEvPacking(${ev.id})">＋ Add Packing List</button>`;
+  }
+}
+
+function editEvPacking(evId) {
+  const ev = _evEvents.find(e => e.id === evId);
+  if (!ev) return;
+  _evEditingId = evId;
+  // Pre-fill the form with existing data and switch to packing field
+  openEventForm(evId);
+  // Scroll to packing field after overlay opens
+  requestAnimationFrame(() => {
+    const field = $('ev-f-packing');
+    if (field) { field.focus(); field.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  });
 }
 
 // ── Prep Checklist ────────────────────────────────────────────────────────────
@@ -3446,6 +3516,7 @@ function openEventForm(evId = null) {
   $('ev-f-shopping').value = ev?.shopping_list_md || '';
   $('ev-f-recipes').value  = ev?.recipes_md       || '';
   $('ev-f-prep').value     = ev?.prep_md           || '';
+  $('ev-f-packing').value  = ev?.packing_list_md  || '';
   $('ev-f-notes').value    = ev?.notes            || '';
   $('ev-form-overlay').style.display = '';
 }
@@ -3481,6 +3552,7 @@ $('ev-form-save')?.addEventListener('click', async () => {
   const shopping_list_md = $('ev-f-shopping')?.value || null;
   const recipes_md       = $('ev-f-recipes')?.value  || null;
   const prep_md          = $('ev-f-prep')?.value      || null;
+  const packing_list_md  = $('ev-f-packing')?.value  || null;
   const notes            = $('ev-f-notes')?.value    || null;
   const status = $('ev-form-status');
   if (!name || !date) {
@@ -3495,7 +3567,7 @@ $('ev-form-save')?.addEventListener('click', async () => {
       r = await fetch(`/api/special-events/${_evEditingId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, date, week, budget, shopping_list_md, recipes_md, prep_md, notes }),
+        body: JSON.stringify({ name, date, week, budget, shopping_list_md, recipes_md, prep_md, packing_list_md, notes }),
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       updated = (await r.json()).event;
@@ -3505,7 +3577,7 @@ $('ev-form-save')?.addEventListener('click', async () => {
       r = await fetch('/api/special-events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, date, week, budget, shopping_list_md, recipes_md, prep_md, notes }),
+        body: JSON.stringify({ name, date, week, budget, shopping_list_md, recipes_md, prep_md, packing_list_md, notes }),
       });
       if (!r.ok) {
         const err = await r.json().catch(() => ({}));
@@ -3534,6 +3606,218 @@ $('ev-subtabs')?.addEventListener('click', e => {
 // Load events when Events tab is activated
 document.querySelectorAll('.tab-btn[data-tab="events"]').forEach(btn => {
   btn.addEventListener('click', () => loadEvents());
+});
+
+// ── Pantry Recipes ────────────────────────────────────────────────────────────
+let _pantryRecipes = [];
+let _pantryCurrentId = null;
+let _pantryEditingId = null;
+
+async function loadPantry() {
+  $('pantry-loading').style.display = '';
+  $('pantry-cards').innerHTML = '';
+  $('pantry-empty').style.display = 'none';
+  try {
+    const { recipes } = await fetchJSON('/api/pantry-recipes');
+    _pantryRecipes = recipes || [];
+    renderPantryCards();
+  } catch { _pantryRecipes = []; }
+  finally { $('pantry-loading').style.display = 'none'; }
+}
+
+function renderPantryCards() {
+  const container = $('pantry-cards');
+  if (!_pantryRecipes.length) {
+    $('pantry-empty').style.display = '';
+    container.innerHTML = '';
+    return;
+  }
+  $('pantry-empty').style.display = 'none';
+  let html = '';
+  for (const r of _pantryRecipes) {
+    const lastMade = r.last_made
+      ? `Last made: ${new Date(r.last_made + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`
+      : 'Never made';
+    const cat = r.category ? `<span style="font-size:0.72rem;background:var(--chip-bg,#e8f5e9);color:var(--chip-text,#2d6a4f);border-radius:4px;padding:2px 7px;margin-right:6px">${r.category}</span>` : '';
+    const meta = [r.yield_desc, r.keeps_desc].filter(Boolean).join(' · ');
+    html += `<div class="ev-card" onclick="openPantryDetail(${r.id})">
+      <div class="ev-card-emoji">🫥</div>
+      <div class="ev-card-body">
+        <div class="ev-card-name">${r.name}</div>
+        <div class="ev-card-date">${cat}${meta ? meta + ' · ' : ''}${lastMade}</div>
+      </div>
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+function openPantryDetail(id) {
+  const r = _pantryRecipes.find(p => p.id === id);
+  if (!r) return;
+  _pantryCurrentId = id;
+  $('pantry-list-view').style.display = 'none';
+  $('pantry-detail-view').style.display = '';
+  const lastMade = r.last_made
+    ? new Date(r.last_made + 'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})
+    : 'Never';
+  const meta = [r.category, r.yield_desc, r.keeps_desc].filter(Boolean).join(' · ');
+  $('pantry-detail-header').innerHTML = `
+    <div style="margin-bottom:16px">
+      <h2 style="margin:0 0 4px;font-size:1.4rem">� ${r.name}</h2>
+      ${meta ? `<div style="font-size:0.85rem;color:var(--muted);margin-bottom:8px">${meta}</div>` : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="lt-save-btn" onclick="markPantryMade(${r.id})">✓ Made Today</button>
+        <button class="lt-save-btn" style="background:var(--bg);border:1.5px solid var(--border);color:var(--text)" onclick="openPantryForm(${r.id})">✏️ Edit</button>
+        <button class="lt-save-btn" style="background:var(--bg);border:1.5px solid #e0726d;color:#c0392b" onclick="deletePantryRecipe(${r.id})">🗑 Delete</button>
+        <span style="font-size:0.82rem;color:var(--muted);align-self:center">Last made: ${lastMade}</span>
+      </div>
+    </div>`;
+
+  const body = $('pantry-detail-body');
+  body.innerHTML = '';
+
+  // ── Ingredients / Buy These ──────────────────────────────────────────────
+  const ings = Array.isArray(r.ingredients) ? r.ingredients : [];
+  if (ings.length) {
+    const ingDiv = document.createElement('div');
+    ingDiv.style.cssText = 'background:var(--bg2,#f6f8f4);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:20px';
+    let ingHtml = `<div style="font-weight:600;font-size:0.85rem;margin-bottom:10px;color:var(--text)">🛒 Add to this week's shopping list</div>`;
+    ings.forEach((ing, i) => {
+      const label = ing.amount ? `${ing.amount} ${ing.name}` : ing.name;
+      ingHtml += `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="flex:1;font-size:0.9rem">${label}</span>
+        <button class="xray-add-btn" onclick="pantryIngAddToList(this,${JSON.stringify(label)})">+ list</button>
+      </div>`;
+    });
+    ingDiv.innerHTML = ingHtml;
+    body.appendChild(ingDiv);
+  }
+
+  // ── Recipe markdown ──────────────────────────────────────────────────────
+  if (r.recipe_md) {
+    const mdDiv = document.createElement('div');
+    mdDiv.className = 'md-content';
+    body.appendChild(mdDiv);
+    renderMD(mdDiv, r.recipe_md);
+  } else {
+    const p = document.createElement('p');
+    p.style.color = 'var(--muted)';
+    p.textContent = 'No recipe written yet. Tap ✏️ Edit to add one.';
+    body.appendChild(p);
+  }
+
+  window.scrollTo(0, 0);
+}
+
+function pantryIngAddToList(btn, label) {
+  xrayPushToChecklist(btn, label);
+}
+
+async function markPantryMade(id) {
+  try {
+    const r = await fetch('/api/pantry-recipes/' + id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mark_made: true }),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const { recipe } = await r.json();
+    const idx = _pantryRecipes.findIndex(p => p.id === id);
+    if (idx >= 0) _pantryRecipes[idx] = recipe;
+    openPantryDetail(id);
+  } catch { alert('Could not update.'); }
+}
+
+async function deletePantryRecipe(id) {
+  const r = _pantryRecipes.find(p => p.id === id);
+  if (!r || !confirm(`Delete "${r.name}"? This cannot be undone.`)) return;
+  try {
+    await fetch('/api/pantry-recipes/' + id, { method: 'DELETE' });
+    _pantryRecipes = _pantryRecipes.filter(p => p.id !== id);
+    closePantryDetail();
+  } catch { alert('Delete failed.'); }
+}
+
+function closePantryDetail() {
+  _pantryCurrentId = null;
+  $('pantry-detail-view').style.display = 'none';
+  $('pantry-list-view').style.display   = '';
+  renderPantryCards();
+}
+
+function openPantryForm(id = null) {
+  _pantryEditingId = id;
+  $('pantry-form-title').textContent = id ? 'Edit Pantry Recipe' : 'New Pantry Recipe';
+  $('pantry-form-status').textContent = '';
+  const r = id ? _pantryRecipes.find(p => p.id === id) : null;
+  $('pantry-f-name').value     = r?.name     || '';
+  $('pantry-f-category').value = r?.category || '';
+  $('pantry-f-yield').value    = r?.yield_desc || '';
+  $('pantry-f-keeps').value    = r?.keeps_desc || '';
+  $('pantry-f-recipe').value   = r?.recipe_md  || '';
+  $('pantry-f-notes').value    = r?.notes      || '';
+  $('pantry-form-overlay').style.display = '';
+}
+
+function closePantryForm() {
+  $('pantry-form-overlay').style.display = 'none';
+}
+
+$('pantry-new-btn')?.addEventListener('click', () => openPantryForm(null));
+$('pantry-back-btn')?.addEventListener('click', closePantryDetail);
+$('pantry-form-cancel')?.addEventListener('click', closePantryForm);
+$('pantry-form-save')?.addEventListener('click', async () => {
+  const name     = ($('pantry-f-name')?.value || '').trim();
+  const category = ($('pantry-f-category')?.value || '').trim() || null;
+  const yield_desc = ($('pantry-f-yield')?.value || '').trim() || null;
+  const keeps_desc = ($('pantry-f-keeps')?.value || '').trim() || null;
+  const recipe_md  = $('pantry-f-recipe')?.value || null;
+  const notes      = $('pantry-f-notes')?.value  || null;
+  const status = $('pantry-form-status');
+  if (!name) {
+    if (status) { status.textContent = '⚠️ Name is required.'; status.style.color = 'var(--err, #c0392b)'; }
+    return;
+  }
+  const btn = $('pantry-form-save');
+  btn.disabled = true;
+  try {
+    let r, updated;
+    if (_pantryEditingId) {
+      r = await fetch('/api/pantry-recipes/' + _pantryEditingId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, category, yield_desc, keeps_desc, recipe_md, notes }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      updated = (await r.json()).recipe;
+      const idx = _pantryRecipes.findIndex(p => p.id === _pantryEditingId);
+      if (idx >= 0) _pantryRecipes[idx] = updated;
+    } else {
+      r = await fetch('/api/pantry-recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, category, yield_desc, keeps_desc, recipe_md, notes }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      updated = (await r.json()).recipe;
+      _pantryRecipes.push(updated);
+    }
+    closePantryForm();
+    if (_pantryCurrentId === _pantryEditingId) {
+      openPantryDetail(updated.id);
+    } else {
+      renderPantryCards();
+    }
+  } catch (err) {
+    if (status) { status.textContent = '⚠️ ' + err.message; status.style.color = 'var(--err, #c0392b)'; }
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// Load pantry when tab activated
+document.querySelectorAll('.tab-btn[data-tab="pantry"]').forEach(btn => {
+  btn.addEventListener('click', () => loadPantry());
 });
 
 // ── Run ───────────────────────────────────────────────────────────────────────

@@ -118,9 +118,26 @@ async function initDb() {
       shopping_list_md TEXT,
       recipes_md       TEXT,
       prep_md          TEXT,
+      packing_list_md  TEXT,
       notes            TEXT,
       created_at       TIMESTAMPTZ DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS pantry_recipes (
+      id          SERIAL      PRIMARY KEY,
+      name        TEXT        NOT NULL,
+      category    TEXT,
+      yield_desc  TEXT,
+      keeps_desc  TEXT,
+      recipe_md   TEXT,
+      ingredients JSONB       DEFAULT '[]',
+      notes       TEXT,
+      last_made   TEXT,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  // Safe migrations for existing installs
+  await pool.query(`
+    ALTER TABLE special_events ADD COLUMN IF NOT EXISTS packing_list_md TEXT;
   `);
 }
 
@@ -1198,6 +1215,81 @@ app.post('/api/import-week', async (req, res) => {
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 
+// ── Pantry Recipes API ────────────────────────────────────────────────────────
+
+// GET /api/pantry-recipes — list all pantry recipes
+app.get('/api/pantry-recipes', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM pantry_recipes ORDER BY category, name',
+    );
+    res.json({ recipes: rows });
+  } catch (err) {
+    console.error('GET /api/pantry-recipes:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+// POST /api/pantry-recipes — create a new pantry recipe
+app.post('/api/pantry-recipes', async (req, res) => {
+  try {
+    const { name, category, yield_desc, keeps_desc, recipe_md, ingredients, notes } = req.body;
+    if (!name?.trim()) return res.status(400).json({ error: 'name required' });
+    const { rows } = await pool.query(
+      `INSERT INTO pantry_recipes (name, category, yield_desc, keeps_desc, recipe_md, ingredients, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [name.trim(), category || null, yield_desc || null, keeps_desc || null,
+       recipe_md || null, JSON.stringify(ingredients || []), notes || null],
+    );
+    res.status(201).json({ recipe: rows[0] });
+  } catch (err) {
+    console.error('POST /api/pantry-recipes:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+// PATCH /api/pantry-recipes/:id — update fields or mark last made
+app.patch('/api/pantry-recipes/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (req.body.mark_made) {
+      const today = new Date().toISOString().slice(0, 10);
+      const { rows } = await pool.query(
+        'UPDATE pantry_recipes SET last_made = $1 WHERE id = $2 RETURNING *', [today, id],
+      );
+      return res.json({ recipe: rows[0] });
+    }
+    const allowed = ['name', 'category', 'yield_desc', 'keeps_desc', 'recipe_md', 'ingredients', 'notes', 'last_made'];
+    const fields = [], vals = [];
+    for (const [k, v] of Object.entries(req.body)) {
+      if (allowed.includes(k)) {
+        fields.push(`${k} = $${fields.length + 1}`);
+        vals.push(k === 'ingredients' ? JSON.stringify(v) : v);
+      }
+    }
+    if (!fields.length) return res.status(400).json({ error: 'no valid fields' });
+    vals.push(id);
+    const { rows } = await pool.query(
+      `UPDATE pantry_recipes SET ${fields.join(', ')} WHERE id = $${vals.length} RETURNING *`, vals,
+    );
+    res.json({ recipe: rows[0] });
+  } catch (err) {
+    console.error('PATCH /api/pantry-recipes/:id:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+// DELETE /api/pantry-recipes/:id
+app.delete('/api/pantry-recipes/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM pantry_recipes WHERE id = $1', [parseInt(req.params.id, 10)]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('DELETE /api/pantry-recipes/:id:', err.message);
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
 // ── Special Events API ────────────────────────────────────────────────────────
 
 function evSlug(name, date) {
@@ -1233,18 +1325,18 @@ app.get('/api/special-events/:id', async (req, res) => {
 // POST /api/special-events — create a new event
 app.post('/api/special-events', async (req, res) => {
   try {
-    const { name, date, week, budget, shopping_list_md, recipes_md, prep_md, notes } = req.body;
+    const { name, date, week, budget, shopping_list_md, recipes_md, prep_md, packing_list_md, notes } = req.body;
     if (!name?.trim() || !date?.trim()) {
       return res.status(400).json({ error: 'name and date are required' });
     }
     const slug = evSlug(name.trim(), date.trim());
     const { rows } = await pool.query(
-      `INSERT INTO special_events (name, date, slug, week, budget, shopping_list_md, recipes_md, prep_md, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      `INSERT INTO special_events (name, date, slug, week, budget, shopping_list_md, recipes_md, prep_md, packing_list_md, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
       [name.trim(), date.trim(), slug,
        week || null,
        parseFloat(budget) || 0,
-       shopping_list_md || null, recipes_md || null, prep_md || null, notes || null],
+       shopping_list_md || null, recipes_md || null, prep_md || null, packing_list_md || null, notes || null],
     );
     res.status(201).json({ event: rows[0] });
   } catch (err) {
@@ -1284,7 +1376,7 @@ app.patch('/api/special-events/:id', async (req, res) => {
     }
 
     // ── Field update mode ───────────────────────────────────────────────────
-    const allowed = ['name','date','week','budget','shopping_list_md','recipes_md','prep_md','notes'];
+    const allowed = ['name','date','week','budget','shopping_list_md','recipes_md','prep_md','packing_list_md','notes'];
     const fields = [], vals = [];
     for (const [k, v] of Object.entries(req.body)) {
       if (allowed.includes(k)) { fields.push(`${k} = $${fields.length + 1}`); vals.push(v); }
