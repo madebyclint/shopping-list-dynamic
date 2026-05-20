@@ -756,8 +756,10 @@ function renderLastWeek(m) {
 }
 
 // ── Swap-mode state ───────────────────────────────────────────────────────────
-let _swapMode      = false;
-let _swapFirstDay  = null; // full day string of first selected meal
+let _swapMode           = false;
+let _swapFirstDay       = null;  // full day string of currently selected meal
+let _swapOriginalMeals  = null;  // snapshot taken when entering swap mode (for cancel)
+let _swapPendingChanges = 0;     // number of unsaved moves/swaps
 
 // Build a 7-slot week array (Sun–Sat) showing empty slots for days without meals.
 // Uses the first parseable meal as an anchor to compute dates for empty slots.
@@ -796,10 +798,50 @@ function mealDayNote(dayStr) {
 }
 
 function toggleSwapMode() {
-  _swapMode = !_swapMode;
+  if (!_swapMode) {
+    _swapOriginalMeals  = JSON.parse(JSON.stringify(_manifest.meals));
+    _swapPendingChanges = 0;
+    _swapMode     = true;
+    _swapFirstDay = null;
+    renderHomeMeals(_manifest);
+    $('swapDaysBtn').classList.add('active');
+  } else {
+    cancelSwap();
+  }
+}
+
+function cancelSwap() {
+  if (_swapOriginalMeals) _manifest = { ..._manifest, meals: _swapOriginalMeals };
+  _swapOriginalMeals  = null;
+  _swapPendingChanges = 0;
+  _swapMode     = false;
   _swapFirstDay = null;
   renderHomeMeals(_manifest);
-  $('swapDaysBtn').classList.toggle('active', _swapMode);
+  $('swapDaysBtn').classList.remove('active');
+}
+
+async function saveSwaps() {
+  const weekDate = _manifest.currentWeek;
+  try {
+    const r = await fetch('/api/reorder-meals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weekDate, meals: _manifest.meals }),
+    });
+    const result = await r.json();
+    if (!r.ok) throw new Error(result.detail || result.error || 'Save failed');
+    _swapOriginalMeals  = null;
+    _swapPendingChanges = 0;
+    _swapMode     = false;
+    _swapFirstDay = null;
+    renderHomeMeals(_manifest);
+    $('swapDaysBtn').classList.remove('active');
+    fetchText(_manifest.files.menu)
+      .then(t => { renderMD($('menu-content'), t); injectMenuAnchors(_manifest.meals); })
+      .catch(() => {});
+  } catch (err) {
+    alert('Save failed: ' + err.message);
+  }
 }
 
 // Re-render only the meal grid + swap banner (avoids replacing the full header)
@@ -815,10 +857,15 @@ function renderHomeMeals(m) {
     const selMeal    = m.meals.find(x => x.day === _swapFirstDay);
     const bannerText = _swapFirstDay
       ? `"${selMeal ? selMeal.name : _swapFirstDay}" selected — click another meal to swap, or an empty day to move`
-      : 'Click a meal to select it';
+      : _swapPendingChanges > 0
+        ? `${_swapPendingChanges} change${_swapPendingChanges !== 1 ? 's' : ''} made — keep arranging or Save`
+        : 'Drag a meal or click to select';
     bannerHtml = `<div class="swap-banner" id="swap-banner">
       <span id="swap-banner-text">${bannerText}</span>
-      <button class="swap-banner-cancel" onclick="toggleSwapMode()">✕ Cancel</button>
+      <span style="display:flex;gap:6px;align-items:center">
+        ${_swapPendingChanges > 0 ? `<button class="list-btn" style="background:var(--accent);color:#fff;padding:5px 14px;font-weight:700" onclick="saveSwaps()">Save</button>` : ''}
+        <button class="swap-banner-cancel" onclick="cancelSwap()">✕ Cancel</button>
+      </span>
     </div>`;
   }
 
@@ -849,32 +896,37 @@ function renderHomeMeals(m) {
   }).join('');
 }
 
-async function performSwap(dayStrA, dayStrB) {
+function performSwap(dayStrA, dayStrB) {
+  const DAYS_ORDER = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const meals    = _manifest.meals.map(m => ({ ...m }));
   const dayNameA = dayStrA.split(',')[0].trim();
   const dayNameB = dayStrB.split(',')[0].trim();
-  const weekDate = _manifest.currentWeek;
-  try {
-    const r = await fetch('/api/swap-meal-days', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ weekDate, dayA: dayNameA, dayB: dayNameB, dayBFull: dayStrB }),
+  const idxA = meals.findIndex(m => m.day.toLowerCase().startsWith(dayNameA.toLowerCase()));
+  const idxB = meals.findIndex(m => m.day.toLowerCase().startsWith(dayNameB.toLowerCase()));
+  if (idxA === -1) return;
+
+  if (idxB === -1) {
+    // Move to empty slot
+    meals[idxA] = { ...meals[idxA], day: dayStrB };
+    meals.sort((a, b) => {
+      const iA = DAYS_ORDER.findIndex(d => a.day.toLowerCase().startsWith(d.toLowerCase()));
+      const iB = DAYS_ORDER.findIndex(d => b.day.toLowerCase().startsWith(d.toLowerCase()));
+      return (iA < 0 ? 99 : iA) - (iB < 0 ? 99 : iB);
     });
-    const result = await r.json();
-    if (!r.ok) throw new Error(result.detail || result.error || 'Swap failed');
-    _manifest = { ..._manifest, meals: result.meals };
-    _swapMode     = false;
-    _swapFirstDay = null;
-    renderHomeMeals(_manifest);
-    $('swapDaysBtn').classList.remove('active');
-    // Reload menu tab markdown since day labels changed
-    fetchText(_manifest.files.menu)
-      .then(t => { renderMD($('menu-content'), t); injectMenuAnchors(_manifest.meals); })
-      .catch(() => {});
-  } catch (err) {
-    alert('Swap failed: ' + err.message);
-    _swapFirstDay = null;
-    renderHomeMeals(_manifest);
+  } else {
+    // Swap two occupied slots
+    const dayStringA = meals[idxA].day;
+    const dayStringB = meals[idxB].day;
+    const { day: _dA, ...fieldsA } = meals[idxA];
+    const { day: _dB, ...fieldsB } = meals[idxB];
+    meals[idxA] = { day: dayStringA, ...fieldsB };
+    meals[idxB] = { day: dayStringB, ...fieldsA };
   }
+
+  _manifest = { ..._manifest, meals };
+  _swapPendingChanges++;
+  _swapFirstDay = null;
+  renderHomeMeals(_manifest);
 }
 
 // ── Home tab ──────────────────────────────────────────────────────────────────

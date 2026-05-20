@@ -2234,6 +2234,73 @@ app.post('/api/swap-meal-days', async (req, res) => {
   }
 });
 
+// ── Reorder meals (batch save from swap-mode) ────────────────────────────────
+app.post('/api/reorder-meals', async (req, res) => {
+  const weekDate = String(req.body.weekDate || '').trim();
+  const newMeals = req.body.meals;
+  if (!weekDate || !Array.isArray(newMeals) || newMeals.length === 0) {
+    return res.status(400).json({ error: 'invalid', detail: 'weekDate and non-empty meals[] required' });
+  }
+  try {
+    const [mRows, menuRows] = await Promise.all([
+      pool.query('SELECT data FROM manifest WHERE id = 1'),
+      pool.query('SELECT content_md FROM weekly_menus WHERE week_date = $1', [weekDate]),
+    ]);
+    if (!mRows.rows[0]) return res.status(404).json({ error: 'no_manifest' });
+    const manifest = mRows.rows[0].data;
+    const oldMeals = manifest.meals || [];
+
+    await pool.query(
+      'UPDATE manifest SET data = $1, updated_at = NOW() WHERE id = 1',
+      [JSON.stringify({ ...manifest, meals: newMeals })],
+    );
+
+    if (menuRows.rows[0]) {
+      const DAYS_ABBR = { sunday:'SUN', monday:'MON', tuesday:'TUE', wednesday:'WED', thursday:'THU', friday:'FRI', saturday:'SAT' };
+      const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      let md = menuRows.rows[0].content_md;
+
+      // Collect meals whose day label changed (matched by name)
+      const changes = newMeals
+        .map(nm => ({ nm, om: oldMeals.find(m => m.name === nm.name) }))
+        .filter(({ nm, om }) => om && om.day !== nm.day)
+        .map(({ nm, om }, i) => {
+          const oldDayName = om.day.split(',')[0].trim().toLowerCase();
+          const oldDate    = om.day.includes(', ') ? om.day.slice(om.day.indexOf(', ') + 2) : '';
+          const newDayName = nm.day.split(',')[0].trim().toLowerCase();
+          const newDate    = nm.day.includes(', ') ? nm.day.slice(nm.day.indexOf(', ') + 2) : '';
+          return {
+            oldDay: om.day, newDay: nm.day,
+            oldAbbr: DAYS_ABBR[oldDayName] || oldDayName.slice(0,3).toUpperCase(), oldDate,
+            newAbbr: DAYS_ABBR[newDayName] || newDayName.slice(0,3).toUpperCase(), newDate,
+            ph: `\x00R${i}\x00`,
+          };
+        });
+
+      // Pass 1: old day labels → placeholders
+      for (const c of changes) {
+        md = md.replace(new RegExp(escRe(`*(${c.oldDay})*`), 'g'), `*(${c.ph})*`);
+        if (c.oldDate) md = md.split(`*(${c.oldAbbr}, ${c.oldDate})*`).join(`*(${c.ph}_A)*`);
+      }
+      // Pass 2: placeholders → new day labels
+      for (const c of changes) {
+        md = md.split(`*(${c.ph})*`).join(`*(${c.newDay})*`);
+        if (c.oldDate && c.newDate) md = md.split(`*(${c.ph}_A)*`).join(`*(${c.newAbbr}, ${c.newDate})*`);
+      }
+
+      await pool.query(
+        'UPDATE weekly_menus SET content_md = $1, updated_at = NOW() WHERE week_date = $2',
+        [md, weekDate],
+      );
+    }
+
+    res.json({ ok: true, meals: newMeals });
+  } catch (err) {
+    console.error('POST /api/reorder-meals:', err.message);
+    res.status(500).json({ error: 'db_error', detail: err.message });
+  }
+});
+
 app.listen(PORT, () =>
   console.log(`🥬 Brooklyn Kitchen running on http://localhost:${PORT}`),
 );
