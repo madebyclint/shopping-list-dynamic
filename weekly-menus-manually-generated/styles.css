@@ -442,6 +442,32 @@ button {
   color: var(--accent) !important;
   opacity: 1 !important;
 }
+/* Empty day slots (swap mode only) */
+.meal-card.meal-empty-slot {
+  border-top-style: dashed;
+  border-top-color: var(--border);
+  background: var(--bg);
+  opacity: 0.55;
+  cursor: default;
+}
+.meal-grid.swap-mode .meal-card.meal-empty-slot {
+  cursor: default;
+  border-top-color: var(--border);
+}
+.meal-grid.swap-mode .meal-card.meal-empty-slot::after {
+  content: '';
+}
+.meal-grid.swap-mode-selected .meal-card.meal-empty-slot {
+  opacity: 0.85;
+  cursor: crosshair;
+  border-top-color: var(--accent);
+  border-top-style: dashed;
+}
+.meal-grid.swap-mode-selected .meal-card.meal-empty-slot::after {
+  content: '→ move here';
+  color: var(--accent);
+  opacity: 1;
+}
 
 /* ── Spend summary ────────────────────────────────────────────── */
 .spend-card {

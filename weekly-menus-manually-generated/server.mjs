@@ -2143,14 +2143,49 @@ app.post('/api/swap-meal-days', async (req, res) => {
 
     const meals = [...(manifest.meals || [])];
 
+    const dayAbbr = { monday:'MON', tuesday:'TUE', wednesday:'WED', thursday:'THU', friday:'FRI', saturday:'SAT', sunday:'SUN' };
+    const DAYS_ORDER = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
     // Find meals by day name prefix (e.g. "Monday" matches "Monday, May 11")
     const idxA = meals.findIndex(m => m.day.toLowerCase().startsWith(dayA.toLowerCase()));
     const idxB = meals.findIndex(m => m.day.toLowerCase().startsWith(dayB.toLowerCase()));
     if (idxA === -1) return res.status(404).json({ error: 'day_not_found', detail: `No meal for "${dayA}"` });
-    if (idxB === -1) return res.status(404).json({ error: 'day_not_found', detail: `No meal for "${dayB}"` });
 
-    // Record original full day strings ("Monday, May 11", "Friday, May 15")
     const dayStringA = meals[idxA].day;
+
+    // ── MOVE (dayB slot is empty) ────────────────────────────────────────────
+    if (idxB === -1) {
+      const dayBFull = String(req.body.dayBFull || '').trim();
+      if (!dayBFull) return res.status(400).json({ error: 'day_b_full_required', detail: 'dayBFull is required when moving to an empty slot.' });
+
+      meals[idxA] = { ...meals[idxA], day: dayBFull };
+      // Re-sort by day-of-week order
+      meals.sort((a, b) => {
+        const iA = DAYS_ORDER.findIndex(d => a.day.toLowerCase().startsWith(d.toLowerCase()));
+        const iB = DAYS_ORDER.findIndex(d => b.day.toLowerCase().startsWith(d.toLowerCase()));
+        return (iA < 0 ? 99 : iA) - (iB < 0 ? 99 : iB);
+      });
+      await pool.query('UPDATE manifest SET data = $1, updated_at = NOW() WHERE id = 1', [JSON.stringify({ ...manifest, meals })]);
+
+      // Update markdown: rename day label from dayStringA to dayBFull
+      const { rows: menuRows } = await pool.query('SELECT content_md FROM weekly_menus WHERE week_date = $1', [weekDate]);
+      if (menuRows[0]) {
+        let md = menuRows[0].content_md;
+        const abbrA    = dayAbbr[dayA.toLowerCase()] || dayA.slice(0, 3).toUpperCase();
+        const abbrB    = dayAbbr[dayB.toLowerCase()] || dayB.slice(0, 3).toUpperCase();
+        const datePartA = dayStringA.includes(', ') ? dayStringA.slice(dayStringA.indexOf(', ') + 2) : '';
+        const dayBDate  = dayBFull.includes(', ')   ? dayBFull.slice(dayBFull.indexOf(', ') + 2)   : '';
+        if (datePartA && dayBDate) {
+          const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          md = md.replace(new RegExp(escRe(`*(${dayStringA})*`), 'g'), `*(${dayBFull})*`);
+          md = md.split(`*(${abbrA}, ${datePartA})*`).join(`*(${abbrB}, ${dayBDate})*`);
+        }
+        await pool.query('UPDATE weekly_menus SET content_md = $1, updated_at = NOW() WHERE week_date = $2', [md, weekDate]);
+      }
+      return res.json({ ok: true, moved: true, meals });
+    }
+
+    // ── SWAP (both slots occupied) ───────────────────────────────────────────
     const dayStringB = meals[idxB].day;
 
     // Swap meal details but keep the day strings pinned to their calendar positions
@@ -2171,18 +2206,15 @@ app.post('/api/swap-meal-days', async (req, res) => {
     if (menuRows[0]) {
       let md = menuRows[0].content_md;
       const PLACEHOLDER = '\x00SWAPTMP\x00';
-      const dayAbbr = { monday:'MON', tuesday:'TUE', wednesday:'WED', thursday:'THU', friday:'FRI', saturday:'SAT', sunday:'SUN' };
       const abbrA   = dayAbbr[dayA.toLowerCase()] || dayA.slice(0, 3).toUpperCase();
       const abbrB   = dayAbbr[dayB.toLowerCase()] || dayB.slice(0, 3).toUpperCase();
       const datePartA = dayStringA.includes(', ') ? dayStringA.slice(dayStringA.indexOf(', ') + 2) : '';
       const datePartB = dayStringB.includes(', ') ? dayStringB.slice(dayStringB.indexOf(', ') + 2) : '';
       if (datePartA && datePartB) {
         const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // Swap full day strings: "*(Monday, May 11)*" ↔ "*(Friday, May 15)*"
         md = md.replace(new RegExp(escRe(`*(${dayStringA})*`), 'g'), `*(${PLACEHOLDER}A)*`);
         md = md.replace(new RegExp(escRe(`*(${dayStringB})*`), 'g'), `*(${dayStringA})*`);
         md = md.split(`*(${PLACEHOLDER}A)*`).join(`*(${dayStringB})*`);
-        // Swap abbreviated quick-glance form: "*(MON, May 11)*" ↔ "*(FRI, May 15)*"
         const abbrPatA = `*(${abbrA}, ${datePartA})*`;
         const abbrPatB = `*(${abbrB}, ${datePartB})*`;
         md = md.split(abbrPatA).join(`(${PLACEHOLDER}B)`);

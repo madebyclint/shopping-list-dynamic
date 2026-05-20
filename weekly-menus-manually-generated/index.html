@@ -598,8 +598,14 @@ async function init() {
     renderHome(_manifest);
     renderLastWeek(_manifest);
 
-    // One-time click handler for home meal grid (handles both nav and swap mode)
+    // One-time click handler for home meal grid (handles nav, swap, and move-to-empty-slot)
     $('home-meals').addEventListener('click', e => {
+      // Empty slot click (swap mode only — moves a selected meal to that day)
+      const emptyCard = e.target.closest('.meal-card[data-empty-day]');
+      if (emptyCard && _swapMode) {
+        if (_swapFirstDay) performSwap(_swapFirstDay, emptyCard.dataset.emptyDay);
+        return;
+      }
       const card = e.target.closest('.meal-card[data-meal-name]');
       if (!card) return;
       if (_swapMode) {
@@ -704,6 +710,35 @@ function renderLastWeek(m) {
 let _swapMode      = false;
 let _swapFirstDay  = null; // full day string of first selected meal
 
+// Build a 7-slot week array (Sun–Sat) showing empty slots for days without meals.
+// Uses the first parseable meal as an anchor to compute dates for empty slots.
+function getWeekSlots(meals) {
+  const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const byDay  = {};
+  for (const meal of meals) {
+    const m = meal.day.match(/^(\w+),/);
+    if (m) byDay[m[1]] = meal;
+  }
+  let anchorIdx = -1, anchorDate = null;
+  for (const meal of meals) {
+    const m = meal.day.match(/^(\w+),\s+(\w+)\s+(\d+)$/);
+    if (!m) continue;
+    const dIdx = DAYS.indexOf(m[1]), mIdx = MONTHS.indexOf(m[2]);
+    if (dIdx < 0 || mIdx < 0) continue;
+    anchorIdx  = dIdx;
+    anchorDate = new Date(Date.UTC(parseInt((_manifest.currentWeek || '2026'), 10), mIdx, parseInt(m[3], 10)));
+    break;
+  }
+  if (!anchorDate) return meals.map(m => ({ ...m, isEmpty: false }));
+  return DAYS.map((dayName, i) => {
+    if (byDay[dayName]) return { ...byDay[dayName], isEmpty: false };
+    const d = new Date(anchorDate);
+    d.setUTCDate(d.getUTCDate() + (i - anchorIdx));
+    return { day: `${dayName}, ${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`, isEmpty: true };
+  });
+}
+
 function mealDayNote(dayStr) {
   const d = dayStr.toLowerCase();
   if (d.startsWith('tuesday'))  return '🩰 ballet/workout';
@@ -723,29 +758,42 @@ function renderHomeMeals(m) {
   const tagClass = { fast: 'tag-fast', teen: 'tag-teen', special: 'tag-special' };
   const grid = $('home-meals');
   grid.classList.toggle('swap-mode', _swapMode);
+  grid.classList.toggle('swap-mode-selected', _swapMode && !!_swapFirstDay);
 
   // Swap banner
   let bannerHtml = '';
   if (_swapMode) {
+    const selMeal    = m.meals.find(x => x.day === _swapFirstDay);
     const bannerText = _swapFirstDay
-      ? `"${(m.meals.find(x => x.day === _swapFirstDay) || {}).name || _swapFirstDay}" selected — click another meal to swap`
-      : 'Click a meal to select it for swapping';
+      ? `"${selMeal ? selMeal.name : _swapFirstDay}" selected — click another meal to swap, or an empty day to move`
+      : 'Click a meal to select it';
     bannerHtml = `<div class="swap-banner" id="swap-banner">
       <span id="swap-banner-text">${bannerText}</span>
       <button class="swap-banner-cancel" onclick="toggleSwapMode()">✕ Cancel</button>
     </div>`;
   }
 
-  grid.innerHTML = bannerHtml + m.meals.map(meal => {
-    const note     = mealDayNote(meal.day);
-    const selected = _swapMode && _swapFirstDay === meal.day ? ' swap-selected' : '';
-    return `<div class="meal-card${selected}" data-meal-name="${meal.name.replace(/"/g, '&quot;')}" data-meal-day="${meal.day.replace(/"/g, '&quot;')}">
-      <div class="meal-day">${meal.day}${note ? `<br><span class="meal-day-note">${note}</span>` : ''}</div>
-      <div class="meal-emoji">${meal.emoji}</div>
-      <div class="meal-name">${meal.name}</div>
+  // In swap mode show all 7 day slots (including empty ones); otherwise just show scheduled meals
+  const slots = _swapMode ? getWeekSlots(m.meals) : m.meals;
+
+  grid.innerHTML = bannerHtml + slots.map(slot => {
+    if (slot.isEmpty) {
+      const note = mealDayNote(slot.day);
+      return `<div class="meal-card meal-empty-slot" data-empty-day="${slot.day.replace(/"/g, '&quot;')}">
+        <div class="meal-day">${slot.day}${note ? `<br><span class="meal-day-note">${note}</span>` : ''}</div>
+        <div class="meal-emoji" style="opacity:0.25">＋</div>
+        <div class="meal-name" style="color:var(--muted);font-style:italic;font-size:0.82rem">Open</div>
+      </div>`;
+    }
+    const note     = mealDayNote(slot.day);
+    const selected = _swapFirstDay === slot.day ? ' swap-selected' : '';
+    return `<div class="meal-card${selected}" data-meal-name="${slot.name.replace(/"/g, '&quot;')}" data-meal-day="${slot.day.replace(/"/g, '&quot;')}">
+      <div class="meal-day">${slot.day}${note ? `<br><span class="meal-day-note">${note}</span>` : ''}</div>
+      <div class="meal-emoji">${slot.emoji}</div>
+      <div class="meal-name">${slot.name}</div>
       <div class="meal-footer">
-        <span class="meal-time">⏱ ${meal.time}</span>
-        ${meal.tag ? `<span class="meal-tag ${tagClass[meal.tagType] || ''}">${meal.tag}</span>` : ''}
+        <span class="meal-time">⏱ ${slot.time}</span>
+        ${slot.tag ? `<span class="meal-tag ${tagClass[slot.tagType] || ''}">${slot.tag}</span>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -759,7 +807,7 @@ async function performSwap(dayStrA, dayStrB) {
     const r = await fetch('/api/swap-meal-days', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ weekDate, dayA: dayNameA, dayB: dayNameB }),
+      body: JSON.stringify({ weekDate, dayA: dayNameA, dayB: dayNameB, dayBFull: dayStrB }),
     });
     const result = await r.json();
     if (!r.ok) throw new Error(result.detail || result.error || 'Swap failed');
