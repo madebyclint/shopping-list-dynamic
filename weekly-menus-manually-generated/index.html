@@ -791,6 +791,7 @@ function renderHome(m) {
     <div id="reschedule-panel" class="reschedule-panel" style="display:none">
       <label>Move week to: <input type="date" id="reschedule-date" value="${m.currentWeek || ''}" /></label>
       <button class="list-btn" style="background:var(--navy);color:#fff" onclick="performReschedule()">Move</button>
+      <button class="list-btn" onclick="performFixDates()">Fix dates</button>
       <button class="list-btn" onclick="toggleReschedule()">Cancel</button>
       <div id="reschedule-status" class="reschedule-status"></div>
     </div>
@@ -821,6 +822,40 @@ function toggleReschedule() {
     $('reschedule-status').textContent = '';
   } else {
     $('rescheduleBtn').classList.remove('active');
+  }
+}
+
+// Fix date labels in manifest when currentWeek was moved but meal day dates weren't shifted.
+// Detects the delta by comparing currentWeek against the date embedded in the first meal label.
+async function performFixDates() {
+  const statusEl = $('reschedule-status');
+  const weekDate = (_manifest.currentWeek || '').trim();
+  if (!weekDate) { statusEl.textContent = '⚠️ No currentWeek in manifest.'; statusEl.className = 'reschedule-status err'; return; }
+  const firstMeal = _manifest.meals?.[0];
+  if (!firstMeal) { statusEl.textContent = '⚠️ No meals found.'; statusEl.className = 'reschedule-status err'; return; }
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const pm = firstMeal.day.match(/^\w[^,]*,\s+(\w+)\s+(\d+)$/);
+  if (!pm || MONTHS.indexOf(pm[1]) < 0) { statusEl.textContent = '⚠️ Could not parse first meal date: ' + firstMeal.day; statusEl.className = 'reschedule-status err'; return; }
+  const yr       = parseInt(weekDate, 10);
+  const fromDate = new Date(Date.UTC(yr, MONTHS.indexOf(pm[1]), parseInt(pm[2], 10))).toISOString().slice(0, 10);
+  if (fromDate === weekDate) { statusEl.textContent = '✓ Dates look correct already.'; statusEl.className = 'reschedule-status ok'; return; }
+  const delta = Math.round((new Date(weekDate + 'T12:00:00Z') - new Date(fromDate + 'T12:00:00Z')) / 86400000);
+  if (!confirm(`Shift all day labels by ${delta > 0 ? '+' + delta : delta} days to match week ${weekDate}?\n\n(Labels appear to belong to week ${fromDate})`)) return;
+  statusEl.textContent = 'Fixing…';
+  statusEl.className   = 'reschedule-status';
+  try {
+    const r = await fetch('/api/recompute-dates', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weekDate, fromDate }),
+    });
+    const result = await r.json();
+    if (!r.ok) throw new Error(result.detail || result.error || 'Fix failed');
+    statusEl.textContent = `✓ Shifted ${delta} days. Reloading…`;
+    statusEl.className   = 'reschedule-status ok';
+    setTimeout(() => location.reload(), 1000);
+  } catch (err) {
+    statusEl.textContent = '⚠️ ' + err.message;
+    statusEl.className   = 'reschedule-status err';
   }
 }
 

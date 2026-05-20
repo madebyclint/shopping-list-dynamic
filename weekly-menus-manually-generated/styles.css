@@ -346,6 +346,7 @@ button {
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 10px;
+  margin-bottom: 5px;
 }
 .home-action-btn {
   background: none;

@@ -1933,30 +1933,74 @@ app.post('/api/move-menu-week', async (req, res) => {
       if (manifestRows[0]) {
         let manifest = manifestRows[0].data;
         let changed  = false;
+
+        // Helpers: shift date labels by deltaDays
+        const deltaDays = Math.round(
+          (new Date(toDate + 'T12:00:00Z') - new Date(fromDate + 'T12:00:00Z')) / 86400000,
+        );
+        const MLNG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const MSHT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const DSHT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+        // Shift an ISO date string (YYYY-MM-DD) by deltaDays
+        const shiftISO = iso => {
+          if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+          const d = new Date(iso + 'T12:00:00Z');
+          d.setUTCDate(d.getUTCDate() + deltaDays);
+          return d.toISOString().slice(0, 10);
+        };
+
+        // Shift "DayName, MonthName D" by deltaDays — preserves the day name label,
+        // only advances the date number (matches user's entered labels exactly)
+        const shiftMealDay = str => {
+          const m = str.match(/^(\w[^,]*),\s+(\w+)\s+(\d+)$/);
+          if (!m) return str;
+          const mIdx = MLNG.indexOf(m[2]);
+          if (mIdx < 0) return str;
+          const yr = parseInt(fromDate, 10); // year from fromDate (e.g. 2026)
+          const d  = new Date(Date.UTC(yr, mIdx, parseInt(m[3], 10)));
+          d.setUTCDate(d.getUTCDate() + deltaDays);
+          return `${m[1]}, ${MLNG[d.getUTCMonth()]} ${d.getUTCDate()}`;
+        };
+
+        // Shift a week label like "Sun May 18 - Fri May 23, 2026"
+        const shiftWeekLabel = label => {
+          const re = /^(\w{2,3})\s+(\w+)\s+(\d+)\s*[-–]\s*(\w{2,3})\s+(\w+)\s+(\d+),?\s*(\d{4})$/;
+          const m  = (label || '').trim().match(re);
+          if (!m) return label;
+          const yr  = parseInt(m[7], 10);
+          const lookupMonth = n => { const i = MLNG.indexOf(n); return i >= 0 ? i : MSHT.indexOf(n); };
+          const mS = lookupMonth(m[2]);
+          const mE = lookupMonth(m[5]);
+          if (mS < 0 || mE < 0) return label;
+          const s = new Date(Date.UTC(yr, mS, parseInt(m[3], 10)));
+          const e = new Date(Date.UTC(yr, mE, parseInt(m[6], 10)));
+          s.setUTCDate(s.getUTCDate() + deltaDays);
+          e.setUTCDate(e.getUTCDate() + deltaDays);
+          return `${DSHT[s.getUTCDay()]} ${MSHT[s.getUTCMonth()]} ${s.getUTCDate()} - ${DSHT[e.getUTCDay()]} ${MSHT[e.getUTCMonth()]} ${e.getUTCDate()}, ${e.getUTCFullYear()}`;
+        };
+
+        const shiftWeekBlock = w => ({
+          ...w,
+          currentWeek:  toDate,
+          shoppingDate: shiftISO(w.shoppingDate),
+          weekLabel:    shiftWeekLabel(w.weekLabel),
+          files: {
+            menu:         `menus/${toDate}-menu.md`,
+            shoppingList: `shopping-lists/${toDate}-shopping-list.md`,
+          },
+          meals: Array.isArray(w.meals)
+            ? w.meals.map(meal => ({ ...meal, day: shiftMealDay(meal.day) }))
+            : w.meals,
+        });
+
         if (manifest.currentWeek === fromDate) {
-          manifest = {
-            ...manifest,
-            currentWeek: toDate,
-            files: {
-              menu:         `menus/${toDate}-menu.md`,
-              shoppingList: `shopping-lists/${toDate}-shopping-list.md`,
-            },
-          };
-          changed = true;
+          manifest = { ...manifest, ...shiftWeekBlock(manifest) };
+          changed  = true;
         }
         if (manifest.lastWeek && manifest.lastWeek.currentWeek === fromDate) {
-          manifest = {
-            ...manifest,
-            lastWeek: {
-              ...manifest.lastWeek,
-              currentWeek: toDate,
-              files: {
-                menu:         `menus/${toDate}-menu.md`,
-                shoppingList: `shopping-lists/${toDate}-shopping-list.md`,
-              },
-            },
-          };
-          changed = true;
+          manifest = { ...manifest, lastWeek: { ...manifest.lastWeek, ...shiftWeekBlock(manifest.lastWeek) } };
+          changed  = true;
         }
         if (changed) {
           await client.query(
@@ -1976,6 +2020,101 @@ app.post('/api/move-menu-week', async (req, res) => {
     }
   } catch (err) {
     console.error('POST /api/move-menu-week:', err.message);
+    res.status(500).json({ error: 'db_error', detail: err.message });
+  }
+});
+
+// ── POST /api/recompute-dates — fix day-date labels in manifest after a mismatched move ──
+// Given the currentWeek ISO date and the delta between that and the old dates,
+// re-derives all meal day dates by shifting from the old first-meal date.
+// Body: { weekDate: "YYYY-MM-DD", fromDate: "YYYY-MM-DD" (the original week date before the move) }
+app.post('/api/recompute-dates', async (req, res) => {
+  try {
+    const weekDate  = String(req.body.weekDate  || '').trim();
+    const fromDate  = String(req.body.fromDate  || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(weekDate)) return res.status(400).json({ error: 'invalid_week_date' });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate))  return res.status(400).json({ error: 'invalid_from_date' });
+
+    const deltaDays = Math.round(
+      (new Date(weekDate + 'T12:00:00Z') - new Date(fromDate + 'T12:00:00Z')) / 86400000,
+    );
+
+    const MLNG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const MSHT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const DSHT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    const shiftISO = iso => {
+      if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+      const d = new Date(iso + 'T12:00:00Z');
+      d.setUTCDate(d.getUTCDate() + deltaDays);
+      return d.toISOString().slice(0, 10);
+    };
+
+    const shiftMealDay = str => {
+      const m = str.match(/^(\w[^,]*),\s+(\w+)\s+(\d+)$/);
+      if (!m) return str;
+      const mIdx = MLNG.indexOf(m[2]);
+      if (mIdx < 0) return str;
+      const yr = parseInt(fromDate, 10);
+      const d  = new Date(Date.UTC(yr, mIdx, parseInt(m[3], 10)));
+      d.setUTCDate(d.getUTCDate() + deltaDays);
+      return `${m[1]}, ${MLNG[d.getUTCMonth()]} ${d.getUTCDate()}`;
+    };
+
+    const shiftWeekLabel = label => {
+      const re = /^(\w{2,3})\s+(\w+)\s+(\d+)\s*[-–]\s*(\w{2,3})\s+(\w+)\s+(\d+),?\s*(\d{4})$/;
+      const m  = (label || '').trim().match(re);
+      if (!m) return label;
+      const yr = parseInt(m[7], 10);
+      const lookupMonth = n => { const i = MLNG.indexOf(n); return i >= 0 ? i : MSHT.indexOf(n); };
+      const mS = lookupMonth(m[2]);
+      const mE = lookupMonth(m[5]);
+      if (mS < 0 || mE < 0) return label;
+      const s = new Date(Date.UTC(yr, mS, parseInt(m[3], 10)));
+      const e = new Date(Date.UTC(yr, mE, parseInt(m[6], 10)));
+      s.setUTCDate(s.getUTCDate() + deltaDays);
+      e.setUTCDate(e.getUTCDate() + deltaDays);
+      return `${DSHT[s.getUTCDay()]} ${MSHT[s.getUTCMonth()]} ${s.getUTCDate()} - ${DSHT[e.getUTCDay()]} ${MSHT[e.getUTCMonth()]} ${e.getUTCDate()}, ${e.getUTCFullYear()}`;
+    };
+
+    const applyShift = w => ({
+      ...w,
+      shoppingDate: shiftISO(w.shoppingDate),
+      weekLabel:    shiftWeekLabel(w.weekLabel),
+      meals: Array.isArray(w.meals)
+        ? w.meals.map(meal => ({ ...meal, day: shiftMealDay(meal.day) }))
+        : w.meals,
+    });
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows } = await client.query('SELECT data FROM manifest WHERE id = 1');
+      if (!rows[0]) throw new Error('manifest_not_found');
+      let manifest = rows[0].data;
+      let changed  = false;
+
+      if (manifest.currentWeek === weekDate) {
+        manifest = { ...manifest, ...applyShift(manifest) };
+        changed  = true;
+      } else if (manifest.lastWeek && manifest.lastWeek.currentWeek === weekDate) {
+        manifest = { ...manifest, lastWeek: { ...manifest.lastWeek, ...applyShift(manifest.lastWeek) } };
+        changed  = true;
+      }
+
+      if (!changed) return res.status(404).json({ error: 'week_not_found_in_manifest' });
+
+      await client.query('UPDATE manifest SET data = $1, updated_at = NOW() WHERE id = 1', [JSON.stringify(manifest)]);
+      await client.query('COMMIT');
+      res.json({ ok: true, weekDate, delta: deltaDays });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('POST /api/recompute-dates:', err.message);
     res.status(500).json({ error: 'db_error', detail: err.message });
   }
 });
