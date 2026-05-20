@@ -289,6 +289,7 @@
           <label>Yield<input type="text" id="pantry-f-yield" placeholder="~1 cup" /></label>
           <label>Keeps<input type="text" id="pantry-f-keeps" placeholder="6 weeks refrigerated" /></label>
         </div>
+        <label>Source / Recipe Link<input type="url" id="pantry-f-url" placeholder="https://" /></label>
         <label>Recipe (markdown)<textarea id="pantry-f-recipe" rows="10" placeholder="## Ingredients&#10;- 1 cup oil&#10;&#10;## Instructions&#10;1. Step one…"></textarea></label>
         <label>Notes<textarea id="pantry-f-notes" rows="3" placeholder="Tips, variations, source…"></textarea></label>
         <div class="ev-form-actions">
@@ -782,6 +783,8 @@ function handleInitialHash() {
     switchTab(hash, false);
     if (hash === 'archive') loadArchive();
     if (hash === 'audit') loadSpendReport();
+    if (hash === 'events') loadEvents();
+    if (hash === 'pantry') loadPantry();
     if (hash === 'planning') { planLoadNotes(); planLoadIdeas(); }
   }
 }
@@ -807,6 +810,8 @@ window.addEventListener('popstate', () => {
     switchTab(hash, false);
     if (hash === 'archive') loadArchive();
     if (hash === 'audit') loadSpendReport();
+    if (hash === 'events') loadEvents();
+    if (hash === 'pantry') loadPantry();
     if (hash === 'planning') { planLoadNotes(); planLoadIdeas(); }
   }
 });
@@ -3665,6 +3670,7 @@ function openPantryDetail(id) {
     <div style="margin-bottom:16px">
       <h2 style="margin:0 0 4px;font-size:1.4rem">� ${r.name}</h2>
       ${meta ? `<div style="font-size:0.85rem;color:var(--muted);margin-bottom:8px">${meta}</div>` : ''}
+      ${r.source_url ? `<div style="font-size:0.82rem;margin-bottom:8px"><a href="${r.source_url}" target="_blank" rel="noopener" style="color:var(--primary,#2d6a4f)">📎 Recipe source ↗</a></div>` : ''}
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="lt-save-btn" onclick="markPantryMade(${r.id})">✓ Made Today</button>
         <button class="lt-save-btn" style="background:var(--bg);border:1.5px solid var(--border);color:var(--text)" onclick="openPantryForm(${r.id})">✏️ Edit</button>
@@ -3754,6 +3760,7 @@ function openPantryForm(id = null) {
   $('pantry-f-category').value = r?.category || '';
   $('pantry-f-yield').value    = r?.yield_desc || '';
   $('pantry-f-keeps').value    = r?.keeps_desc || '';
+  $('pantry-f-url').value      = r?.source_url  || '';
   $('pantry-f-recipe').value   = r?.recipe_md  || '';
   $('pantry-f-notes').value    = r?.notes      || '';
   $('pantry-form-overlay').style.display = '';
@@ -3771,6 +3778,7 @@ $('pantry-form-save')?.addEventListener('click', async () => {
   const category = ($('pantry-f-category')?.value || '').trim() || null;
   const yield_desc = ($('pantry-f-yield')?.value || '').trim() || null;
   const keeps_desc = ($('pantry-f-keeps')?.value || '').trim() || null;
+  const source_url  = ($('pantry-f-url')?.value   || '').trim() || null;
   const recipe_md  = $('pantry-f-recipe')?.value || null;
   const notes      = $('pantry-f-notes')?.value  || null;
   const status = $('pantry-form-status');
@@ -3786,7 +3794,7 @@ $('pantry-form-save')?.addEventListener('click', async () => {
       r = await fetch('/api/pantry-recipes/' + _pantryEditingId, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, category, yield_desc, keeps_desc, recipe_md, notes }),
+        body: JSON.stringify({ name, category, yield_desc, keeps_desc, recipe_md, notes, source_url }),
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       updated = (await r.json()).recipe;
@@ -3796,7 +3804,7 @@ $('pantry-form-save')?.addEventListener('click', async () => {
       r = await fetch('/api/pantry-recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, category, yield_desc, keeps_desc, recipe_md, notes }),
+        body: JSON.stringify({ name, category, yield_desc, keeps_desc, recipe_md, notes, source_url }),
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       updated = (await r.json()).recipe;

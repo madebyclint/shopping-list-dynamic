@@ -131,6 +131,7 @@ async function initDb() {
       recipe_md   TEXT,
       ingredients JSONB       DEFAULT '[]',
       notes       TEXT,
+      source_url  TEXT,
       last_made   TEXT,
       created_at  TIMESTAMPTZ DEFAULT NOW()
     );
@@ -138,6 +139,7 @@ async function initDb() {
   // Safe migrations for existing installs
   await pool.query(`
     ALTER TABLE special_events ADD COLUMN IF NOT EXISTS packing_list_md TEXT;
+    ALTER TABLE pantry_recipes  ADD COLUMN IF NOT EXISTS source_url TEXT;
   `);
 }
 
@@ -813,6 +815,12 @@ app.get('/api/generate-prompt', async (_req, res) => {
     );
     const activeNotes = notesRes.rows;
 
+    // Get pantry recipes
+    const pantryRes = await pool.query(
+      `SELECT name, category, yield_desc, keeps_desc, notes, source_url FROM pantry_recipes ORDER BY name`
+    );
+    const pantryItems = pantryRes.rows;
+
     // Build optional context blocks
     let ideasBlock = '';
     if (includedIdeas.length) {
@@ -838,6 +846,20 @@ app.get('/api/generate-prompt', async (_req, res) => {
       notesBlock = `\n**This week's specific notes (please honor these):**\n${lines.map(l => `- ${l}`).join('\n')}\n`;
     }
 
+    let pantryBlock = '';
+    if (pantryItems.length) {
+      const lines = pantryItems.map(p => {
+        let line = `- **${p.name}**`;
+        if (p.category) line += ` (${p.category})`;
+        if (p.yield_desc) line += ` — ${p.yield_desc}`;
+        if (p.keeps_desc) line += ` · keeps ${p.keeps_desc}`;
+        if (p.source_url) line += ` · recipe: ${p.source_url}`;
+        if (p.notes) line += `\n  Notes: ${p.notes.split('\n')[0]}`;
+        return line;
+      }).join('\n');
+      pantryBlock = `\n**Homemade pantry items available (already made — do NOT add their ingredients to the shopping list. Feel free to suggest using them in meals or as condiments):**\n${lines}\n`;
+    }
+
     const prompt = `I need a meal plan for the next week. Here is the criteria:
 
 1. Needs to be 5 dinners to cook + 1 breakfast
@@ -859,7 +881,7 @@ app.get('/api/generate-prompt', async (_req, res) => {
 - Week of ${weekDate}
 - Recent meals to avoid repeating (last 6 weeks): ${recentMeals.join(', ')}
 - We are in Brooklyn buying at small markets (higher prices than chain stores)
-${ideasBlock}${notesBlock}
+${ideasBlock}${notesBlock}${pantryBlock}
 **Pantry staples — do NOT add these to the shopping list:**
 - Olive oil, vegetable oil, canola oil, butter
 - Soy sauce, fish sauce, rice vinegar, sesame oil
@@ -1233,13 +1255,13 @@ app.get('/api/pantry-recipes', async (_req, res) => {
 // POST /api/pantry-recipes — create a new pantry recipe
 app.post('/api/pantry-recipes', async (req, res) => {
   try {
-    const { name, category, yield_desc, keeps_desc, recipe_md, ingredients, notes } = req.body;
+    const { name, category, yield_desc, keeps_desc, recipe_md, ingredients, notes, source_url } = req.body;
     if (!name?.trim()) return res.status(400).json({ error: 'name required' });
     const { rows } = await pool.query(
-      `INSERT INTO pantry_recipes (name, category, yield_desc, keeps_desc, recipe_md, ingredients, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      `INSERT INTO pantry_recipes (name, category, yield_desc, keeps_desc, recipe_md, ingredients, notes, source_url)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
       [name.trim(), category || null, yield_desc || null, keeps_desc || null,
-       recipe_md || null, JSON.stringify(ingredients || []), notes || null],
+       recipe_md || null, JSON.stringify(ingredients || []), notes || null, source_url || null],
     );
     res.status(201).json({ recipe: rows[0] });
   } catch (err) {
@@ -1259,7 +1281,7 @@ app.patch('/api/pantry-recipes/:id', async (req, res) => {
       );
       return res.json({ recipe: rows[0] });
     }
-    const allowed = ['name', 'category', 'yield_desc', 'keeps_desc', 'recipe_md', 'ingredients', 'notes', 'last_made'];
+    const allowed = ['name', 'category', 'yield_desc', 'keeps_desc', 'recipe_md', 'ingredients', 'notes', 'source_url', 'last_made'];
     const fields = [], vals = [];
     for (const [k, v] of Object.entries(req.body)) {
       if (allowed.includes(k)) {
