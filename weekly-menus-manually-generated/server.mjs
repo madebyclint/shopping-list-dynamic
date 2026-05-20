@@ -1898,14 +1898,40 @@ app.post('/api/move-menu-week', async (req, res) => {
       );
       await client.query('DELETE FROM weekly_menus WHERE week_date = $1', [fromDate]);
 
-      // Move shopping_lists (if exists)
+      // Move shopping_lists (if exists) and shift date references in its content
       const { rows: listRow } = await client.query(
         'SELECT content_md FROM shopping_lists WHERE week_date = $1', [fromDate],
       );
       if (listRow[0]) {
+        const _delta  = Math.round((new Date(toDate + 'T12:00:00Z') - new Date(fromDate + 'T12:00:00Z')) / 86400000);
+        const _MLNG   = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const _shiftD = s => { const d = new Date(s + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + _delta); return d.toISOString().slice(0, 10); };
+        const _mRe    = _MLNG.join('|');
+        let listMd = listRow[0].content_md;
+        // Shift ISO dates (e.g. 2026-05-18 → 2026-05-25)
+        listMd = listMd.replace(/\b(\d{4}-\d{2}-\d{2})\b/g, _shiftD);
+        // Shift "Month D–D" or "Month D" date ranges in markdown heading lines only
+        listMd = listMd.split('\n').map(line => {
+          if (!line.startsWith('#')) return line;
+          return line.replace(new RegExp(`(${_mRe})\\s+(\\d{1,2})(?:[–\\-](\\d{1,2}))?`, 'g'), (m, mo, d1, d2) => {
+            const mi = _MLNG.indexOf(mo);
+            if (mi < 0) return m;
+            const yr = parseInt(fromDate, 10);
+            const s  = new Date(Date.UTC(yr, mi, +d1));
+            s.setUTCDate(s.getUTCDate() + _delta);
+            if (d2 != null) {
+              const e = new Date(Date.UTC(yr, mi, +d2));
+              e.setUTCDate(e.getUTCDate() + _delta);
+              return s.getUTCMonth() === e.getUTCMonth()
+                ? `${_MLNG[s.getUTCMonth()]} ${s.getUTCDate()}–${e.getUTCDate()}`
+                : `${_MLNG[s.getUTCMonth()]} ${s.getUTCDate()}–${_MLNG[e.getUTCMonth()]} ${e.getUTCDate()}`;
+            }
+            return `${_MLNG[s.getUTCMonth()]} ${s.getUTCDate()}`;
+          });
+        }).join('\n');
         await client.query(
           'INSERT INTO shopping_lists (week_date, content_md, updated_at) VALUES ($1, $2, NOW())',
-          [toDate, listRow[0].content_md],
+          [toDate, listMd],
         );
         await client.query('DELETE FROM shopping_lists WHERE week_date = $1', [fromDate]);
       }
