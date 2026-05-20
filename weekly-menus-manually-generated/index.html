@@ -598,6 +598,26 @@ async function init() {
     renderHome(_manifest);
     renderLastWeek(_manifest);
 
+    // One-time click handler for home meal grid (handles both nav and swap mode)
+    $('home-meals').addEventListener('click', e => {
+      const card = e.target.closest('.meal-card[data-meal-name]');
+      if (!card) return;
+      if (_swapMode) {
+        const dayStr = card.dataset.mealDay || '';
+        if (!_swapFirstDay) {
+          _swapFirstDay = dayStr;
+          renderHomeMeals(_manifest);
+        } else if (_swapFirstDay === dayStr) {
+          _swapFirstDay = null;
+          renderHomeMeals(_manifest);
+        } else {
+          performSwap(_swapFirstDay, dayStr);
+        }
+        return;
+      }
+      switchToMenuMeal(card.dataset.mealName);
+    });
+
     // Load last week menu non-blocking
     const _lw = _manifest.lastWeek;
     if (_lw && _lw.files && _lw.files.menu) {
@@ -659,16 +679,18 @@ function renderLastWeek(m) {
     <div style="margin-bottom:24px;display:flex;gap:10px;flex-wrap:wrap">
       ${lw.files && lw.files.menu ? `<button class="list-btn" style="background:var(--navy);color:#fff" onclick="switchTab('last-menu')">🥗 Menu</button>` : ''}
     </div>
-    <div class="meal-grid">${lw.meals.map(meal => `
-      <div class="meal-card" style="cursor:pointer" data-last-meal="${meal.name.replace(/"/g, '&quot;')}">
-        <div class="meal-day">${meal.day}</div>
+    <div class="meal-grid">${lw.meals.map(meal => {
+      const note = mealDayNote(meal.day);
+      return `<div class="meal-card" style="cursor:pointer" data-last-meal="${meal.name.replace(/"/g, '&quot;')}">
+        <div class="meal-day">${meal.day}${note ? `<br><span class="meal-day-note">${note}</span>` : ''}</div>
         <div class="meal-emoji">${meal.emoji}</div>
         <div class="meal-name">${meal.name}</div>
         <div class="meal-footer">
           <span class="meal-time">⏱ ${meal.time}</span>
           ${meal.tag ? `<span class="meal-tag ${tagClass[meal.tagType] || ''}">${meal.tag}</span>` : ''}
         </div>
-      </div>`).join('')}
+      </div>`;
+    }).join('')}
     </div>
   `;
   el.addEventListener('click', e => {
@@ -678,33 +700,103 @@ function renderLastWeek(m) {
   });
 }
 
-// ── Home tab ──────────────────────────────────────────────────────────────────
-function renderHome(m) {
-  $('home-week-header').innerHTML = `
-    <div class="section-title">${m.weekLabel}</div>
-    <div class="section-sub">Shopping trip: ${m.shoppingDate} · ${m.meals.length} meals</div>
-  `;
+// ── Swap-mode state ───────────────────────────────────────────────────────────
+let _swapMode      = false;
+let _swapFirstDay  = null; // full day string of first selected meal
 
-  // Meal cards
+function mealDayNote(dayStr) {
+  const d = dayStr.toLowerCase();
+  if (d.startsWith('tuesday'))  return '🩰 ballet/workout';
+  if (d.startsWith('thursday')) return '👨‍🍳 kids prep';
+  return '';
+}
+
+function toggleSwapMode() {
+  _swapMode = !_swapMode;
+  _swapFirstDay = null;
+  renderHomeMeals(_manifest);
+  $('swapDaysBtn').classList.toggle('active', _swapMode);
+}
+
+// Re-render only the meal grid + swap banner (avoids replacing the full header)
+function renderHomeMeals(m) {
   const tagClass = { fast: 'tag-fast', teen: 'tag-teen', special: 'tag-special' };
-  $('home-meals').innerHTML = m.meals.map(meal => `
-    <div class="meal-card" data-meal-name="${meal.name.replace(/"/g, '&quot;')}">
-      <div class="meal-day">${meal.day}</div>
+  const grid = $('home-meals');
+  grid.classList.toggle('swap-mode', _swapMode);
+
+  // Swap banner
+  let bannerHtml = '';
+  if (_swapMode) {
+    const bannerText = _swapFirstDay
+      ? `"${(m.meals.find(x => x.day === _swapFirstDay) || {}).name || _swapFirstDay}" selected — click another meal to swap`
+      : 'Click a meal to select it for swapping';
+    bannerHtml = `<div class="swap-banner" id="swap-banner">
+      <span id="swap-banner-text">${bannerText}</span>
+      <button class="swap-banner-cancel" onclick="toggleSwapMode()">✕ Cancel</button>
+    </div>`;
+  }
+
+  grid.innerHTML = bannerHtml + m.meals.map(meal => {
+    const note     = mealDayNote(meal.day);
+    const selected = _swapMode && _swapFirstDay === meal.day ? ' swap-selected' : '';
+    return `<div class="meal-card${selected}" data-meal-name="${meal.name.replace(/"/g, '&quot;')}" data-meal-day="${meal.day.replace(/"/g, '&quot;')}">
+      <div class="meal-day">${meal.day}${note ? `<br><span class="meal-day-note">${note}</span>` : ''}</div>
       <div class="meal-emoji">${meal.emoji}</div>
       <div class="meal-name">${meal.name}</div>
       <div class="meal-footer">
         <span class="meal-time">⏱ ${meal.time}</span>
         ${meal.tag ? `<span class="meal-tag ${tagClass[meal.tagType] || ''}">${meal.tag}</span>` : ''}
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+}
 
-  // Click → jump to menu tab at that meal's anchor
-  $('home-meals').addEventListener('click', e => {
-    const card = e.target.closest('.meal-card[data-meal-name]');
-    if (!card) return;
-    switchToMenuMeal(card.dataset.mealName);
-  });
+async function performSwap(dayStrA, dayStrB) {
+  const dayNameA = dayStrA.split(',')[0].trim();
+  const dayNameB = dayStrB.split(',')[0].trim();
+  const weekDate = _manifest.currentWeek;
+  try {
+    const r = await fetch('/api/swap-meal-days', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weekDate, dayA: dayNameA, dayB: dayNameB }),
+    });
+    const result = await r.json();
+    if (!r.ok) throw new Error(result.detail || result.error || 'Swap failed');
+    _manifest = { ..._manifest, meals: result.meals };
+    _swapMode     = false;
+    _swapFirstDay = null;
+    renderHomeMeals(_manifest);
+    $('swapDaysBtn').classList.remove('active');
+    // Reload menu tab markdown since day labels changed
+    fetchText(_manifest.files.menu)
+      .then(t => { renderMD($('menu-content'), t); injectMenuAnchors(_manifest.meals); })
+      .catch(() => {});
+  } catch (err) {
+    alert('Swap failed: ' + err.message);
+    _swapFirstDay = null;
+    renderHomeMeals(_manifest);
+  }
+}
+
+// ── Home tab ──────────────────────────────────────────────────────────────────
+function renderHome(m) {
+  $('home-week-header').innerHTML = `
+    <div class="section-title">${m.weekLabel}</div>
+    <div class="section-sub">Shopping trip: ${m.shoppingDate} · ${m.meals.length} meals</div>
+    <div class="home-actions">
+      <button class="home-action-btn" id="rescheduleBtn" onclick="toggleReschedule()">📅 Reschedule Week</button>
+      <button class="home-action-btn" id="swapDaysBtn" onclick="toggleSwapMode()">⇄ Swap Days</button>
+    </div>
+    <div id="reschedule-panel" class="reschedule-panel" style="display:none">
+      <label>Move week to: <input type="date" id="reschedule-date" value="${m.currentWeek || ''}" /></label>
+      <button class="list-btn" style="background:var(--navy);color:#fff" onclick="performReschedule()">Move</button>
+      <button class="list-btn" onclick="toggleReschedule()">Cancel</button>
+      <div id="reschedule-status" class="reschedule-status"></div>
+    </div>
+  `;
+
+  renderHomeMeals(m);
 
   // Spend summary — full report in Audit tab
   $('home-spend').innerHTML = `
@@ -716,6 +808,54 @@ function renderHome(m) {
       </p>
     </div>
   `;
+}
+
+// ── Reschedule week ───────────────────────────────────────────────────────────
+function toggleReschedule() {
+  const panel = $('reschedule-panel');
+  if (!panel) return;
+  const showing = panel.style.display !== 'none';
+  panel.style.display = showing ? 'none' : '';
+  if (!showing) {
+    $('rescheduleBtn').classList.add('active');
+    $('reschedule-status').textContent = '';
+  } else {
+    $('rescheduleBtn').classList.remove('active');
+  }
+}
+
+async function performReschedule() {
+  const statusEl = $('reschedule-status');
+  const toDate   = ($('reschedule-date')?.value || '').trim();
+  if (!toDate || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
+    statusEl.textContent = '⚠️ Please pick a valid date.';
+    statusEl.className   = 'reschedule-status err';
+    return;
+  }
+  const fromDate = _manifest.currentWeek;
+  if (fromDate === toDate) {
+    statusEl.textContent = '⚠️ That\'s the same date.';
+    statusEl.className   = 'reschedule-status err';
+    return;
+  }
+  if (!confirm(`Move this week's menu from ${fromDate} to ${toDate}?\n\nThis will update the week date in the database. The shopping list, cart state, and audit records will move with it.`)) return;
+  statusEl.textContent = 'Moving…';
+  statusEl.className   = 'reschedule-status';
+  try {
+    const r = await fetch('/api/move-menu-week', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fromDate, toDate }),
+    });
+    const result = await r.json();
+    if (!r.ok) throw new Error(result.detail || result.error || 'Move failed');
+    statusEl.textContent = `✓ Moved to ${toDate}. Reloading…`;
+    statusEl.className   = 'reschedule-status ok';
+    setTimeout(() => location.reload(), 1000);
+  } catch (err) {
+    statusEl.textContent = '⚠️ ' + err.message;
+    statusEl.className   = 'reschedule-status err';
+  }
 }
 
 // ── Menu anchors ─────────────────────────────────────────────────────────────

@@ -1868,6 +1868,201 @@ async function seedKamayanFeast() {
   }
 }
 
+// ── POST /api/move-menu-week — reassign a menu to a different week date ────────
+app.post('/api/move-menu-week', async (req, res) => {
+  try {
+    const fromDate = String(req.body.fromDate || '').trim();
+    const toDate   = String(req.body.toDate   || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) return res.status(400).json({ error: 'invalid_from_date' });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(toDate))   return res.status(400).json({ error: 'invalid_to_date' });
+    if (fromDate === toDate)                     return res.status(400).json({ error: 'dates_identical' });
+
+    const { rows: srcRows } = await pool.query(
+      'SELECT label, content_md FROM weekly_menus WHERE week_date = $1', [fromDate],
+    );
+    if (!srcRows[0]) return res.status(404).json({ error: 'source_week_not_found', detail: `No menu found for ${fromDate}` });
+
+    const { rows: tgtRows } = await pool.query(
+      'SELECT 1 FROM weekly_menus WHERE week_date = $1', [toDate],
+    );
+    if (tgtRows[0]) return res.status(409).json({ error: 'target_week_exists', detail: `A menu already exists for ${toDate}. Delete it first or choose a different date.` });
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Move weekly_menus (PK = week_date)
+      await client.query(
+        'INSERT INTO weekly_menus (week_date, label, content_md, updated_at) VALUES ($1, $2, $3, NOW())',
+        [toDate, srcRows[0].label, srcRows[0].content_md],
+      );
+      await client.query('DELETE FROM weekly_menus WHERE week_date = $1', [fromDate]);
+
+      // Move shopping_lists (if exists)
+      const { rows: listRow } = await client.query(
+        'SELECT content_md FROM shopping_lists WHERE week_date = $1', [fromDate],
+      );
+      if (listRow[0]) {
+        await client.query(
+          'INSERT INTO shopping_lists (week_date, content_md, updated_at) VALUES ($1, $2, NOW())',
+          [toDate, listRow[0].content_md],
+        );
+        await client.query('DELETE FROM shopping_lists WHERE week_date = $1', [fromDate]);
+      }
+
+      // Move cart_state (if exists)
+      const { rows: cartRow } = await client.query(
+        'SELECT state FROM cart_state WHERE week_key = $1', [fromDate],
+      );
+      if (cartRow[0]) {
+        await client.query(
+          `INSERT INTO cart_state (week_key, state, updated_at) VALUES ($1, $2, NOW())
+           ON CONFLICT (week_key) DO UPDATE SET state = EXCLUDED.state, updated_at = NOW()`,
+          [toDate, JSON.stringify(cartRow[0].state)],
+        );
+        await client.query('DELETE FROM cart_state WHERE week_key = $1', [fromDate]);
+      }
+
+      // Update shopping_audits week_date references
+      await client.query(
+        'UPDATE shopping_audits SET week_date = $1 WHERE week_date = $2', [toDate, fromDate],
+      );
+
+      // Update manifest if it references fromDate
+      const { rows: manifestRows } = await client.query('SELECT data FROM manifest WHERE id = 1');
+      if (manifestRows[0]) {
+        let manifest = manifestRows[0].data;
+        let changed  = false;
+        if (manifest.currentWeek === fromDate) {
+          manifest = {
+            ...manifest,
+            currentWeek: toDate,
+            files: {
+              menu:         `menus/${toDate}-menu.md`,
+              shoppingList: `shopping-lists/${toDate}-shopping-list.md`,
+            },
+          };
+          changed = true;
+        }
+        if (manifest.lastWeek && manifest.lastWeek.currentWeek === fromDate) {
+          manifest = {
+            ...manifest,
+            lastWeek: {
+              ...manifest.lastWeek,
+              currentWeek: toDate,
+              files: {
+                menu:         `menus/${toDate}-menu.md`,
+                shoppingList: `shopping-lists/${toDate}-shopping-list.md`,
+              },
+            },
+          };
+          changed = true;
+        }
+        if (changed) {
+          await client.query(
+            'UPDATE manifest SET data = $1, updated_at = NOW() WHERE id = 1',
+            [JSON.stringify(manifest)],
+          );
+        }
+      }
+
+      await client.query('COMMIT');
+      res.json({ ok: true, fromDate, toDate });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('POST /api/move-menu-week:', err.message);
+    res.status(500).json({ error: 'db_error', detail: err.message });
+  }
+});
+
+// ── POST /api/swap-meal-days — swap two meals between day slots ────────────────
+app.post('/api/swap-meal-days', async (req, res) => {
+  try {
+    const weekDate = String(req.body.weekDate || '').trim();
+    const dayA     = String(req.body.dayA || '').trim(); // e.g. "Monday"
+    const dayB     = String(req.body.dayB || '').trim(); // e.g. "Friday"
+
+    if (!weekDate || !/^\d{4}-\d{2}-\d{2}$/.test(weekDate)) {
+      return res.status(400).json({ error: 'invalid_week_date' });
+    }
+    if (!dayA || !dayB || dayA.toLowerCase() === dayB.toLowerCase()) {
+      return res.status(400).json({ error: 'invalid_days' });
+    }
+
+    const { rows: manifestRows } = await pool.query('SELECT data FROM manifest WHERE id = 1');
+    if (!manifestRows[0]) return res.status(404).json({ error: 'no_manifest' });
+    const manifest = manifestRows[0].data;
+
+    if (manifest.currentWeek !== weekDate) {
+      return res.status(400).json({ error: 'week_not_current', detail: 'Can only swap days in the current week.' });
+    }
+
+    const meals = [...(manifest.meals || [])];
+
+    // Find meals by day name prefix (e.g. "Monday" matches "Monday, May 11")
+    const idxA = meals.findIndex(m => m.day.toLowerCase().startsWith(dayA.toLowerCase()));
+    const idxB = meals.findIndex(m => m.day.toLowerCase().startsWith(dayB.toLowerCase()));
+    if (idxA === -1) return res.status(404).json({ error: 'day_not_found', detail: `No meal for "${dayA}"` });
+    if (idxB === -1) return res.status(404).json({ error: 'day_not_found', detail: `No meal for "${dayB}"` });
+
+    // Record original full day strings ("Monday, May 11", "Friday, May 15")
+    const dayStringA = meals[idxA].day;
+    const dayStringB = meals[idxB].day;
+
+    // Swap meal details but keep the day strings pinned to their calendar positions
+    const { day: _dA, ...fieldsA } = meals[idxA];
+    const { day: _dB, ...fieldsB } = meals[idxB];
+    meals[idxA] = { day: dayStringA, ...fieldsB };
+    meals[idxB] = { day: dayStringB, ...fieldsA };
+
+    await pool.query(
+      'UPDATE manifest SET data = $1, updated_at = NOW() WHERE id = 1',
+      [JSON.stringify({ ...manifest, meals })],
+    );
+
+    // Update weekly_menus markdown — swap day/date labels in menu text
+    const { rows: menuRows } = await pool.query(
+      'SELECT content_md FROM weekly_menus WHERE week_date = $1', [weekDate],
+    );
+    if (menuRows[0]) {
+      let md = menuRows[0].content_md;
+      const PLACEHOLDER = '\x00SWAPTMP\x00';
+      const dayAbbr = { monday:'MON', tuesday:'TUE', wednesday:'WED', thursday:'THU', friday:'FRI', saturday:'SAT', sunday:'SUN' };
+      const abbrA   = dayAbbr[dayA.toLowerCase()] || dayA.slice(0, 3).toUpperCase();
+      const abbrB   = dayAbbr[dayB.toLowerCase()] || dayB.slice(0, 3).toUpperCase();
+      const datePartA = dayStringA.includes(', ') ? dayStringA.slice(dayStringA.indexOf(', ') + 2) : '';
+      const datePartB = dayStringB.includes(', ') ? dayStringB.slice(dayStringB.indexOf(', ') + 2) : '';
+      if (datePartA && datePartB) {
+        const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // Swap full day strings: "*(Monday, May 11)*" ↔ "*(Friday, May 15)*"
+        md = md.replace(new RegExp(escRe(`*(${dayStringA})*`), 'g'), `*(${PLACEHOLDER}A)*`);
+        md = md.replace(new RegExp(escRe(`*(${dayStringB})*`), 'g'), `*(${dayStringA})*`);
+        md = md.split(`*(${PLACEHOLDER}A)*`).join(`*(${dayStringB})*`);
+        // Swap abbreviated quick-glance form: "*(MON, May 11)*" ↔ "*(FRI, May 15)*"
+        const abbrPatA = `*(${abbrA}, ${datePartA})*`;
+        const abbrPatB = `*(${abbrB}, ${datePartB})*`;
+        md = md.split(abbrPatA).join(`(${PLACEHOLDER}B)`);
+        md = md.split(abbrPatB).join(abbrPatA);
+        md = md.split(`(${PLACEHOLDER}B)`).join(abbrPatB);
+      }
+      await pool.query(
+        'UPDATE weekly_menus SET content_md = $1, updated_at = NOW() WHERE week_date = $2',
+        [md, weekDate],
+      );
+    }
+
+    res.json({ ok: true, meals });
+  } catch (err) {
+    console.error('POST /api/swap-meal-days:', err.message);
+    res.status(500).json({ error: 'db_error', detail: err.message });
+  }
+});
+
 app.listen(PORT, () =>
   console.log(`🥬 Brooklyn Kitchen running on http://localhost:${PORT}`),
 );

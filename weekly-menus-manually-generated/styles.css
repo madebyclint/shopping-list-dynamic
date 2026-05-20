@@ -326,6 +326,122 @@ button {
   color: #c0392b;
 }
 
+/* ── Day context notes (Tuesday / Thursday labels) ──────────────── */
+.meal-day-note {
+  display: inline-block;
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 1px 6px;
+  margin-top: 3px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ── Home tab action buttons ────────────────────────────────────── */
+.home-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.home-action-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.home-action-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.home-action-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ── Reschedule inline panel ────────────────────────────────────── */
+.reschedule-panel {
+  margin-top: 10px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+}
+.reschedule-panel label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+}
+.reschedule-panel input[type="date"] {
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+.reschedule-status {
+  font-size: 0.78rem;
+  margin-top: 4px;
+  width: 100%;
+}
+.reschedule-status.ok  { color: var(--accent); }
+.reschedule-status.err { color: #c0392b; }
+
+/* ── Swap mode styles ───────────────────────────────────────────── */
+.swap-banner {
+  background: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  color: #92400e;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.swap-banner-cancel {
+  background: none;
+  border: 1px solid #fbbf24;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  color: #92400e;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.meal-grid.swap-mode .meal-card {
+  cursor: crosshair;
+  border-top-color: #fbbf24;
+}
+.meal-grid.swap-mode .meal-card::after {
+  content: '⇄ swap here';
+  color: #fbbf24;
+}
+.meal-card.swap-selected {
+  border-top-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent), var(--shadow);
+}
+.meal-card.swap-selected::after {
+  content: '✓ selected — pick another' !important;
+  color: var(--accent) !important;
+  opacity: 1 !important;
+}
+
 /* ── Spend summary ────────────────────────────────────────────── */
 .spend-card {
   background: var(--surface);
