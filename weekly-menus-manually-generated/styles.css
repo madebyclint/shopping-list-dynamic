@@ -468,6 +468,16 @@ button {
   color: var(--accent);
   opacity: 1;
 }
+/* Drag-and-drop states */
+.meal-card.dragging {
+  opacity: 0.3;
+  box-shadow: none;
+}
+.meal-card.drag-over {
+  border-top-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent), var(--shadow);
+  border-top-style: solid !important;
+}
 
 /* ── Spend summary ────────────────────────────────────────────── */
 .spend-card {

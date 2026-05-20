@@ -624,6 +624,55 @@ async function init() {
       switchToMenuMeal(card.dataset.mealName);
     });
 
+    // Drag-and-drop handlers for swap mode
+    let _dragDay = null;
+    let _dragOverCard = null;
+    const homeGrid = $('home-meals');
+    homeGrid.addEventListener('dragstart', e => {
+      if (!_swapMode) return;
+      const card = e.target.closest('.meal-card[data-meal-day]');
+      if (!card) { e.preventDefault(); return; }
+      _dragDay = card.dataset.mealDay;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    homeGrid.addEventListener('dragend', e => {
+      _dragDay = null;
+      if (_dragOverCard) { _dragOverCard.classList.remove('drag-over'); _dragOverCard = null; }
+      const card = e.target.closest('.meal-card');
+      if (card) card.classList.remove('dragging');
+    });
+    homeGrid.addEventListener('dragover', e => {
+      if (!_dragDay) return;
+      const card = e.target.closest('.meal-card');
+      if (!card) return;
+      const targetDay = card.dataset.mealDay || card.dataset.emptyDay || '';
+      if (!targetDay || targetDay === _dragDay) return;
+      if (_dragOverCard && _dragOverCard !== card) _dragOverCard.classList.remove('drag-over');
+      _dragOverCard = card;
+      card.classList.add('drag-over');
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    homeGrid.addEventListener('dragleave', e => {
+      if (_dragOverCard && !_dragOverCard.contains(e.relatedTarget)) {
+        _dragOverCard.classList.remove('drag-over');
+        _dragOverCard = null;
+      }
+    });
+    homeGrid.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!_dragDay) return;
+      const card = e.target.closest('.meal-card');
+      if (_dragOverCard) { _dragOverCard.classList.remove('drag-over'); _dragOverCard = null; }
+      if (!card) { _dragDay = null; return; }
+      const targetDay = card.dataset.mealDay || card.dataset.emptyDay || '';
+      if (!targetDay || targetDay === _dragDay) { _dragDay = null; return; }
+      const fromDay = _dragDay;
+      _dragDay = null;
+      performSwap(fromDay, targetDay);
+    });
+
     // Load last week menu non-blocking
     const _lw = _manifest.lastWeek;
     if (_lw && _lw.files && _lw.files.menu) {
@@ -786,8 +835,9 @@ function renderHomeMeals(m) {
       </div>`;
     }
     const note     = mealDayNote(slot.day);
-    const selected = _swapFirstDay === slot.day ? ' swap-selected' : '';
-    return `<div class="meal-card${selected}" data-meal-name="${slot.name.replace(/"/g, '&quot;')}" data-meal-day="${slot.day.replace(/"/g, '&quot;')}">
+    const selected   = _swapFirstDay === slot.day ? ' swap-selected' : '';
+    const draggable  = _swapMode ? ' draggable="true"' : '';
+    return `<div class="meal-card${selected}"${draggable} data-meal-name="${slot.name.replace(/"/g, '&quot;')}" data-meal-day="${slot.day.replace(/"/g, '&quot;')}">
       <div class="meal-day">${slot.day}${note ? `<br><span class="meal-day-note">${note}</span>` : ''}</div>
       <div class="meal-emoji">${slot.emoji}</div>
       <div class="meal-name">${slot.name}</div>
