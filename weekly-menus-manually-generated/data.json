@@ -42,11 +42,11 @@
       "tagType": "teen"
     },
     {
-      "name": "Deli Sandwiches",
+      "name": "Date Night",
       "day": "Friday, May 23",
-      "emoji": "🥪",
+      "emoji": "💕",
       "time": "out",
-      "tag": "MEAL OUT",
+      "tag": "DATE NIGHT",
       "tagType": "out"
     }
   ],
