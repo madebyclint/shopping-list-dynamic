@@ -3,15 +3,14 @@
   "week": "2026-05-18",
   "meals": [
     {
-      "name": "Simple Maggi Beef Ribs w/ Kimchi & Oranges",
+      "name": "Simple Maggi Ribs w/ Couscous & Roasted Broccoli",
       "day": "Sunday",
       "emoji": "🍖",
       "buy_these": [
         "Beef short ribs, bone-in (~3 lbs)",
         "Maggi seasoning sauce (1 bottle)",
-        "Kimchi (1 jar, 16 oz)",
-        "Kale (1 bunch)",
-        "Oranges (4–5 navel)"
+        "Broccoli (2 heads)",
+        "Couscous (1 box)"
       ],
       "pantry": [
         "Olive oil",
@@ -65,23 +64,25 @@
       ]
     },
     {
-      "name": "Seattle-Style Hot Dogs",
+      "name": "Fried Chicken, Salad & Fruit",
       "day": "Thursday",
-      "emoji": "🌭",
+      "emoji": "🍗",
       "buy_these": [
-        "Beef uncured hot dogs (1 pack, 6 ct)",
-        "Hot dog buns (1 pack, 8 ct)",
-        "Cream cheese (8 oz block)",
-        "Green cabbage (1 small head)",
-        "Yellow onion (1 small)",
-        "Sriracha (1 bottle)",
-        "Watermelon (1 quarter or half cut)"
+        "Bone-in chicken pieces (~3 lbs, legs/thighs)",
+        "Buttermilk (1 qt)",
+        "Mixed greens (1 bag, 5 oz)",
+        "Salad dressing (1 bottle)",
+        "Assorted fresh fruit (for the side)"
       ],
       "pantry": [
-        "Butter or oil (for sautéing cabbage)",
+        "All-purpose flour",
+        "Garlic powder",
+        "Onion powder",
+        "Paprika",
+        "Cayenne",
         "Salt",
-        "Black pepper"
+        "Black pepper",
+        "Neutral oil (for frying)"
       ]
-    }
-  ]
+    }  ]
 }

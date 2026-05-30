@@ -10,7 +10,7 @@
   },
   "meals": [
     {
-      "name": "Simple Maggi Beef Ribs w/ Kimchi & Oranges",
+      "name": "Simple Maggi Ribs w/ Couscous & Roasted Broccoli",
       "day": "Sunday, May 18",
       "emoji": "🍖",
       "time": "40 min",
@@ -34,10 +34,10 @@
       "tagType": ""
     },
     {
-      "name": "Seattle-Style Hot Dogs",
+      "name": "Fried Chicken, Salad & Fruit",
       "day": "Thursday, May 22",
-      "emoji": "🌭",
-      "time": "15 min",
+      "emoji": "🍗",
+      "time": "30 min",
       "tag": "TEEN PREP",
       "tagType": "teen"
     },
