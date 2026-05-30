@@ -26,6 +26,14 @@
       "tagType": ""
     },
     {
+      "name": "Fried Chicken, Salad & Fruit",
+      "day": "Tuesday, May 20",
+      "emoji": "🍗",
+      "time": "30 min",
+      "tag": "TEEN PREP",
+      "tagType": "teen"
+    },
+    {
       "name": "Family Night Out",
       "day": "Wednesday, May 21",
       "emoji": "👨‍👩‍👧‍👦",
@@ -34,12 +42,12 @@
       "tagType": "out"
     },
     {
-      "name": "Fried Chicken, Salad & Fruit",
+      "name": "Steamed Artichokes & Maggi Wings",
       "day": "Thursday, May 22",
-      "emoji": "🍗",
-      "time": "30 min",
-      "tag": "TEEN PREP",
-      "tagType": "teen"
+      "emoji": "🌿🍗",
+      "time": "45 min",
+      "tag": "",
+      "tagType": ""
     },
     {
       "name": "Date Night",

@@ -45,15 +45,8 @@
       ]
     },
     {
-      "name": "Family Night Out",
-      "day": "Wednesday",
-      "emoji": "👨‍👩‍👧‍👦",
-      "buy_these": [],
-      "pantry": []
-    },
-    {
       "name": "Fried Chicken, Salad & Fruit",
-      "day": "Thursday",
+      "day": "Tuesday",
       "emoji": "🍗",
       "buy_these": [
         "Bone-in chicken pieces (~3 lbs, legs/thighs)",
@@ -71,6 +64,31 @@
         "Salt",
         "Black pepper",
         "Neutral oil (for frying)"
+      ]
+    },
+    {
+      "name": "Family Night Out",
+      "day": "Wednesday",
+      "emoji": "👨‍👩‍👧‍👦",
+      "buy_these": [],
+      "pantry": []
+    },
+    {
+      "name": "Steamed Artichokes & Maggi Wings",
+      "day": "Thursday",
+      "emoji": "🌿🍗",
+      "buy_these": [
+        "Whole artichokes, large (4)",
+        "Lemon (1)",
+        "Chicken wings, split (3–4 lbs)",
+        "Zucchini (2 medium) or corn (2 ears)",
+        "Mango (2)"
+      ],
+      "pantry": [
+        "Maggi seasoning sauce",
+        "Butter (for dipping)",
+        "Salt",
+        "Olive oil or vegetable oil"
       ]
     }  ]
 }

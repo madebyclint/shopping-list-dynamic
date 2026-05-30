@@ -1,4 +1,4 @@
-# Shopping List — May 18–23, 2026 — ~$217
+# Shopping List — May 18–23, 2026 — ~$246
 
 > **Notes:** Maggi sauce is at most Caribbean and Latin markets in Brooklyn — check the international aisle. Broccoli — pick crowns with tight florets, they roast better. Buttermilk — for the fried chicken soak; find it near the cream and sour cream. Couscous — any brand, Israeli or Moroccan both work. Rice vermicelli / pancit bihon noodles are at any Asian market (also check the Asian aisle at Key Food). Oyster sauce and fish sauce are in the Asian/international aisle. Canned sardines and salmon in the canned fish aisle — look for olive oil or water-packed.
 
@@ -7,6 +7,10 @@
 🥬 **PRODUCE**
 
 - Broccoli (2 heads) — Maggi Ribs — ~$2.50 ea — **~$5.00**
+- Artichokes, large (4) — Artichokes & Maggi Wings — ~$2.50 ea — **~$10.00**
+- Lemon (1) — Artichokes & Maggi Wings (steaming) — ~$0.75 — **~$0.75**
+- Zucchini (2 medium) or corn (2 ears) — Artichokes & Maggi Wings (side) — ~$1.25 ea — **~$2.50**
+- Mango (2) — Artichokes & Maggi Wings (side) — ~$1.50 ea — **~$3.00**
 - Green cabbage (1 medium head) — Pancit Bihon — ~$2.50 — **~$2.50**
 - Yellow onion (1) — Pancit Bihon — ~$0.75 ea — **~$0.75**
 - Mixed greens (1 bag, 5 oz) — Fried Chicken — ~$4.00 — **~$4.00**
@@ -16,7 +20,7 @@
 - Green onions (1 bunch) — Pancit Bihon (garnish) — ~$1.00 — **~$1.00**
 - Assorted fresh fruit (~$10–15) — Weekly staple + Fried Chicken side — **~$12.00**
 
-Produce Subtotal: **~$31.25**
+Produce Subtotal: **~$47.50**
 
 ---
 
@@ -24,6 +28,7 @@ Produce Subtotal: **~$31.25**
 
 - Beef short ribs, bone-in (~3 lbs) — Maggi Ribs — ~$7.00/lb — **~$21.00**
 - Bone-in chicken pieces (~3 lbs, legs/thighs) — Fried Chicken — ~$3.50/lb — **~$10.50**
+- Chicken wings, split (3–4 lbs) — Artichokes & Maggi Wings — ~$3.50/lb — **~$12.25**
 - Boneless chicken thighs (~1 lb) — Pancit Bihon — ~$5.50/lb — **~$5.50**
 - Pork shoulder (~8 oz) — Pancit Bihon — ~$4.00 — **~$4.00**
 
@@ -34,7 +39,7 @@ Produce Subtotal: **~$31.25**
 - Canned tuna in water (3 cans) — Protein staple — ~$2.00 ea — **~$6.00**
 - Canned salmon (2 cans) — Protein staple — ~$3.50 ea — **~$7.00**
 
-Proteins Subtotal: **~$79.50**
+Proteins Subtotal: **~$91.75**
 
 ---
 
@@ -82,12 +87,12 @@ Household Subtotal: **~$18.00**
 
 | Category | Est. Total |
 |---|---|
-| Produce | ~$31.25 |
-| Proteins | ~$79.50 |
+| Produce | ~$47.50 |
+| Proteins | ~$91.75 |
 | Dairy & Refrigerated | ~$23.50 |
 | Pantry & Dry Goods | ~$65.00 |
 | Household | ~$18.00 |
-| **GRAND TOTAL** | **~$217.25** |
+| **GRAND TOTAL** | **~$245.75** |
 
 ---
 
@@ -97,6 +102,10 @@ Household Subtotal: **~$18.00**
 
 **— Produce —**
 - Broccoli, 2 heads — Maggi Ribs
+- Artichokes, large, 4 — Artichokes & Maggi Wings
+- Lemon, 1 — Artichokes & Maggi Wings
+- Zucchini, 2 medium (or corn, 2 ears) — Artichokes & Maggi Wings
+- Mango, 2 — Artichokes & Maggi Wings
 - Green cabbage, 1 medium head — Pancit Bihon
 - Yellow onion, 1 — Pancit Bihon
 - Mixed greens, 1 bag (5 oz) — Fried Chicken
@@ -108,6 +117,7 @@ Household Subtotal: **~$18.00**
 
 **— Proteins —**
 - Beef short ribs, bone-in, ~3 lbs — Maggi Ribs
+- Chicken wings, split, 3–4 lbs — Artichokes & Maggi Wings
 - Bone-in chicken pieces, ~3 lbs (legs/thighs) — Fried Chicken
 - Boneless chicken thighs, ~1 lb — Pancit Bihon
 - Pork shoulder, ~8 oz — Pancit Bihon
