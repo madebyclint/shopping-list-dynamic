@@ -45,23 +45,11 @@
       ]
     },
     {
-      "name": "Steamed Artichokes & Al Pastor Wings",
+      "name": "Family Night Out",
       "day": "Wednesday",
-      "emoji": "🌿🍗",
-      "buy_these": [
-        "Whole artichokes, large (4)",
-        "Lemon (1)",
-        "Butter (for dipping, melted)",
-        "Chicken wings, split (3–4 lbs)",
-        "Al pastor seasoning (1 packet or jar)",
-        "Arbol chili sauce (1 bottle)",
-        "Zucchini (2 medium) or corn (2 ears)",
-        "Mango (2)"
-      ],
-      "pantry": [
-        "Salt",
-        "Olive oil or vegetable oil"
-      ]
+      "emoji": "👨‍👩‍👧‍👦",
+      "buy_these": [],
+      "pantry": []
     },
     {
       "name": "Fried Chicken, Salad & Fruit",
