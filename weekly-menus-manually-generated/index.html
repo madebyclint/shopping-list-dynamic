@@ -3131,6 +3131,24 @@ function xrayPushToChecklist(btn, name) {
   btn.disabled = true;
 }
 
+function xrayMoveToPantry(mealIdx, item) {
+  const meal = (_xrayData?.meals || [])[mealIdx];
+  if (!meal) return;
+  meal.buy_these = (meal.buy_these || []).filter(i => i !== item);
+  if (!meal.pantry) meal.pantry = [];
+  if (!meal.pantry.includes(item)) meal.pantry.push(item);
+  renderXray(_xrayData, _listText);
+}
+
+function xrayMoveToList(mealIdx, item) {
+  const meal = (_xrayData?.meals || [])[mealIdx];
+  if (!meal) return;
+  meal.pantry = (meal.pantry || []).filter(i => i !== item);
+  if (!meal.buy_these) meal.buy_these = [];
+  if (!meal.buy_these.includes(item)) meal.buy_these.unshift(item);
+  renderXray(_xrayData, _listText);
+}
+
 function xrayCheck(item, listText) {
   const norm = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
   const skip = new Set(['with','from','each','some','the','and','for','cup','cups','tbsp','tsp','pkg','can','pack','slice','sliced','bunch','bag','jar']);
@@ -3144,7 +3162,7 @@ function renderXray(data, listText) {
   let totalFound = 0, totalMissing = 0, totalPantry = 0;
   let html = '';
 
-  (data.meals || []).forEach(meal => {
+  (data.meals || []).forEach((meal, mealIdx) => {
     const found = [], missing = [];
     (meal.buy_these || []).forEach(item => {
       if (xrayCheck(item, listText)) found.push(item);
@@ -3159,15 +3177,15 @@ function renderXray(data, listText) {
       <div class="xray-meal-title">${meal.emoji || ''} ${meal.name} <span style="opacity:0.6;font-weight:400">&#x2014; ${meal.day}</span></div>`;
     if (found.length) {
       html += `<div class="xray-section-label">&#x2705; On the list (${found.length})</div>`;
-      found.forEach(i => html += `<div class="xray-item"><span class="xray-icon">&#x2705;</span><span class="xray-item-name">${i}</span></div>`);
+      found.forEach(i => html += `<div class="xray-item"><span class="xray-icon">&#x2705;</span><span class="xray-item-name">${i}</span><button class="xray-move-btn" onclick="xrayMoveToPantry(${mealIdx}, ${JSON.stringify(i)})" title="Move to pantry skip list">&darr; pantry</button></div>`);
     }
     if (missing.length) {
       html += `<div class="xray-section-label" style="color:var(--warn)">&#x26A0;&#xFE0F; Verify / missing (${missing.length})</div>`;
-      missing.forEach(i => html += `<div class="xray-item" style="color:var(--warn)"><span class="xray-icon">&#x26A0;&#xFE0F;</span><span class="xray-item-name">${i}</span><button class="xray-add-btn" onclick="xrayPushToChecklist(this, ${JSON.stringify(i)})" title="Add to checklist">+ list</button></div>`);
+      missing.forEach(i => html += `<div class="xray-item" style="color:var(--warn)"><span class="xray-icon">&#x26A0;&#xFE0F;</span><span class="xray-item-name">${i}</span><button class="xray-add-btn" onclick="xrayPushToChecklist(this, ${JSON.stringify(i)})" title="Add to checklist">+ list</button><button class="xray-move-btn" onclick="xrayMoveToPantry(${mealIdx}, ${JSON.stringify(i)})" title="Move to pantry skip list">&darr; pantry</button></div>`);
     }
     if (pantry.length) {
       html += `<div class="xray-section-label">Pantry &#x2014; not checked (${pantry.length})</div>`;
-      pantry.forEach(i => html += `<div class="xray-item" style="color:var(--muted)"><span class="xray-icon">&#x1F3E0;</span><span class="xray-item-name">${i}</span><button class="xray-add-btn" style="border-color:var(--muted);color:var(--muted)" onclick="xrayPushToChecklist(this, ${JSON.stringify(i)})" title="Add to checklist">+ list</button></div>`);
+      pantry.forEach(i => html += `<div class="xray-item" style="color:var(--muted)"><span class="xray-icon">&#x1F3E0;</span><span class="xray-item-name">${i}</span><button class="xray-move-btn" style="border-color:var(--muted);color:var(--muted)" onclick="xrayMoveToList(${mealIdx}, ${JSON.stringify(i)})" title="Move back to buy list">&uarr; to list</button></div>`);
     }
     html += '</div>';
   });
