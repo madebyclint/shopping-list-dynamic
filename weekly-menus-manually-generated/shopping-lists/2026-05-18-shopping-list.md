@@ -1,6 +1,6 @@
-# Shopping List — May 18–23, 2026 — ~$246
+# Shopping List — May 18–23, 2026 — ~$240
 
-> **Notes:** Maggi sauce is at most Caribbean and Latin markets in Brooklyn — check the international aisle. Broccoli — pick crowns with tight florets, they roast better. Buttermilk — for the fried chicken soak; find it near the cream and sour cream. Couscous — any brand, Israeli or Moroccan both work. Rice vermicelli / pancit bihon noodles are at any Asian market (also check the Asian aisle at Key Food). Oyster sauce and fish sauce are in the Asian/international aisle. Canned sardines and salmon in the canned fish aisle — look for olive oil or water-packed.
+> **Notes:** Maggi sauce is at most Caribbean and Latin markets in Brooklyn — check the international aisle. Broccoli — pick crowns with tight florets, they roast better. Couscous — any brand, Israeli or Moroccan both work. Rice vermicelli / pancit bihon noodles are at any Asian market (also check the Asian aisle at Key Food). Oyster sauce and fish sauce are in the Asian/international aisle. Canned sardines and salmon in the canned fish aisle — look for olive oil or water-packed.
 
 ---
 
@@ -27,10 +27,9 @@ Produce Subtotal: **~$47.50**
 🥩 **PROTEINS**
 
 - Beef short ribs, bone-in (~3 lbs) — Maggi Ribs — ~$7.00/lb — **~$21.00**
-- Bone-in chicken pieces (~3 lbs, legs/thighs) — Fried Chicken — ~$3.50/lb — **~$10.50**
+- Pre-made fried chicken (1–2 packs, from deli/hot bar) — Fried Chicken — ~$12.00 — **~$12.00**
 - Chicken wings, split (3–4 lbs) — Artichokes & Maggi Wings — ~$3.50/lb — **~$12.25**
-- Boneless chicken thighs (~1 lb) — Pancit Bihon — ~$5.50/lb — **~$5.50**
-- Pork shoulder (~8 oz) — Pancit Bihon — ~$4.00 — **~$4.00**
+- Boneless chicken thighs or rotisserie (~1 lb) — Pancit Bihon — ~$5.50/lb — **~$5.50**
 
 **— Extra Protein Staples —**
 - Chicken thighs, extra (2 lbs) — Protein staple — ~$5.50/lb — **~$11.00**
@@ -39,19 +38,18 @@ Produce Subtotal: **~$47.50**
 - Canned tuna in water (3 cans) — Protein staple — ~$2.00 ea — **~$6.00**
 - Canned salmon (2 cans) — Protein staple — ~$3.50 ea — **~$7.00**
 
-Proteins Subtotal: **~$91.75**
+Proteins Subtotal: **~$89.25**
 
 ---
 
 🧀 **DAIRY & REFRIGERATED**
 
-- Buttermilk (1 qt) — Fried Chicken (soak) — ~$3.00 — **~$3.00**
 - Lactaid whole milk (1 half-gallon) — Weekly staple — ~$5.50 — **~$5.50**
 - Almond milk (1 gallon) — Weekly staple — ~$7.00 — **~$7.00**
 - Eggs (1 dozen) — Weekly staple — ~$5.00 — **~$5.00**
 - Condensed milk (1 can) — Weekly staple — ~$3.00 — **~$3.00**
 
-Dairy & Refrigerated Subtotal: **~$23.50**
+Dairy & Refrigerated Subtotal: **~$20.50**
 
 ---
 
@@ -79,7 +77,7 @@ Pantry & Dry Goods Subtotal: **~$65.00**
 
 - Toilet paper (1 pack) — Weekly staple — ~$8.00 — **~$8.00**
 - Paper towels (1 pack) — Weekly staple — ~$6.00 — **~$6.00**
-- Hand soap (1 bottle) — Weekly staple — ~$4.00 — **~$4.00**
+- Hand soap (1 bar) — Weekly staple — ~$4.00 — **~$4.00**
 
 Household Subtotal: **~$18.00**
 
@@ -88,11 +86,11 @@ Household Subtotal: **~$18.00**
 | Category | Est. Total |
 |---|---|
 | Produce | ~$47.50 |
-| Proteins | ~$91.75 |
-| Dairy & Refrigerated | ~$23.50 |
+| Proteins | ~$89.25 |
+| Dairy & Refrigerated | ~$20.50 |
 | Pantry & Dry Goods | ~$65.00 |
 | Household | ~$18.00 |
-| **GRAND TOTAL** | **~$245.75** |
+| **GRAND TOTAL** | **~$240.25** |
 
 ---
 
@@ -118,9 +116,8 @@ Household Subtotal: **~$18.00**
 **— Proteins —**
 - Beef short ribs, bone-in, ~3 lbs — Maggi Ribs
 - Chicken wings, split, 3–4 lbs — Artichokes & Maggi Wings
-- Bone-in chicken pieces, ~3 lbs (legs/thighs) — Fried Chicken
-- Boneless chicken thighs, ~1 lb — Pancit Bihon
-- Pork shoulder, ~8 oz — Pancit Bihon
+- Pre-made fried chicken (1–2 packs, from deli/hot bar) — Fried Chicken
+- Boneless chicken thighs or rotisserie, ~1 lb — Pancit Bihon
 - Chicken thighs, extra, 2 lbs — protein staple
 - Beef uncured hot dogs, 1 pack — protein staple
 - Canned sardines in olive oil, 3 cans — protein staple
@@ -128,7 +125,6 @@ Household Subtotal: **~$18.00**
 - Canned salmon, 2 cans — protein staple
 
 **— Dairy —**
-- Buttermilk, 1 qt — Fried Chicken
 - Lactaid whole milk, 1 half-gallon — weekly
 - Almond milk, 1 gallon — weekly
 - Eggs, 1 dozen — weekly
@@ -152,7 +148,7 @@ Household Subtotal: **~$18.00**
 **— Household —**
 - Toilet paper, 1 pack — weekly
 - Paper towels, 1 pack — weekly
-- Hand soap, 1 bottle — weekly
+- Hand soap, 1 bar — weekly
 
 ### Latin / Caribbean Market (Quick Stop)
 

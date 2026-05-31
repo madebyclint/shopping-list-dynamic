@@ -1687,6 +1687,33 @@ button {
   background: rgba(255, 255, 255, 0.22);
   color: #fff;
 }
+.cl-section-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 16px 10px;
+}
+.cl-section-btn {
+  font-size: 0.72rem;
+  padding: 4px 11px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: none;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.cl-section-btn.active {
+  background: #fff;
+  border-color: #fff;
+  color: var(--accent);
+  font-weight: 600;
+}
+.cl-section-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
 .cl-search-row {
   padding: 0 0 10px;
 }

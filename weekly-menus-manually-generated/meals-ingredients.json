@@ -23,8 +23,7 @@
       "day": "Monday",
       "emoji": "🍜",
       "buy_these": [
-        "Boneless chicken thighs (~1 lb)",
-        "Pork shoulder (~8 oz)",
+        "Rotisserie chicken or boneless chicken thighs (~1 lb)",
         "Carrots (2 medium)",
         "Celery (1 small bunch)",
         "Sugar snap peas (1 small bag)",
@@ -49,22 +48,12 @@
       "day": "Tuesday",
       "emoji": "🍗",
       "buy_these": [
-        "Bone-in chicken pieces (~3 lbs, legs/thighs)",
-        "Buttermilk (1 qt)",
+        "Pre-made fried chicken (1–2 packs, from deli or hot bar)",
         "Mixed greens (1 bag, 5 oz)",
         "Salad dressing (1 bottle)",
         "Assorted fresh fruit (for the side)"
       ],
-      "pantry": [
-        "All-purpose flour",
-        "Garlic powder",
-        "Onion powder",
-        "Paprika",
-        "Cayenne",
-        "Salt",
-        "Black pepper",
-        "Neutral oil (for frying)"
-      ]
+      "pantry": []
     },
     {
       "name": "Family Night Out",

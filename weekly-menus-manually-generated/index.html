@@ -106,6 +106,7 @@
         <button class="cl-search-clear" id="cl-search-clear" title="Clear">✕</button>
       </div>
     </div>
+    <div id="cl-section-filter-row" class="cl-section-filter-row" style="display:none"></div>
     <div class="cl-totals" id="cl-totals"></div>
     <div class="cl-progress-wrap"><div class="cl-progress-bar" id="cl-progress" style="width:0%"></div></div>
   </div>
@@ -2318,6 +2319,7 @@ let _clState   = { v: 1, c: [], s: [], x: [], prices: {} };
 let _clWeekKey = '';   // authoritative week key for all saves/loads
 let _clSort    = 'store'; // 'store' | 'meal'
 let _clFilter  = 'all'; // 'all' | 'unchecked'
+let _clSectionFilter = ''; // '' | subgroup name
 
 // Lazily parse the shopping list so clComputeAudit() works even if the
 // checklist overlay has never been opened.
@@ -2574,7 +2576,7 @@ function clGetState(idx) {
   return _clState.c.includes(idx) ? 'checked' : _clState.s.includes(idx) ? 'skipped' : 'unchecked';
 }
 function clFmtN(n) { const v = parseFloat(n); if (isNaN(v)) return '1'; return v % 1 === 0 ? String(v) : v.toFixed(1); }
-function clItemRow({ name, displayName, qtyN, unit, price, meals, idx }) {
+function clItemRow({ name, displayName, qtyN, unit, price, meals, idx, subgroup }) {
   const dn = displayName || name;
   const qtyHtml = qtyN != null
     ? `<div class="cl-qty-stepper">
@@ -2589,7 +2591,7 @@ function clItemRow({ name, displayName, qtyN, unit, price, meals, idx }) {
       ).join('')}</div>`
     : '';
   return `
-    <div class="cl-item" data-idx="${idx}" data-state="${clGetState(idx)}">
+    <div class="cl-item" data-idx="${idx}" data-state="${clGetState(idx)}" data-subgroup="${subgroup || ''}">
       <div class="cl-item-main-row">
         <button class="cl-item-toggle" data-idx="${idx}">
           <span class="cl-checkbox"></span>
@@ -2601,6 +2603,17 @@ function clItemRow({ name, displayName, qtyN, unit, price, meals, idx }) {
       </div>
       ${mealsHtml}
     </div>`;
+}
+function clUpdateSectionFilter() {
+  const row = $('cl-section-filter-row');
+  if (!row) return;
+  if (_clSort !== 'store') { row.style.display = 'none'; return; }
+  const subs = [...new Set(_clItems.map(i => i.subgroup).filter(Boolean))];
+  if (!subs.length) { row.style.display = 'none'; return; }
+  row.style.display = '';
+  row.innerHTML = ['', ...subs].map(s =>
+    `<button class="cl-section-btn${_clSectionFilter === s ? ' active' : ''}" data-sec="${s}">${s || 'All'}</button>`
+  ).join('');
 }
 function clRenderList() {
   const byStore = {}, order = [];
@@ -2629,8 +2642,11 @@ function clRenderList() {
   html += '<div id="cl-custom-list"></div>';
   $('cl-body').innerHTML = html;
   clRenderCustom();
+  clUpdateSectionFilter();
 }
 function clRenderByMeal() {
+  const sfRow = $('cl-section-filter-row');
+  if (sfRow) sfRow.style.display = 'none';
   const byMeal = {}, order = [];
   _clItems.forEach((item, idx) => {
     const key = item.meal || 'General / Pantry';
@@ -2653,7 +2669,7 @@ function clRender() {
 function clApplySearch() {
   const q = ($('cl-search')?.value || '').toLowerCase().trim();
   const filterUnchecked = _clFilter === 'unchecked';
-  if (!q && !filterUnchecked) {
+  if (!q && !filterUnchecked && !_clSectionFilter) {
     document.querySelectorAll('#cl-body .cl-item[data-idx]').forEach(el => el.style.display = '');
     document.querySelectorAll('#cl-body .cl-store-section').forEach(sec => sec.style.display = '');
     document.querySelectorAll('#cl-body .cl-subgroup-label').forEach(el => el.style.display = '');
@@ -2666,7 +2682,8 @@ function clApplySearch() {
       const text = el.querySelector('.cl-item-name')?.textContent.toLowerCase() || '';
       const matchSearch = !q || text.includes(q);
       const matchFilter = !filterUnchecked || el.dataset.state === 'unchecked';
-      const match = matchSearch && matchFilter;
+      const matchSection = !_clSectionFilter || (el.dataset.subgroup === _clSectionFilter);
+      const match = matchSearch && matchFilter && matchSection;
       el.style.display = match ? '' : 'none';
       if (match) anyVisible = true;
     });
@@ -2696,12 +2713,14 @@ function clRenderCustom() {
   let html = '<div class="cl-custom-section"><h4>Custom / Unplanned Items</h4>';
   _clState.x.forEach((item, i) => {
     html += `<div class="cl-item" data-custom="${i}" data-state="${item.st === 'c' ? 'checked' : 'unchecked'}">
-      <button class="cl-item-toggle" data-custom="${i}">
-        <span class="cl-checkbox"></span>
-        <span class="cl-item-name">${item.n}</span>
-      </button>
-      <span class="cl-item-price">${item.p ? clFmtP(item.p) : ''}</span>
-      <button class="cl-skip-btn" data-del="${i}" title="Remove">✕</button>
+      <div class="cl-item-main-row">
+        <button class="cl-item-toggle" data-custom="${i}">
+          <span class="cl-checkbox"></span>
+          <span class="cl-item-name">${item.n}</span>
+        </button>
+        <span class="cl-item-price">${item.p ? clFmtP(item.p) : ''}</span>
+        <button class="cl-skip-btn" data-del="${i}" title="Remove">✕</button>
+      </div>
     </div>`;
   });
   html += `<div class="cl-custom-row">
@@ -2948,6 +2967,7 @@ async function openChecklist({ weekKey, listText } = {}) {
   } catch { _persistedPrices = {}; }
   _clSort = 'store';
   _clFilter = 'all';
+  _clSectionFilter = '';
   document.querySelectorAll('.cl-sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === 'store'));
   const filterBtn = $('cl-filter-unchecked'); if (filterBtn) filterBtn.classList.remove('active');
   const si = $('cl-search');
@@ -2999,6 +3019,13 @@ async function openChecklist({ weekKey, listText } = {}) {
     if (e.target.closest('#cl-filter-unchecked')) {
       _clFilter = _clFilter === 'unchecked' ? 'all' : 'unchecked';
       $('cl-filter-unchecked').classList.toggle('active', _clFilter === 'unchecked');
+      clApplySearch();
+      return;
+    }
+    const secBtn = e.target.closest('.cl-section-btn[data-sec]');
+    if (secBtn) {
+      _clSectionFilter = secBtn.dataset.sec;
+      clUpdateSectionFilter();
       clApplySearch();
       return;
     }
@@ -3177,15 +3204,15 @@ function renderXray(data, listText) {
       <div class="xray-meal-title">${meal.emoji || ''} ${meal.name} <span style="opacity:0.6;font-weight:400">&#x2014; ${meal.day}</span></div>`;
     if (found.length) {
       html += `<div class="xray-section-label">&#x2705; On the list (${found.length})</div>`;
-      found.forEach(i => html += `<div class="xray-item"><span class="xray-icon">&#x2705;</span><span class="xray-item-name">${i}</span><button class="xray-move-btn" onclick="xrayMoveToPantry(${mealIdx}, ${JSON.stringify(i)})" title="Move to pantry skip list">&darr; pantry</button></div>`);
+      found.forEach(i => html += `<div class="xray-item"><span class="xray-icon">&#x2705;</span><span class="xray-item-name">${i}</span><button class="xray-move-btn" onclick='xrayMoveToPantry(${mealIdx}, ${JSON.stringify(i)})' title="Move to pantry skip list">&darr; pantry</button></div>`);
     }
     if (missing.length) {
       html += `<div class="xray-section-label" style="color:var(--warn)">&#x26A0;&#xFE0F; Verify / missing (${missing.length})</div>`;
-      missing.forEach(i => html += `<div class="xray-item" style="color:var(--warn)"><span class="xray-icon">&#x26A0;&#xFE0F;</span><span class="xray-item-name">${i}</span><button class="xray-add-btn" onclick="xrayPushToChecklist(this, ${JSON.stringify(i)})" title="Add to checklist">+ list</button><button class="xray-move-btn" onclick="xrayMoveToPantry(${mealIdx}, ${JSON.stringify(i)})" title="Move to pantry skip list">&darr; pantry</button></div>`);
+      missing.forEach(i => html += `<div class="xray-item" style="color:var(--warn)"><span class="xray-icon">&#x26A0;&#xFE0F;</span><span class="xray-item-name">${i}</span><button class="xray-add-btn" onclick='xrayPushToChecklist(this, ${JSON.stringify(i)})' title="Add to checklist">+ list</button><button class="xray-move-btn" onclick='xrayMoveToPantry(${mealIdx}, ${JSON.stringify(i)})' title="Move to pantry skip list">&darr; pantry</button></div>`);
     }
     if (pantry.length) {
       html += `<div class="xray-section-label">Pantry &#x2014; not checked (${pantry.length})</div>`;
-      pantry.forEach(i => html += `<div class="xray-item" style="color:var(--muted)"><span class="xray-icon">&#x1F3E0;</span><span class="xray-item-name">${i}</span><button class="xray-move-btn" style="border-color:var(--muted);color:var(--muted)" onclick="xrayMoveToList(${mealIdx}, ${JSON.stringify(i)})" title="Move back to buy list">&uarr; to list</button></div>`);
+      pantry.forEach(i => html += `<div class="xray-item" style="color:var(--muted)"><span class="xray-icon">&#x1F3E0;</span><span class="xray-item-name">${i}</span><button class="xray-move-btn" style="border-color:var(--muted);color:var(--muted)" onclick='xrayMoveToList(${mealIdx}, ${JSON.stringify(i)})' title="Move back to buy list">&uarr; to list</button></div>`);
     }
     html += '</div>';
   });
