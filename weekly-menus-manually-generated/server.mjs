@@ -2327,6 +2327,81 @@ app.post('/api/reorder-meals', async (req, res) => {
   }
 });
 
+// ── PATCH /api/rename-list-item — rename an item in shopping list, xray, and menu ──
+app.patch('/api/rename-list-item', async (req, res) => {
+  const { weekDate, oldName, newName } = req.body || {};
+  if (!weekDate || !oldName || !newName) {
+    return res.status(400).json({ error: 'weekDate, oldName, newName are required' });
+  }
+  if (oldName === newName) return res.json({ updated: [] });
+
+  const updated = [];
+  try {
+    // 1. Update shopping list markdown
+    const sl = await pool.query(
+      'SELECT content_md FROM shopping_lists WHERE week_date = $1', [weekDate],
+    );
+    if (sl.rows.length) {
+      const newMd = sl.rows[0].content_md.split(oldName).join(newName);
+      if (newMd !== sl.rows[0].content_md) {
+        await pool.query(
+          'UPDATE shopping_lists SET content_md = $1 WHERE week_date = $2',
+          [newMd, weekDate],
+        );
+        updated.push('shopping_list');
+      }
+    }
+
+    // 2. Update meals-ingredients (X-Ray) — exact string replace in buy_these / pantry arrays
+    const mi = await pool.query(
+      "SELECT content FROM documents WHERE key = 'meals-ingredients'",
+    );
+    if (mi.rows.length) {
+      try {
+        const data = JSON.parse(mi.rows[0].content);
+        let changed = false;
+        (data.meals || []).forEach(meal => {
+          ['buy_these', 'pantry'].forEach(field => {
+            if (Array.isArray(meal[field])) {
+              meal[field] = meal[field].map(item => {
+                if (item === oldName) { changed = true; return newName; }
+                return item;
+              });
+            }
+          });
+        });
+        if (changed) {
+          await pool.query(
+            "UPDATE documents SET content = $1 WHERE key = 'meals-ingredients'",
+            [JSON.stringify(data)],
+          );
+          updated.push('xray');
+        }
+      } catch { /* malformed JSON — skip */ }
+    }
+
+    // 3. Update menu markdown (narrative text — best-effort exact replace)
+    const mn = await pool.query(
+      'SELECT content_md FROM weekly_menus WHERE week_date = $1', [weekDate],
+    );
+    if (mn.rows.length) {
+      const newMd = mn.rows[0].content_md.split(oldName).join(newName);
+      if (newMd !== mn.rows[0].content_md) {
+        await pool.query(
+          'UPDATE weekly_menus SET content_md = $1 WHERE week_date = $2',
+          [newMd, weekDate],
+        );
+        updated.push('menu');
+      }
+    }
+
+    res.json({ updated });
+  } catch (err) {
+    console.error('PATCH /api/rename-list-item:', err.message);
+    res.status(500).json({ error: 'db_error', detail: err.message });
+  }
+});
+
 app.listen(PORT, () =>
   console.log(`🥬 Brooklyn Kitchen running on http://localhost:${PORT}`),
 );

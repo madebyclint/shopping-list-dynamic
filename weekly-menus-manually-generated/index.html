@@ -2581,6 +2581,10 @@ function clGetState(idx) {
 function clFmtN(n) { const v = parseFloat(n); if (isNaN(v)) return '1'; return v % 1 === 0 ? String(v) : v.toFixed(1); }
 function clItemRow({ name, displayName, qtyN, unit, price, meals, idx, subgroup }) {
   const dn = displayName || name;
+  const note = (_clState.notes || {})[String(idx)] || '';
+  const noteHtml = note
+    ? `<div class="cl-item-note" data-note-display="${idx}">${note.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`
+    : '';
   const qtyHtml = qtyN != null
     ? `<div class="cl-qty-stepper">
         <button class="cl-qty-btn" data-dec="${idx}">−</button>
@@ -2602,8 +2606,11 @@ function clItemRow({ name, displayName, qtyN, unit, price, meals, idx, subgroup 
         </button>
         ${qtyHtml}
         <span class="cl-item-price" data-price-idx="${idx}" title="Click to edit price">${price != null ? clFmtP(price) : ''}</span>
+        <button class="cl-note-btn${note ? ' has-note' : ''}" data-note-idx="${idx}" title="${note ? 'Edit note' : 'Add note'}">📝</button>
+        <button class="cl-edit-btn" data-edit-idx="${idx}" title="Rename item (updates shopping list, X-Ray &amp; menu)">✏️</button>
         <button class="cl-skip-btn" data-skip="${idx}" title="Skip">⏭</button>
       </div>
+      ${noteHtml}
       ${mealsHtml}
     </div>`;
 }
@@ -2715,20 +2722,35 @@ function clRenderCustom() {
   if (!el) return;
   let html = '<div class="cl-custom-section"><h4>Custom / Unplanned Items</h4>';
   _clState.x.forEach((item, i) => {
+    const note = item.note || '';
+    const noteHtml = note
+      ? `<div class="cl-item-note">${note.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`
+      : '';
+    const qty = item.qty || 1;
+    const displayPrice = item.unitP != null ? item.unitP * qty : item.p;
+    const qtyHtml = `<div class="cl-qty-stepper">
+      <button class="cl-qty-btn" data-cdec="${i}">−</button>
+      <span class="cl-qty-n" data-cqty-idx="${i}" title="Tap to edit">${clFmtN(qty)}</span>
+      <button class="cl-qty-btn" data-cinc="${i}">+</button>
+    </div>`;
     html += `<div class="cl-item" data-custom="${i}" data-state="${item.st === 'c' ? 'checked' : 'unchecked'}">
       <div class="cl-item-main-row">
         <button class="cl-item-toggle" data-custom="${i}">
           <span class="cl-checkbox"></span>
           <span class="cl-item-name">${item.n}</span>
         </button>
-        <span class="cl-item-price">${item.p ? clFmtP(item.p) : ''}</span>
+        ${qtyHtml}
+        <span class="cl-item-price">${displayPrice ? clFmtP(displayPrice) : ''}</span>
+        <button class="cl-note-btn${note ? ' has-note' : ''}" data-custom-note="${i}" title="${note ? 'Edit note' : 'Add note'}">📝</button>
         <button class="cl-skip-btn" data-del="${i}" title="Remove">✕</button>
       </div>
+      ${noteHtml}
     </div>`;
   });
   html += `<div class="cl-custom-row">
     <input class="cl-custom-name-input" id="cl-custom-name" placeholder="Add item…" autocomplete="off"/>
-    <input class="cl-custom-price-input" id="cl-custom-price" type="number" placeholder="0.00" step="0.01" min="0"/>
+    <input class="cl-custom-qty-input" id="cl-custom-qty" type="number" placeholder="qty" step="1" min="1" value="1"/>
+    <input class="cl-custom-price-input" id="cl-custom-price" type="number" placeholder="$0.00" step="0.01" min="0"/>
     <button class="cl-add-btn" id="cl-add-btn">+ Add</button>
   </div></div>`;
   el.innerHTML = html;
@@ -2742,7 +2764,8 @@ function clUpdateTotals() {
     else if (_clState.s.includes(idx)) { skipAmt += p; }
   });
   _clState.x.forEach(item => {
-    const p = item.p || 0;
+    const qty = item.qty || 1;
+    const p = (item.unitP != null ? item.unitP * qty : item.p) || 0;
     listAmt += p;
     if (item.st === 'c') { cartAmt += p; cartN++; }
   });
@@ -2778,10 +2801,12 @@ function clComputeAudit() {
   });
   _clState.x.forEach(item => {
     // All custom extras count toward budget (there's no skip for extras, only remove)
-    budget += (item.p || 0);
+    const qty = item.qty || 1;
+    const xp = (item.unitP != null ? item.unitP * qty : item.p) || 0;
+    budget += xp;
     budget_item_count++;
     if (item.st === 'c') {
-      checklist_total += (item.p || 0);
+      checklist_total += xp;
       item_count++;
     }
   });
@@ -2886,6 +2911,7 @@ function clConnectSSE(weekKey) {
         _clState = newState;
         if (!_clState.qtys)   _clState.qtys   = {};
         if (!_clState.prices) _clState.prices = {};
+        if (!_clState.notes)  _clState.notes  = {};
         clSaveLocal(); // keep localStorage in sync with incoming state too
         clApplyPriceOverrides();
         clApplyQtyOverrides();
@@ -2917,8 +2943,14 @@ function clToggleSkip(idx) {
 function clAddCustom() {
   const n = ($('cl-custom-name')?.value || '').trim();
   const p = parseFloat($('cl-custom-price')?.value) || null;
+  const qty = Math.max(1, parseFloat($('cl-custom-qty')?.value) || 1);
   if (!n) return;
-  _clState.x.push({ n, p, st: '' });
+  const item = { n, p, st: '' };
+  if (qty !== 1) {
+    item.qty = qty;
+    if (p !== null) item.unitP = parseFloat((p / qty).toFixed(4));
+  }
+  _clState.x.push(item);
   clSync();
   clRenderCustom();
 }
@@ -2932,6 +2964,118 @@ function clToggleCustom(i) {
   const el = document.querySelector(`.cl-item[data-custom="${i}"]`);
   if (el) el.dataset.state = _clState.x[i].st === 'c' ? 'checked' : 'unchecked';
   clSync();
+}
+function clUpdateCustomQty(i, newQty) {
+  const q = Math.max(0, parseFloat(newQty) || 0);
+  const item = _clState.x[i];
+  if (!item) return;
+  const oldQty = item.qty || 1;
+  if (item.unitP == null && item.p != null && oldQty > 0) {
+    item.unitP = parseFloat((item.p / oldQty).toFixed(4));
+  }
+  item.qty = q || 1;
+  if (item.unitP != null && item.qty > 0) {
+    item.p = parseFloat((item.unitP * item.qty).toFixed(2));
+  }
+  clSync();
+  clRenderCustom();
+}
+function clSaveNote(key, note, isCustom) {
+  const trimmed = note.trim();
+  if (isCustom) {
+    const i = parseInt(key);
+    if (_clState.x[i]) {
+      if (trimmed) _clState.x[i].note = trimmed;
+      else delete _clState.x[i].note;
+    }
+    clSync();
+    clRenderCustom();
+  } else {
+    if (!_clState.notes) _clState.notes = {};
+    if (trimmed) _clState.notes[String(key)] = trimmed;
+    else delete _clState.notes[String(key)];
+    clSync();
+    // Update note display in the DOM without full re-render
+    const idx = parseInt(key);
+    const itemEl = document.querySelector(`.cl-item[data-idx="${idx}"]`);
+    if (itemEl) {
+      let noteEl = itemEl.querySelector('.cl-item-note');
+      const noteBtn = itemEl.querySelector('.cl-note-btn[data-note-idx]');
+      if (trimmed) {
+        if (!noteEl) {
+          noteEl = document.createElement('div');
+          noteEl.className = 'cl-item-note';
+          noteEl.dataset.noteDisplay = idx;
+          const mealsEl = itemEl.querySelector('.cl-item-meals');
+          if (mealsEl) itemEl.insertBefore(noteEl, mealsEl);
+          else itemEl.appendChild(noteEl);
+        }
+        noteEl.textContent = trimmed;
+        if (noteBtn) noteBtn.classList.add('has-note');
+      } else {
+        if (noteEl) noteEl.remove();
+        if (noteBtn) noteBtn.classList.remove('has-note');
+      }
+    }
+  }
+}
+function clToggleNoteEditor(itemEl, key, isCustom) {
+  // Remove any other open note editors first
+  document.querySelectorAll('.cl-note-edit-wrap').forEach(w => w.remove());
+  const existing = itemEl.querySelector('.cl-note-edit-wrap');
+  if (existing) return; // was already open (closed above), so just toggle off
+  const currentNote = isCustom
+    ? (_clState.x[parseInt(key)]?.note || '')
+    : ((_clState.notes || {})[String(key)] || '');
+  const wrap = document.createElement('div');
+  wrap.className = 'cl-note-edit-wrap';
+  wrap.innerHTML = `<input class="cl-note-edit-input" type="text" placeholder="Add a note…" maxlength="200"/><button class="cl-note-save-btn">Save</button>`;
+  const mealsEl = itemEl.querySelector('.cl-item-meals');
+  const existingNoteEl = itemEl.querySelector('.cl-item-note');
+  const insertAfter = existingNoteEl || itemEl.querySelector('.cl-item-main-row');
+  if (insertAfter && insertAfter.nextSibling) itemEl.insertBefore(wrap, insertAfter.nextSibling);
+  else itemEl.appendChild(wrap);
+  const input = wrap.querySelector('.cl-note-edit-input');
+  input.value = currentNote;
+  input.focus();
+  input.select();
+  const saveAndClose = () => {
+    const val = input.value;
+    clSaveNote(key, val, isCustom);
+    wrap.remove();
+  };
+  wrap.querySelector('.cl-note-save-btn').addEventListener('click', saveAndClose);
+  input.addEventListener('keydown', ke => {
+    if (ke.key === 'Enter') { ke.preventDefault(); saveAndClose(); }
+    if (ke.key === 'Escape') { wrap.remove(); }
+  });
+}
+async function clRenameItem(idx, oldName, newName) {
+  if (!newName || newName === oldName) return;
+  const weekDate = _clWeekKey || _manifest?.currentWeek;
+  // Update local state immediately
+  if (_clItems[idx]) {
+    _clItems[idx].name = newName;
+    _clItems[idx].displayName = newName;
+  }
+  // Also update _listText for xray checks
+  if (_listText) _listText = _listText.split(oldName).join(newName);
+  if (_weeklyListText) _weeklyListText = _weeklyListText.split(oldName).join(newName);
+  if (!weekDate) return;
+  try {
+    const r = await fetch('/api/rename-list-item', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weekDate, oldName, newName }),
+    });
+    if (r.ok) {
+      const data = await r.json();
+      if (data.updated?.includes('xray') && _xrayData) {
+        // Invalidate xray cache so it re-fetches with updated names
+        _xrayData = null;
+      }
+    }
+  } catch { /* best effort — local state already updated */ }
 }
 function clCopyURL() {
   const btn = $('cl-copy-btn');
@@ -2960,8 +3104,9 @@ async function openChecklist({ weekKey, listText } = {}) {
     _clState = bestState;
     if (!_clState.qtys)   _clState.qtys   = {};
     if (!_clState.prices) _clState.prices = {};
+    if (!_clState.notes)  _clState.notes  = {};
   } else {
-    _clState = { v: 1, c: [], s: [], x: [], prices: {}, qtys: {} };
+    _clState = { v: 1, c: [], s: [], x: [], prices: {}, qtys: {}, notes: {} };
   }
   // Load master item prices from DB (persists across weeks)
   try {
@@ -3108,6 +3253,71 @@ async function openChecklist({ weekKey, listText } = {}) {
     const del = e.target.closest('[data-del]');
     if (del) { clDeleteCustom(parseInt(del.dataset.del)); return; }
     if (e.target.closest('#cl-add-btn')) { clAddCustom(); return; }
+    // Note button — standard item
+    const noteBtn = e.target.closest('.cl-note-btn[data-note-idx]');
+    if (noteBtn) { clToggleNoteEditor(noteBtn.closest('.cl-item'), noteBtn.dataset.noteIdx, false); return; }
+    // Note button — custom item
+    const customNoteBtn = e.target.closest('.cl-note-btn[data-custom-note]');
+    if (customNoteBtn) { clToggleNoteEditor(customNoteBtn.closest('.cl-item'), customNoteBtn.dataset.customNote, true); return; }
+    // Edit (rename) button — standard item only
+    const editBtn = e.target.closest('.cl-edit-btn[data-edit-idx]');
+    if (editBtn) {
+      const idx = parseInt(editBtn.dataset.editIdx);
+      const itemEl = editBtn.closest('.cl-item');
+      const nameEl = itemEl?.querySelector('.cl-item-name');
+      const togBtn = itemEl?.querySelector('.cl-item-toggle[data-idx]');
+      if (!nameEl || nameEl.querySelector('input')) return;
+      const oldName = _clItems[idx]?.displayName || _clItems[idx]?.name || nameEl.textContent.trim();
+      const inp = document.createElement('input');
+      inp.className = 'cl-name-edit-input';
+      inp.type = 'text';
+      inp.value = oldName;
+      nameEl.textContent = '';
+      nameEl.appendChild(inp);
+      if (togBtn) togBtn.disabled = true;
+      inp.focus(); inp.select();
+      const commit = async () => {
+        const newName = inp.value.trim();
+        nameEl.textContent = newName || oldName;
+        if (togBtn) togBtn.disabled = false;
+        if (newName && newName !== oldName) await clRenameItem(idx, oldName, newName);
+      };
+      inp.addEventListener('blur', () => setTimeout(commit, 50));
+      inp.addEventListener('keydown', ke => {
+        if (ke.key === 'Enter') { ke.preventDefault(); inp.blur(); }
+        if (ke.key === 'Escape') { nameEl.textContent = oldName; if (togBtn) togBtn.disabled = false; }
+      });
+      return;
+    }
+    // Custom item qty steppers
+    const cdec = e.target.closest('.cl-qty-btn[data-cdec]');
+    if (cdec) { clUpdateCustomQty(parseInt(cdec.dataset.cdec), Math.max(1, (_clState.x[parseInt(cdec.dataset.cdec)]?.qty || 1) - 1)); return; }
+    const cinc = e.target.closest('.cl-qty-btn[data-cinc]');
+    if (cinc) { clUpdateCustomQty(parseInt(cinc.dataset.cinc), (_clState.x[parseInt(cinc.dataset.cinc)]?.qty || 1) + 1); return; }
+    // Custom item qty tap-to-edit
+    const cqtyNEl = e.target.closest('.cl-qty-n[data-cqty-idx]');
+    if (cqtyNEl && !cqtyNEl.querySelector('input')) {
+      const i = parseInt(cqtyNEl.dataset.cqtyIdx);
+      const cur = _clState.x[i]?.qty || 1;
+      const inp = document.createElement('input');
+      inp.className = 'cl-qty-edit-input';
+      inp.type = 'number'; inp.min = '1'; inp.step = '1';
+      inp.value = cur;
+      cqtyNEl.textContent = '';
+      cqtyNEl.appendChild(inp);
+      inp.focus(); inp.select();
+      const commit = () => {
+        const v = inp.value.trim();
+        if (v !== '' && !isNaN(parseFloat(v))) clUpdateCustomQty(i, v);
+        else cqtyNEl.textContent = clFmtN(cur);
+      };
+      inp.addEventListener('blur', commit);
+      inp.addEventListener('keydown', ke => {
+        if (ke.key === 'Enter') { ke.preventDefault(); inp.blur(); }
+        if (ke.key === 'Escape') { cqtyNEl.textContent = clFmtN(cur); }
+      });
+      return;
+    }
   });
   ov.addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.target.id === 'cl-custom-name') clAddCustom();
