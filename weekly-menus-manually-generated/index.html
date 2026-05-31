@@ -2355,8 +2355,8 @@ async function clEnsureParsed() {
     } catch { /* fall through with empty prices */ }
   }
   clParseMd(_listText);
-  clApplyPriceOverrides();
   clApplyQtyOverrides();
+  clApplyPriceOverrides();
 }
 
 function clEncode(obj) {
@@ -2537,25 +2537,27 @@ function clApplyQtyOverrides() {
   });
 }
 function clUpdatePrice(idx, raw) {
-  const p = parseFloat(String(raw).replace(/[^0-9.]/g, ''));
-  if (isNaN(p)) return;
-  const val = parseFloat(p.toFixed(2));
-  _clItems[idx].price = val;
-  // Update unit cost so future qty changes scale correctly
-  if (_clItems[idx].qtyN > 0) _clItems[idx].unitCost = val / _clItems[idx].qtyN;
+  // raw is treated as the per-unit price; total = unitPrice * qty
+  const unitP = parseFloat(String(raw).replace(/[^0-9.]/g, ''));
+  if (isNaN(unitP)) return;
+  const unitVal = parseFloat(unitP.toFixed(2));
+  const n = (_clItems[idx]?.qtyN > 0) ? _clItems[idx].qtyN : 1;
+  const total = parseFloat((unitVal * n).toFixed(2));
+  _clItems[idx].unitCost = unitVal;
+  _clItems[idx].price = total;
   if (!_clState.prices) _clState.prices = {};
-  _clState.prices[String(idx)] = val;
+  _clState.prices[String(idx)] = total; // store total (consistent with qty-derived prices)
   clUpdateTotals();
   clSaveToDB();
   clSaveLocal();
-  // Also persist to master price store so it carries over to future weeks
+  // Persist unit price to master store so it carries over to future weeks
   const normName = clNorm(_clItems[idx].displayName || _clItems[idx].name);
   if (normName) {
-    _persistedPrices[normName] = val;
+    _persistedPrices[normName] = unitVal;
     fetch('/api/item-prices', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: normName, price: val }),
+      body: JSON.stringify({ name: normName, price: unitVal }),
     }).catch(() => {}); // fire-and-forget
   }
 }
@@ -3121,8 +3123,8 @@ async function openChecklist({ weekKey, listText } = {}) {
   const si = $('cl-search');
   if (si) { si.value = ''; $('cl-search-clear').classList.remove('show'); }
   clParseMd(_listText);
-  clApplyPriceOverrides();
   clApplyQtyOverrides();
+  clApplyPriceOverrides();
   clRender();
   clUpdateTotals();
   $('checklist-overlay').classList.add('show');
@@ -3223,11 +3225,13 @@ async function openChecklist({ weekKey, listText } = {}) {
     const priceEl = e.target.closest('.cl-item-price[data-price-idx]');
     if (priceEl && !priceEl.querySelector('input')) {
       const idx = parseInt(priceEl.dataset.priceIdx);
-      const cur = _clItems[idx]?.price;
+      const curTotal = _clItems[idx]?.price;
+      // Pre-fill with unit price so user enters "per each" regardless of qty
+      const curUnit = _clItems[idx]?.unitCost ?? curTotal;
       const inp = document.createElement('input');
       inp.className = 'cl-price-edit-input';
       inp.type = 'text';
-      inp.value = cur != null ? parseFloat(cur).toFixed(2) : '';
+      inp.value = curUnit != null ? parseFloat(curUnit).toFixed(2) : '';
       inp.placeholder = '0.00';
       priceEl.textContent = '';
       priceEl.appendChild(inp);
@@ -3240,7 +3244,7 @@ async function openChecklist({ weekKey, listText } = {}) {
       inp.addEventListener('blur', commit);
       inp.addEventListener('keydown', ke => {
         if (ke.key === 'Enter') { ke.preventDefault(); inp.blur(); }
-        if (ke.key === 'Escape') { priceEl.textContent = cur != null ? clFmtP(cur) : ''; }
+        if (ke.key === 'Escape') { priceEl.textContent = curTotal != null ? clFmtP(curTotal) : ''; }
       });
       return;
     }
