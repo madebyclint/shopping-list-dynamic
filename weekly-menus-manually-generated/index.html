@@ -2471,6 +2471,7 @@ function clParseMd(md) {
     });
     return;
   }
+  const seenNames = new Set();
   tripMatch[1].split(/\n### /).filter(Boolean).forEach(block => {
     const lines = block.split('\n');
     const store = lines[0].trim();
@@ -2503,6 +2504,8 @@ function clParseMd(md) {
       const rawMealStr = mealFromLine || _rawMealMap[normClean] || '';
       const price = clLookupPrice(clean);
       const unitCost = (price != null && qtyN > 0) ? price / qtyN : null;
+      if (seenNames.has(normClean)) return; // skip duplicate from alt-store sections
+      seenNames.add(normClean);
       _clItems.push({ name, displayName, qtyStr, qtyN, unit, unitCost, price,
         meal: clNormMeal(rawMealStr) || _mealMap[normClean] || '',
         meals: clParseMeals(rawMealStr),
@@ -3154,25 +3157,64 @@ function xrayPushToChecklist(btn, name) {
   }
   _clState.x.push({ n: name, p: null, st: '' });
   clSync();
+  renderXray(_xrayData, _listText);
   btn.textContent = '✓ added';
   btn.disabled = true;
 }
 
-function xrayMoveToPantry(mealIdx, item) {
+// Find the _clItems index whose name best matches an X-Ray item string.
+function xrayFindClItem(name) {
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  const skip = new Set(['with','from','each','some','the','and','for','cup','cups','tbsp','tsp','pkg','can','pack','slice','sliced','bunch','bag','jar','lbs','oz']);
+  const tokens = norm(name).split(' ').filter(t => t.length >= 4 && !skip.has(t));
+  if (!tokens.length || !_clItems.length) return -1;
+  return _clItems.findIndex(item => {
+    const hay = norm(item.name);
+    return tokens.some(t => hay.includes(t));
+  });
+}
+
+async function xrayMoveToPantry(mealIdx, item) {
   const meal = (_xrayData?.meals || [])[mealIdx];
   if (!meal) return;
   meal.buy_these = (meal.buy_these || []).filter(i => i !== item);
   if (!meal.pantry) meal.pantry = [];
   if (!meal.pantry.includes(item)) meal.pantry.push(item);
+  // Mirror to checklist: mark the matching item as checked
+  if (!_clWeekKey) _clWeekKey = _manifest?.currentWeek ?? 'current';
+  await clEnsureParsed();
+  const idx = xrayFindClItem(item);
+  if (idx !== -1) {
+    if (!_clState.c) _clState.c = [];
+    if (!_clState.c.includes(idx)) _clState.c.push(idx);
+    _clState.s = (_clState.s || []).filter(i => i !== idx);
+    clSync();
+  }
   renderXray(_xrayData, _listText);
 }
 
-function xrayMoveToList(mealIdx, item) {
+async function xrayMoveToList(mealIdx, item) {
   const meal = (_xrayData?.meals || [])[mealIdx];
   if (!meal) return;
   meal.pantry = (meal.pantry || []).filter(i => i !== item);
   if (!meal.buy_these) meal.buy_these = [];
   if (!meal.buy_these.includes(item)) meal.buy_these.unshift(item);
+  // Mirror to checklist: uncheck the matching item
+  if (!_clWeekKey) _clWeekKey = _manifest?.currentWeek ?? 'current';
+  await clEnsureParsed();
+  const idx = xrayFindClItem(item);
+  if (idx !== -1) {
+    _clState.c = (_clState.c || []).filter(i => i !== idx);
+    _clState.s = (_clState.s || []).filter(i => i !== idx);
+    clSync();
+  } else {
+    // Item not on the main shopping list — add as a custom item so it shows on the checklist
+    if (!_clState.x) _clState.x = [];
+    if (!_clState.x.some(it => it.n === item)) {
+      _clState.x.push({ n: item, p: null, st: '' });
+      clSync();
+    }
+  }
   renderXray(_xrayData, _listText);
 }
 
@@ -3192,7 +3234,8 @@ function renderXray(data, listText) {
   (data.meals || []).forEach((meal, mealIdx) => {
     const found = [], missing = [];
     (meal.buy_these || []).forEach(item => {
-      if (xrayCheck(item, listText)) found.push(item);
+      const addedAsCustom = (_clState?.x || []).some(c => c.n === item);
+      if (xrayCheck(item, listText) || addedAsCustom) found.push(item);
       else missing.push(item);
     });
     const pantry = meal.pantry || [];
