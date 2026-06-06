@@ -21,14 +21,14 @@ const pool = new pg.Pool({ connectionString: DB_URL, ssl: { rejectUnauthorized: 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEEKLY_DIR = path.join(__dirname, '..');
 
-const menuMd       = readFileSync(path.join(WEEKLY_DIR, 'menus', '2026-05-18-menu.md'), 'utf8');
-const shoppingMd   = readFileSync(path.join(WEEKLY_DIR, 'shopping-lists', '2026-05-18-shopping-list.md'), 'utf8');
+const menuMd       = readFileSync(path.join(WEEKLY_DIR, 'menus', '2026-06-08-menu.md'), 'utf8');
+const shoppingMd   = readFileSync(path.join(WEEKLY_DIR, 'shopping-lists', '2026-06-08-shopping-list.md'), 'utf8');
 const mealHistory  = readFileSync(path.join(WEEKLY_DIR, 'meal-history.md'), 'utf8');
 const mealsIng     = readFileSync(path.join(WEEKLY_DIR, 'meals-ingredients.json'), 'utf8');
 const dataJson     = JSON.parse(readFileSync(path.join(WEEKLY_DIR, 'data.json'), 'utf8'));
 
-const WEEK_DATE = '2026-05-18';
-const LABEL     = 'Week of May 18, 2026';
+const WEEK_DATE = '2026-06-08';
+const LABEL     = 'Week of Jun 8, 2026';
 
 async function run() {
   const client = await pool.connect();
@@ -92,7 +92,7 @@ async function run() {
     console.log('✓ documents[meals-ingredients] upserted');
 
     await client.query('COMMIT');
-    console.log('\n✅ All done — week 2026-05-18 is live in the DB.');
+    console.log('\n✅ All done — week 2026-06-08 is live in the DB.');
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('❌ Import failed, rolled back:', err.message);

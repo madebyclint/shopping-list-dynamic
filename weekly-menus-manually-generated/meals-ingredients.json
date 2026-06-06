@@ -1,83 +1,116 @@
 {
   "_comment": "Per-meal ingredient coverage for the X-Ray panel. Update each week alongside the menu. buy_these = items that MUST appear on the shopping list. pantry = assumed at home, not checked.",
-  "week": "2026-05-18",
+  "week": "2026-06-08",
   "meals": [
     {
-      "name": "Simple Maggi Ribs w/ Couscous & Roasted Broccoli",
-      "day": "Sunday",
-      "emoji": "🍖",
+      "name": "Yucatecan Tamales + Esquites",
+      "day": "Monday",
+      "emoji": "🫔",
       "buy_these": [
-        "Beef short ribs, bone-in (~3 lbs)",
-        "Maggi seasoning sauce (1 bottle)",
-        "Broccoli (2 heads)",
-        "Couscous (1 box)"
+        "Banana leaves (frozen pack)",
+        "Masa harina (1 bag)",
+        "Achiote paste or annatto powder",
+        "Rotisserie chicken x2 (buy both Monday)",
+        "Corn, 3–4 ears (or frozen kernels)",
+        "Cotija cheese",
+        "Mango (2)"
       ],
       "pantry": [
-        "Olive oil",
+        "Chicken broth",
+        "Lard or vegetable shortening",
         "Salt",
+        "Mayo",
+        "Lime",
+        "Chili powder",
+        "Cumin",
+        "Dried oregano",
+        "Orange (squeeze)",
+        "Jalapeño or habanero (optional)"
+      ]
+    },
+    {
+      "name": "Chilaquiles Divorciados",
+      "day": "Tuesday",
+      "emoji": "🍳",
+      "buy_these": [
+        "Salsa verde (1 jar)",
+        "Salsa roja (1 jar)",
+        "Tortilla chips (1 bag)",
+        "Crema or sour cream",
+        "Cotija or queso fresco",
+        "Avocados (2)",
+        "Cilantro (2 bunches)",
+        "Oranges"
+      ],
+      "pantry": [
+        "Rotisserie chicken (second bird from Monday, refrigerated)",
+        "Eggs (4, optional fried on top)",
+        "Lime"
+      ]
+    },
+    {
+      "name": "Battered Fried Chicken + Watermelon",
+      "day": "Wednesday",
+      "emoji": "🍗",
+      "buy_these": [
+        "Chicken thighs + drumsticks (3–4 lbs)",
+        "Lactaid whole milk (¾ cup for batter)",
+        "Vegetable oil (for frying, ~1 qt)",
+        "Watermelon (1 medium — half Wed, half for Fri agua fresca)"
+      ],
+      "pantry": [
+        "All-purpose flour",
+        "Baking powder",
+        "Salt",
+        "Eggs",
+        "Garlic powder",
+        "Paprika",
+        "Cayenne",
+        "Black pepper",
+        "Vegetable oil (small amount for batter)"
+      ]
+    },
+    {
+      "name": "Maggi Beef Ribs + Kimchi",
+      "day": "Thursday",
+      "emoji": "🍖",
+      "buy_these": [
+        "Beef short ribs, flanken cut (2–3 lbs)",
+        "Store-bought kimchi (1 jar)",
+        "Jasmine rice (if low)",
+        "Pineapple or seasonal fruit"
+      ],
+      "pantry": [
+        "Maggi seasoning sauce",
         "Black pepper"
       ]
     },
     {
-      "name": "Pancit Bihon",
-      "day": "Monday",
-      "emoji": "🍜",
+      "name": "Birria Tacos + Sandia Agua Fresca",
+      "day": "Friday",
+      "emoji": "🌮",
       "buy_these": [
-        "Rotisserie chicken or boneless chicken thighs (~1 lb)",
-        "Carrots (2 medium)",
-        "Celery (1 small bunch)",
-        "Sugar snap peas (1 small bag)",
-        "Green onions (1 bunch)",
-        "Rice vermicelli noodles / pancit bihon (8 oz)",
-        "Oyster sauce (1 bottle)",
-        "Fish sauce (1 bottle)",
-        "Chicken stock (2 cartons)"
+        "Chuck roast (2 lbs)",
+        "Dried guajillo chiles (4 pods)",
+        "Dried ancho chiles (4 pods)",
+        "Chipotles in adobo (1 small can)",
+        "Roma tomatoes (2)",
+        "Corn tortillas",
+        "Oaxaca cheese",
+        "Cilantro",
+        "White onion (2)",
+        "Limes (bag)"
       ],
       "pantry": [
-        "Yellow onion",
         "Garlic",
-        "Soy sauce",
-        "Neutral oil",
         "Salt",
-        "Black pepper",
-        "Lemon or lime"
+        "Dried oregano",
+        "Ground cumin",
+        "Bay leaves",
+        "White vinegar",
+        "Sugar (for agua fresca)",
+        "Watermelon (other half from Wednesday)"
       ]
-    },
-    {
-      "name": "Fried Chicken, Salad & Fruit",
-      "day": "Tuesday",
-      "emoji": "🍗",
-      "buy_these": [
-        "Pre-made fried chicken (1–2 packs, from deli or hot bar)",
-        "Mixed greens (1 bag, 5 oz)",
-        "Salad dressing (1 bottle)",
-        "Assorted fresh fruit (for the side)"
-      ],
-      "pantry": []
-    },
-    {
-      "name": "Family Night Out",
-      "day": "Wednesday",
-      "emoji": "👨‍👩‍👧‍👦",
-      "buy_these": [],
-      "pantry": []
-    },
-    {
-      "name": "Steamed Artichokes & Maggi Wings",
-      "day": "Thursday",
-      "emoji": "🌿🍗",
-      "buy_these": [
-        "Whole artichokes, large (4)",
-        "Lemon (1)",
-        "Chicken wings, split (3–4 lbs)",
-        "Zucchini (2 medium) or corn (2 ears)",
-        "Mango (2)"
-      ],
-      "pantry": [
-        "Maggi seasoning sauce",
-        "Butter (for dipping)",
-        "Salt",
-        "Olive oil or vegetable oil"
-      ]
-    }  ]
+    }
+  ]
 }

@@ -1,110 +1,110 @@
 {
   "_comment": "Update this file each week when generating a new meal plan. weekLabel uses the Monday date. shoppingDate is the day of the trip.",
   "_commentLastWeek": "lastWeek holds the previous week's data. When rolling over, move currentWeek → lastWeek, then fill in the new week as currentWeek.",
-  "currentWeek": "2026-05-18",
-  "weekLabel": "Sun May 18 - Fri May 23, 2026",
-  "shoppingDate": "2026-05-17",
+  "currentWeek": "2026-06-08",
+  "weekLabel": "Mon Jun 8 - Fri Jun 12, 2026",
+  "shoppingDate": "2026-06-07",
   "files": {
-    "menu": "menus/2026-05-18-menu.md",
-    "shoppingList": "shopping-lists/2026-05-18-shopping-list.md"
+    "menu": "menus/2026-06-08-menu.md",
+    "shoppingList": "shopping-lists/2026-06-08-shopping-list.md"
   },
   "meals": [
     {
-      "name": "Simple Maggi Ribs w/ Couscous & Roasted Broccoli",
-      "day": "Sunday, May 18",
-      "emoji": "🍖",
-      "time": "40 min",
+      "name": "Yucatecan Tamales + Esquites",
+      "day": "Monday, June 8",
+      "emoji": "🫔",
+      "time": "45–60 min",
       "tag": "",
       "tagType": ""
     },
     {
-      "name": "Pancit Bihon",
-      "day": "Monday, May 19",
-      "emoji": "🍜",
-      "time": "50 min",
-      "tag": "",
-      "tagType": ""
+      "name": "Chilaquiles Divorciados",
+      "day": "Tuesday, June 9",
+      "emoji": "🍳",
+      "time": "20 min",
+      "tag": "FAST",
+      "tagType": "fast"
     },
     {
-      "name": "Fried Chicken, Salad & Fruit",
-      "day": "Tuesday, May 20",
+      "name": "Battered Fried Chicken + Watermelon",
+      "day": "Wednesday, June 10",
       "emoji": "🍗",
-      "time": "30 min",
+      "time": "40–50 min",
+      "tag": "",
+      "tagType": ""
+    },
+    {
+      "name": "Maggi Beef Ribs + Kimchi",
+      "day": "Thursday, June 11",
+      "emoji": "🍖",
+      "time": "8 min cook",
       "tag": "TEEN PREP",
       "tagType": "teen"
     },
     {
-      "name": "Family Night Out",
-      "day": "Wednesday, May 21",
-      "emoji": "👨‍👩‍👧‍👦",
-      "time": "out",
-      "tag": "FAMILY NIGHT",
-      "tagType": "out"
-    },
-    {
-      "name": "Steamed Artichokes & Maggi Wings",
-      "day": "Thursday, May 22",
-      "emoji": "🌿🍗",
-      "time": "45 min",
+      "name": "Birria Tacos + Sandia Agua Fresca",
+      "day": "Friday, June 12",
+      "emoji": "🌮",
+      "time": "1 hr 15 min",
       "tag": "",
       "tagType": ""
-    },
-    {
-      "name": "Date Night",
-      "day": "Friday, May 23",
-      "emoji": "💕",
-      "time": "out",
-      "tag": "DATE NIGHT",
-      "tagType": "out"
     }
   ],
   "lastWeek": {
-    "weekLabel": "Mon May 4 - Fri May 9, 2026",
-    "shoppingDate": "2026-05-03",
+    "weekLabel": "Sun May 18 - Fri May 23, 2026",
+    "shoppingDate": "2026-05-17",
     "files": {
-      "menu": "menus/2026-05-04-menu.md",
-      "shoppingList": "shopping-lists/2026-05-04-shopping-list.md"
+      "menu": "menus/2026-05-18-menu.md",
+      "shoppingList": "shopping-lists/2026-05-18-shopping-list.md"
     },
     "meals": [
       {
-        "name": "Pepes Tahu / Banana Leaf-Wrapped Tofu Packets",
-        "day": "Monday, May 4",
-        "emoji": "🫘",
-        "time": "55 min",
+        "name": "Simple Maggi Ribs w/ Couscous & Roasted Broccoli",
+        "day": "Sunday, May 18",
+        "emoji": "🍖",
+        "time": "40 min",
         "tag": "",
         "tagType": ""
       },
       {
-        "name": "Sushi Hand Rolls (Temaki)",
-        "day": "Tuesday, May 5",
-        "emoji": "🍣",
-        "time": "15 min",
-        "tag": "FAST",
-        "tagType": "fast"
+        "name": "Pancit Bihon",
+        "day": "Monday, May 19",
+        "emoji": "🍜",
+        "time": "50 min",
+        "tag": "",
+        "tagType": ""
       },
       {
-        "name": "English/Scottish Breakfast for Dinner",
-        "day": "Wednesday, May 6",
-        "emoji": "🍳",
+        "name": "Fried Chicken, Salad & Fruit",
+        "day": "Tuesday, May 20",
+        "emoji": "🍗",
         "time": "30 min",
-        "tag": "",
-        "tagType": ""
-      },
-      {
-        "name": "Pesto Pasta with Chicken Sausage & Cherry Tomatoes",
-        "day": "Thursday, May 7",
-        "emoji": "🍝",
-        "time": "25 min",
         "tag": "TEEN PREP",
         "tagType": "teen"
       },
       {
-        "name": "Maggi-Marinated Ribs + Kimchi Slaw",
-        "day": "Friday, May 8",
-        "emoji": "🍖",
+        "name": "Family Night Out",
+        "day": "Wednesday, May 21",
+        "emoji": "👨‍👩‍👧‍👦",
+        "time": "out",
+        "tag": "FAMILY NIGHT",
+        "tagType": "out"
+      },
+      {
+        "name": "Steamed Artichokes & Maggi Wings",
+        "day": "Thursday, May 22",
+        "emoji": "🌿🍗",
         "time": "45 min",
         "tag": "",
         "tagType": ""
+      },
+      {
+        "name": "Date Night",
+        "day": "Friday, May 23",
+        "emoji": "💕",
+        "time": "out",
+        "tag": "DATE NIGHT",
+        "tagType": "out"
       }
     ]
   }
