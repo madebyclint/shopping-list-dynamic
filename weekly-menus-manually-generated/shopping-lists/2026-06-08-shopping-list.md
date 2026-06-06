@@ -1,6 +1,6 @@
-# Shopping List — Jun 8–12, 2026 — ~$220
+# Shopping List — Jun 8–12, 2026 — ~$215
 
-> **Notes:** Banana leaves: call ahead — not every Latin or Asian market carries them consistently (usually frozen near the plantains or in the international freezer section). Achiote paste (recado rojo) is at Latin markets; annatto powder from the Latin or Indian spice aisle works as a substitute. Flanken-cut short ribs are thin cross-cut strips — ask the butcher if you don't see them labeled. Guajillo and ancho chiles: Latin market or specialty spice store. Chipotles in adobo: canned, near salsa/Mexican items at most grocery stores. Oaxaca cheese: Latin market; fresh mozzarella works as a substitute. Rotisserie chickens — buy both on Monday. Refrigerate the second bird whole, pull it Tuesday for chilaquiles.
+> **Notes:** Banana leaves: call ahead — not every Latin or Asian market carries them consistently (usually frozen near the plantains or in the international freezer section). Flanken-cut short ribs are thin cross-cut strips — ask the butcher if you don't see them labeled. Guajillo and ancho chiles: Latin market or specialty spice store. Chipotles in adobo: canned, near salsa/Mexican items at most grocery stores. Oaxaca cheese: Latin market; fresh mozzarella works as a substitute. Rotisserie chickens — buy both on Monday. Refrigerate the second bird whole, pull it Tuesday for chilaquiles. **Masa harina and chicken broth are already in the pantry — do not buy.**
 
 ---
 
@@ -34,21 +34,21 @@ Proteins Subtotal: **~$66.25**
 
 🧀 **DAIRY & REFRIGERATED**
 
-- Lactaid whole milk (1 half-gallon) ✓ — Weekly staple + Wed batter — ~$5.50 — **~$5.50**
-- Eggs (1 dozen) ✓ — Weekly staple + Tue eggs + Wed batter — ~$5.00 — **~$5.00**
+- Lactaid whole milk ✓ — Weekly staple + Wed batter — ~$5.50 — **~$5.50**
+- Almond milk ✓ — Weekly staple — ~$7.00 — **~$7.00**
+- Eggs ✓ — Weekly staple + Tue eggs + Wed batter — ~$5.00 — **~$5.00**
 - Crema or sour cream — Chilaquiles — ~$3.50 — **~$3.50**
 - Cotija or queso fresco — Esquites + Chilaquiles — ~$4.00 — **~$4.00**
 - Oaxaca cheese — Birria tacos — ~$6.00 — **~$6.00**
 
-Dairy & Refrigerated Subtotal: **~$24.00**
+Dairy & Refrigerated Subtotal: **~$31.00**
 
 ---
 
 🌶️ **LATIN / ASIAN MARKET**
 
 - Banana leaves (frozen pack) — Mon tamales — ~$5.00 — **~$5.00**
-- Masa harina (1 bag, if low) — Mon tamales — ~$4.00 — **~$4.00**
-- Achiote paste or annatto powder — Mon tamales — ~$3.00 — **~$3.00**
+- Roasted chile & garlic salsa (1 jar) — Mon tamales (filling + serving) — ~$4.50 — **~$4.50**
 - Dried guajillo chiles (4 pods) — Fri birria — ~$2.00 — **~$2.00**
 - Dried ancho chiles (4 pods) — Fri birria — ~$2.00 — **~$2.00**
 - Chipotles in adobo (1 small can) — Fri birria — ~$3.00 — **~$3.00**
@@ -57,21 +57,23 @@ Dairy & Refrigerated Subtotal: **~$24.00**
 - Salsa verde (1 jar) — Tue chilaquiles — ~$4.50 — **~$4.50**
 - Salsa roja (1 jar) — Tue chilaquiles — ~$4.50 — **~$4.50**
 
-Latin/Asian Market Subtotal: **~$39.50**
+Latin/Asian Market Subtotal: **~$37.00**
 
 ---
 
 🛒 **DRY GOODS & PANTRY**
 
 - Corn tortillas (1 pack) — Fri birria — ~$3.50 — **~$3.50**
-- Lard or vegetable shortening (if low) — Mon tamales masa — ~$4.00 — **~$4.00**
+- Vegetable shortening (if low) — Mon tamales masa — ~$4.00 — **~$4.00**
+- White vinegar (if low) — Fri birria — ~$2.00 — **~$2.00**
 - Vegetable oil (1 bottle, if low) — Wed Dutch oven frying — ~$5.00 — **~$5.00**
 - Jasmine rice (if low) — Thu ribs — ~$4.00 — **~$4.00**
 - Cereal (2 boxes) — Weekly staple — ~$6.00 ea — **~$12.00**
 - Chips, tortilla (1 bag) — Weekly staple + Tue chilaquiles — ~$5.00 — **~$5.00**
+- Trail mix (1 bag) — Weekly staple — ~$7.00 — **~$7.00**
 - Ice cream (1 container) — Weekly staple — ~$7.00 — **~$7.00**
 
-Dry Goods & Pantry Subtotal: **~$40.50**
+Dry Goods & Pantry Subtotal: **~$47.50**
 
 ---
 
@@ -90,10 +92,19 @@ Household Subtotal: **~$10.00**
 |---|---|
 | Produce | ~$39.00 |
 | Proteins | ~$66.25 |
-| Dairy & Refrigerated | ~$24.00 |
-| Latin / Asian Market | ~$39.50 |
-| Dry Goods & Pantry | ~$40.50 |
+| Dairy & Refrigerated | ~$31.00 |
+| Latin / Asian Market | ~$37.00 |
+| Dry Goods & Pantry | ~$47.50 |
 | Household | ~$10.00 |
-| **Total** | **~$219.25** |
+| **Total** | **~$230.75** |
 
-> Budget notes: Two rotisserie birds is the biggest efficiency of the week — one purchase feeds Monday's tamales and Tuesday's chilaquiles. If flanken ribs are unavailable, regular bone-in short ribs work (add 2 extra minutes in the air fryer). Banana leaves freeze well; buy extra for the freezer. One medium watermelon covers Wednesday dinner and Friday's agua fresca.
+---
+
+## Notes
+
+- **Monday:** Start by 5:30pm. Masa harina and chicken broth are already in the pantry — do not buy.
+- **Rotisserie chickens:** Buy both Monday — pull and refrigerate the second bird for Tuesday's chilaquiles.
+- **Thursday ribs:** Marinate Wednesday night so the teens just air fry day-of. Zero prep Thursday.
+- **Watermelon:** One medium melon covers both Wednesday dinner and Friday's agua fresca.
+- **Banana leaves:** Call ahead to confirm your market has them (Latin or Asian freezer section).
+

@@ -9,7 +9,7 @@ Running log of weekly menus. Reference when generating new plans to avoid repeat
 ## Week of Mon Jun 8 - Fri Jun 12, 2026
 
 ### Dinners
-- 🫔 Yucatecan Tamales + Esquites *(MONDAY)* — Banana leaf tamales with achiote-seasoned rotisserie chicken filling, esquites street corn with mayo, lime, cotija, mango slices — 45–60 min
+- 🫔 Yucatecan Banana Leaf Tamales + Esquites *(MONDAY)* — Banana leaf tamales with chile-salsa rotisserie chicken filling, esquites street corn with mayo, lime, cotija, mango slices — 2–2.5 hrs
 - 🍳 Chilaquiles Divorciados *(TUESDAY — FAST)* — Tortilla chips in salsa roja and salsa verde (divorced!), pulled rotisserie chicken from Monday, fried egg, crema, cotija, avocado, oranges — 15–20 min
 - 🍗 Battered Fried Chicken + Watermelon *(WEDNESDAY)* — Milk-battered chicken thighs and drumsticks, Dutch oven fried, cold watermelon — 40–50 min
 - 🍖 Maggi Beef Ribs + Kimchi *(THURSDAY — TEEN PREP)* — Overnight Maggi-marinated flanken ribs, air fried 8 min at 450°F, jasmine rice, kimchi, pineapple — 8 min cook
