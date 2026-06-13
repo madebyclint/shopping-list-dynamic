@@ -1,112 +1,67 @@
 {
   "_comment": "Per-meal ingredient coverage for the X-Ray panel. Update each week alongside the menu. buy_these = items that MUST appear on the shopping list. pantry = assumed at home, not checked.",
-  "week": "2026-06-08",
+  "week": "2026-06-15",
   "meals": [
     {
-      "name": "Yucatecan Banana Leaf Tamales + Esquites",
+      "name": "Beef Burgers",
       "day": "Monday",
-      "emoji": "🫔",
-      "buy_these": [
-        "Banana leaves (frozen pack)",
-        "Roasted chile & garlic salsa (1 jar)",
-        "Rotisserie chicken x2 (buy both Monday)",
-        "Corn, 3–4 ears (or frozen kernels)",
-        "Cotija cheese",
-        "Mango (2)"
-      ],
+      "emoji": "🍔",
+      "buy_these": [],
       "pantry": [
-        "Masa harina (4 cups)",
-        "Vegetable shortening",
-        "Baking powder",
-        "Salt",
-        "Chicken broth",
-        "Mayo",
-        "Lime",
-        "Chili powder"
-      ]
-    },
-    {
-      "name": "Chilaquiles Divorciados",
-      "day": "Tuesday",
-      "emoji": "🍳",
-      "buy_these": [
-        "Salsa verde (1 jar)",
-        "Salsa roja (1 jar)",
-        "Tortilla chips (1 bag)",
-        "Crema or sour cream",
-        "Cotija or queso fresco",
-        "Avocados (2)",
-        "Cilantro (2 bunches)",
+        "Beef patties (freezer)",
+        "Brioche burger buns",
+        "Cheddar or American cheese",
+        "Lettuce, tomato, onion",
+        "Ketchup, mustard, mayo",
         "Oranges"
-      ],
-      "pantry": [
-        "Rotisserie chicken (second bird from Monday, refrigerated)",
-        "Eggs (4, optional fried on top)",
-        "Lime"
       ]
     },
     {
-      "name": "Battered Fried Chicken + Watermelon",
+      "name": "Quesadillas",
+      "day": "Tuesday",
+      "emoji": "🫓",
+      "buy_these": [
+        "Mangoes (2–3)"
+      ],
+      "pantry": [
+        "Flour tortillas",
+        "Shredded cheese",
+        "Filling of choice (leftover protein or veg)",
+        "Butter or oil",
+        "Sour cream or salsa (if on hand)"
+      ]
+    },
+    {
+      "name": "Eggs, Tofu & Soba",
       "day": "Wednesday",
-      "emoji": "🍗",
+      "emoji": "🍜",
       "buy_these": [
-        "Chicken thighs + drumsticks (3–4 lbs)",
-        "Lactaid whole milk (¾ cup for batter)",
-        "Vegetable oil (for frying, ~1 qt)",
-        "Watermelon (1 medium — half Wed, half for Fri agua fresca)"
+        "Green onions (1 bunch)",
+        "Ginger (small knob)",
+        "Melon (1 medium)"
       ],
       "pantry": [
-        "All-purpose flour",
-        "Baking powder",
-        "Salt",
-        "Eggs",
-        "Garlic powder",
-        "Paprika",
-        "Cayenne",
-        "Black pepper",
-        "Vegetable oil (small amount for batter)"
+        "Soba noodles",
+        "Firm tofu (1 block)",
+        "Eggs (1–2 per person)",
+        "Soy sauce",
+        "Mirin",
+        "Sesame oil",
+        "Dashi powder or broth"
       ]
     },
     {
-      "name": "Maggi Beef Ribs + Kimchi",
+      "name": "Sardines & Rice",
       "day": "Thursday",
-      "emoji": "🍖",
-      "buy_these": [
-        "Beef short ribs, flanken cut (2–3 lbs)",
-        "Store-bought kimchi (1 jar)",
-        "Jasmine rice (if low)",
-        "Pineapple or seasonal fruit"
-      ],
+      "emoji": "🐟",
+      "buy_these": [],
       "pantry": [
-        "Maggi seasoning sauce",
-        "Black pepper"
-      ]
-    },
-    {
-      "name": "Birria Tacos + Sandia Agua Fresca",
-      "day": "Friday",
-      "emoji": "🌮",
-      "buy_these": [
-        "Chuck roast (2 lbs)",
-        "Dried guajillo chiles (4 pods)",
-        "Dried ancho chiles (4 pods)",
-        "Chipotles in adobo (1 small can)",
-        "Roma tomatoes (2)",
-        "Corn tortillas",
-        "Oaxaca cheese",
-        "Cilantro",
-        "White onion (2)",
-        "Limes (bag)"
-      ],
-      "pantry": [
-        "Garlic",
-        "Salt",
-        "Dried oregano",
-        "Ground cumin",
-        "Bay leaves",
-        "White vinegar",
-        "Sugar (for agua fresca)",
-        "Watermelon (other half from Wednesday)"
+        "Canned sardines (2–3 tins)",
+        "Jasmine rice",
+        "Green onions (from Wednesday's bunch)",
+        "Soy sauce",
+        "Hot sauce",
+        "Melon (from Wednesday's purchase)"
       ]
     }
   ]

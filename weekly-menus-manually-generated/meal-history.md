@@ -6,6 +6,20 @@ Running log of weekly menus. Reference when generating new plans to avoid repeat
 
 ---
 
+## Week of Mon Jun 15 - Fri Jun 19, 2026
+
+### Dinners
+- 🍔 Beef Burgers *(MONDAY)* — Beef patties on brioche buns, lettuce, tomato, onion, cheese, condiments, oranges — ~25 min
+- 🫓 Quesadillas *(TUESDAY — FAST)* — Flour tortillas with melted cheese and filling, pan-fried golden, mangoes — ≤20 min
+- 🍜 Eggs, Tofu & Soba *(WEDNESDAY)* — 7-minute soft-boiled eggs, pan-fried firm tofu, soba noodles in soy-mirin broth, green onions, ginger, melon — ~30 min
+- 🐟 Sardines & Rice *(THURSDAY — TEEN PREP)* — Canned sardines over jasmine rice, green onions, soy sauce, melon — ~25 min
+
+### Notes
+- Purge week — most proteins and pantry items already on hand; short grocery list
+- Fri: Flying to Seattle — no dinner
+
+---
+
 ## Week of Mon Jun 8 - Fri Jun 12, 2026
 
 ### Dinners
