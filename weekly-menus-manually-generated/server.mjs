@@ -26,9 +26,12 @@ import pg      from 'pg';
 import { fileURLToPath } from 'url';
 import path    from 'path';
 import { readFileSync, existsSync, readdirSync } from 'fs';
-import { timingSafeEqual } from 'crypto';
+import { timingSafeEqual, randomUUID, randomBytes } from 'crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { mcpAuthRouter, getOAuthProtectedResourceMetadataUrl } from '@modelcontextprotocol/sdk/server/auth/router.js';
+import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
+import { InvalidGrantError, InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
 import * as z from 'zod/v4';
 
 // ── Load .env.local as fallback when env vars are missing (local dev) ─────────
@@ -2383,19 +2386,148 @@ function tokenMatches(expected, presented) {
   return timingSafeEqual(a, b);
 }
 
-function requireMcpToken(req, res, next) {
-  const tokens = parseMcpTokens();
-  if (!tokens.length) {
-    console.error('MCP_ACCESS_TOKENS is not set — /mcp is disabled');
-    return res.status(503).json({ error: 'mcp_not_configured' });
-  }
-  const header = req.headers.authorization || '';
-  const presented = header.startsWith('Bearer ') ? header.slice(7) : header;
-  const match = presented && tokens.find(t => tokenMatches(t.token, presented));
-  if (!match) return res.status(401).json({ error: 'unauthorized' });
-  req.mcpUser = match.label;
-  next();
+// ── OAuth (for Claude's custom-connector UI, which only offers OAuth — not a
+// plain header field) ──────────────────────────────────────────────────────
+// A minimal, in-memory OAuth 2.1 authorization server: dynamic client
+// registration + an authorize step that's just a login form asking for the
+// same MCP_ACCESS_TOKENS value, then standard code→token exchange (PKCE).
+// State resets on server restart — a redeploy logs everyone out of the
+// connector and they just reconnect (re-enter the token once).
+const PUBLIC_URL = process.env.PUBLIC_URL
+  || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : `http://localhost:${PORT}`);
+
+const oauthClients = new Map();       // client_id -> OAuthClientInformationFull
+const oauthCodes = new Map();         // code -> { clientId, redirectUri, codeChallenge, label, scopes, expiresAt }
+const oauthAccessTokens = new Map();  // access_token -> { clientId, label, scopes, expiresAt (ms) }
+const oauthRefreshTokens = new Map(); // refresh_token -> { clientId, label, scopes }
+
+const OAUTH_CODE_TTL_MS = 5 * 60_000;
+const OAUTH_ACCESS_TOKEN_TTL_S = 60 * 60; // 1 hour
+
+function issueTokens(clientId, label, scopes) {
+  const access_token = randomBytes(32).toString('hex');
+  const refresh_token = randomBytes(32).toString('hex');
+  const expiresAt = Date.now() + OAUTH_ACCESS_TOKEN_TTL_S * 1000;
+  oauthAccessTokens.set(access_token, { clientId, label, scopes, expiresAt });
+  oauthRefreshTokens.set(refresh_token, { clientId, label, scopes });
+  return { access_token, token_type: 'bearer', expires_in: OAUTH_ACCESS_TOKEN_TTL_S, refresh_token, scope: (scopes || []).join(' ') || undefined };
 }
+
+function renderLoginForm({ params, client, error }) {
+  const hidden = [
+    ['client_id', client.client_id],
+    ['redirect_uri', params.redirectUri],
+    ['response_type', 'code'],
+    ['code_challenge', params.codeChallenge],
+    ['code_challenge_method', 'S256'],
+    ['state', params.state],
+    ['scope', (params.scopes || []).join(' ')],
+    ['resource', params.resource ? params.resource.href : undefined],
+  ].filter(([, v]) => v).map(([k, v]) => `<input type="hidden" name="${k}" value="${String(v).replace(/"/g, '&quot;')}">`).join('\n');
+  return `<!doctype html><html><head><title>Brooklyn Kitchen — Sign in</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{font-family:system-ui,sans-serif;max-width:380px;margin:15vh auto;padding:0 20px;color:#111}
+h2{margin:0 0 4px} p{color:#555;font-size:0.92rem}
+input[type=password]{width:100%;padding:11px;font-size:16px;box-sizing:border-box;margin:14px 0 8px;border:1px solid #ccc;border-radius:8px}
+button{width:100%;padding:11px;font-size:16px;background:#111;color:#fff;border:none;border-radius:8px;cursor:pointer}
+.err{color:#b91c1c;font-size:0.85rem;margin:-4px 0 8px}</style></head>
+<body>
+<h2>🥬 Brooklyn Kitchen</h2>
+<p>Enter your household access token to connect Claude to the shopping list.</p>
+${error ? `<div class="err">${error}</div>` : ''}
+<form method="POST">
+${hidden}
+<input type="password" name="token" placeholder="Access token" autofocus required>
+<button type="submit">Connect</button>
+</form>
+</body></html>`;
+}
+
+class KitchenOAuthProvider {
+  get clientsStore() {
+    return {
+      getClient: (clientId) => oauthClients.get(clientId),
+      registerClient: (client) => { oauthClients.set(client.client_id, client); return client; },
+    };
+  }
+
+  async authorize(client, params, res) {
+    const req = res.req;
+    if (req.method === 'POST') {
+      const tokens = parseMcpTokens();
+      const presented = String(req.body.token || '');
+      const match = presented && tokens.find(t => tokenMatches(t.token, presented));
+      if (!tokens.length) {
+        return res.status(503).send(renderLoginForm({ params, client, error: 'Server has no access tokens configured (MCP_ACCESS_TOKENS).' }));
+      }
+      if (!match) {
+        return res.status(401).send(renderLoginForm({ params, client, error: 'Incorrect token — try again.' }));
+      }
+      const code = randomBytes(24).toString('hex');
+      oauthCodes.set(code, {
+        clientId: client.client_id,
+        redirectUri: params.redirectUri,
+        codeChallenge: params.codeChallenge,
+        label: match.label,
+        scopes: params.scopes || [],
+        expiresAt: Date.now() + OAUTH_CODE_TTL_MS,
+      });
+      const redirectUrl = new URL(params.redirectUri);
+      redirectUrl.searchParams.set('code', code);
+      if (params.state) redirectUrl.searchParams.set('state', params.state);
+      return res.redirect(302, redirectUrl.href);
+    }
+    res.status(200).type('html').send(renderLoginForm({ params, client }));
+  }
+
+  async challengeForAuthorizationCode(client, authorizationCode) {
+    const rec = oauthCodes.get(authorizationCode);
+    if (!rec || rec.clientId !== client.client_id) throw new InvalidGrantError('Invalid authorization code');
+    if (rec.expiresAt < Date.now()) { oauthCodes.delete(authorizationCode); throw new InvalidGrantError('Authorization code expired'); }
+    return rec.codeChallenge;
+  }
+
+  async exchangeAuthorizationCode(client, authorizationCode) {
+    const rec = oauthCodes.get(authorizationCode);
+    if (!rec || rec.clientId !== client.client_id) throw new InvalidGrantError('Invalid authorization code');
+    oauthCodes.delete(authorizationCode); // one-time use
+    if (rec.expiresAt < Date.now()) throw new InvalidGrantError('Authorization code expired');
+    return issueTokens(client.client_id, rec.label, rec.scopes);
+  }
+
+  async exchangeRefreshToken(client, refreshToken, scopes) {
+    const rec = oauthRefreshTokens.get(refreshToken);
+    if (!rec || rec.clientId !== client.client_id) throw new InvalidGrantError('Invalid refresh token');
+    oauthRefreshTokens.delete(refreshToken); // rotate
+    return issueTokens(client.client_id, rec.label, scopes || rec.scopes);
+  }
+
+  async verifyAccessToken(token) {
+    const rec = oauthAccessTokens.get(token);
+    if (rec) {
+      if (rec.expiresAt < Date.now()) { oauthAccessTokens.delete(token); throw new InvalidTokenError('Token expired'); }
+      return { token, clientId: rec.clientId, scopes: rec.scopes || [], expiresAt: Math.floor(rec.expiresAt / 1000) };
+    }
+    // Fall back to the static shared token(s) — lets scripts/testing use the
+    // same Authorization header without going through the OAuth dance.
+    const tokens = parseMcpTokens();
+    const match = tokens.find(t => tokenMatches(t.token, token));
+    if (match) return { token, clientId: `static:${match.label}`, scopes: [], expiresAt: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365 * 100 };
+    throw new InvalidTokenError('Invalid token');
+  }
+}
+
+const kitchenOAuthProvider = new KitchenOAuthProvider();
+const mcpResourceUrl = new URL('/mcp', PUBLIC_URL);
+const mcpResourceMetadataUrl = getOAuthProtectedResourceMetadataUrl(mcpResourceUrl);
+const requireMcpToken = requireBearerAuth({ verifier: kitchenOAuthProvider, resourceMetadataUrl: mcpResourceMetadataUrl });
+
+app.use(mcpAuthRouter({
+  provider: kitchenOAuthProvider,
+  issuerUrl: new URL(PUBLIC_URL),
+  resourceServerUrl: mcpResourceUrl,
+  resourceName: 'Brooklyn Kitchen',
+}));
 
 async function getCurrentWeekKey() {
   const { rows } = await pool.query('SELECT data FROM manifest WHERE id = 1');
