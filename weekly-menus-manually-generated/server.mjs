@@ -26,6 +26,10 @@ import pg      from 'pg';
 import { fileURLToPath } from 'url';
 import path    from 'path';
 import { readFileSync, existsSync, readdirSync } from 'fs';
+import { timingSafeEqual } from 'crypto';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import * as z from 'zod/v4';
 
 // ── Load .env.local as fallback when env vars are missing (local dev) ─────────
 if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
@@ -134,6 +138,13 @@ async function initDb() {
       source_url  TEXT,
       last_made   TEXT,
       created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS planning_notes (
+      id                 SERIAL      PRIMARY KEY,
+      content            TEXT        NOT NULL,
+      created_at         TIMESTAMPTZ DEFAULT NOW(),
+      resolved_at        TIMESTAMPTZ,
+      resolved_week_date TEXT
     );
   `);
   // Safe migrations for existing installs
@@ -305,14 +316,56 @@ app.get('/meals-ingredients.json', async (_req, res, next) => {
 app.use(express.static(__dirname));
 
 // ── GET /api/cart?week=YYYY-MM-DD ────────────────────────────────────────────
+// readCartState/writeCartState — shared by the /api/cart routes below and the
+// MCP cart tools (add_shopping_item, update_shopping_item, get_this_week).
+async function readCartState(weekKey) {
+  const { rows } = await pool.query(
+    'SELECT state FROM cart_state WHERE week_key = $1', [weekKey],
+  );
+  return rows[0]?.state ?? null;
+}
+
+async function writeCartState(weekKey, state, reqId) {
+  await pool.query(
+    `INSERT INTO cart_state (week_key, state, updated_at)
+     VALUES ($1, $2, NOW())
+     ON CONFLICT (week_key)
+     DO UPDATE SET state = EXCLUDED.state, updated_at = NOW()`,
+    [weekKey, JSON.stringify(state)],
+  );
+  // Push to all connected clients for this week (real-time sync)
+  broadcast(weekKey, state, reqId || null);
+}
+
+function emptyCartState() {
+  return { v: 1, c: [], s: [], x: [], prices: {}, qtys: {}, notes: {} };
+}
+
+const normItemName = s => String(s || '').toLowerCase().trim();
+
+function findExtraIndex(state, name) {
+  const target = normItemName(name);
+  return (state.x || []).findIndex(it => normItemName(it.n) === target);
+}
+
+// Cheap duplicate check for add_shopping_item: does this name already show up
+// as an extra, or as a substring in the current week's raw shopping-list text?
+// Intentionally simple (no attempt to replicate the client's markdown parser
+// in clParseMd()/index.html) — good enough to catch "already added this" cases.
+async function findLikelyDuplicate(weekKey, name, listMd) {
+  const target = normItemName(name);
+  if (!target) return null;
+  const state = (await readCartState(weekKey)) || emptyCartState();
+  const extraIdx = findExtraIndex(state, name);
+  if (extraIdx !== -1) return { where: 'extras', item: state.x[extraIdx] };
+  if (listMd && listMd.toLowerCase().includes(target)) return { where: 'shopping_list', item: null };
+  return null;
+}
+
 app.get('/api/cart', async (req, res) => {
   try {
     const weekKey = String(req.query.week || 'current').slice(0, 50);
-    const { rows } = await pool.query(
-      'SELECT state FROM cart_state WHERE week_key = $1',
-      [weekKey],
-    );
-    res.json(rows[0]?.state ?? null);
+    res.json(await readCartState(weekKey));
   } catch (err) {
     console.error('GET /api/cart:', err.message);
     res.status(500).json({ error: 'db_error' });
@@ -329,19 +382,7 @@ app.post('/api/cart', async (req, res) => {
       return res.status(400).json({ error: 'invalid_state' });
     }
 
-    await pool.query(
-      `INSERT INTO cart_state (week_key, state, updated_at)
-       VALUES ($1, $2, NOW())
-       ON CONFLICT (week_key)
-       DO UPDATE SET state = EXCLUDED.state, updated_at = NOW()`,
-      [weekKey, JSON.stringify(state)],
-    );
-
-    const reqId = String(req.body.reqId || '').slice(0, 64) || null;
-
-    // Push to all connected clients for this week (real-time sync)
-    broadcast(weekKey, state, reqId);
-
+    await writeCartState(weekKey, state, String(req.body.reqId || '').slice(0, 64) || null);
     res.json({ ok: true });
   } catch (err) {
     console.error('POST /api/cart:', err.message);
@@ -613,155 +654,70 @@ app.get('/api/cart/events', (req, res) => {
   });
 });
 
-// ── Meal Ideas API ────────────────────────────────────────────────────────────
+// ── Planning Notes API ────────────────────────────────────────────────────────
+// Freeform notes for the next week's meal plan (replaces the old separate
+// "Meal Ideas" + "Next Week Notes" features — Claude doesn't need structured
+// fields a human-scannable UI wanted, just plain text). Resolved automatically
+// by /api/import-week, or manually from the UI.
 
-async function ensureMealIdeasTables() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS meal_ideas (
-      id SERIAL PRIMARY KEY,
-      title VARCHAR(255) NOT NULL,
-      description TEXT,
-      cuisine_type VARCHAR(100),
-      notes TEXT,
-      is_favorite BOOLEAN DEFAULT false,
-      usage_count INTEGER DEFAULT 0,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    );
-    CREATE TABLE IF NOT EXISTS next_week_notes (
-      id SERIAL PRIMARY KEY,
-      content TEXT NOT NULL,
-      note_type VARCHAR(50) NOT NULL DEFAULT 'general',
-      week_date DATE,
-      is_active BOOLEAN DEFAULT true,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    );
-  `);
-  // Add include_in_prompt column if it doesn't exist yet (safe migration)
-  await pool.query(`
-    ALTER TABLE meal_ideas ADD COLUMN IF NOT EXISTS include_in_prompt BOOLEAN DEFAULT false;
-  `);
-}
-ensureMealIdeasTables().catch(e => console.error('meal_ideas table init error:', e));
-
-app.get('/api/meal-ideas', async (req, res) => {
+app.get('/api/planning-notes', async (req, res) => {
   try {
-    const favOnly = req.query.favorites === 'true';
-    const q = favOnly
-      ? 'SELECT * FROM meal_ideas WHERE is_favorite = true ORDER BY created_at DESC'
-      : 'SELECT * FROM meal_ideas ORDER BY is_favorite DESC, created_at DESC';
+    const q = req.query.all === '1'
+      ? 'SELECT * FROM planning_notes ORDER BY created_at DESC'
+      : 'SELECT * FROM planning_notes WHERE resolved_at IS NULL ORDER BY created_at DESC';
     const { rows } = await pool.query(q);
-    res.json({ ideas: rows });
-  } catch (err) {
-    console.error('GET /api/meal-ideas:', err.message);
-    res.status(500).json({ error: 'db_error' });
-  }
-});
-
-app.post('/api/meal-ideas', async (req, res) => {
-  try {
-    const { title, description, cuisine_type, notes, is_favorite } = req.body;
-    if (!title?.trim()) return res.status(400).json({ error: 'title required' });
-    const { rows } = await pool.query(
-      `INSERT INTO meal_ideas (title, description, cuisine_type, notes, is_favorite)
-       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [title.trim(), description || null, cuisine_type || null, notes || null, !!is_favorite]
-    );
-    res.status(201).json({ idea: rows[0] });
-  } catch (err) {
-    console.error('POST /api/meal-ideas:', err.message);
-    res.status(500).json({ error: 'db_error' });
-  }
-});
-
-app.patch('/api/meal-ideas/:id', async (req, res) => {
-  try {
-    const id = parseInt(req.params.id, 10);
-    const allowed = ['title','description','cuisine_type','notes','is_favorite','include_in_prompt'];
-    const fields = [], vals = [];
-    for (const [k, v] of Object.entries(req.body)) {
-      if (allowed.includes(k)) { fields.push(`${k} = $${fields.length + 1}`); vals.push(v); }
-    }
-    if (!fields.length) return res.status(400).json({ error: 'no valid fields' });
-    vals.push(id);
-    const { rows } = await pool.query(
-      `UPDATE meal_ideas SET ${fields.join(', ')} WHERE id = $${vals.length} RETURNING *`, vals
-    );
-    res.json({ idea: rows[0] });
-  } catch (err) {
-    console.error('PATCH /api/meal-ideas:', err.message);
-    res.status(500).json({ error: 'db_error' });
-  }
-});
-
-app.delete('/api/meal-ideas/:id', async (req, res) => {
-  try {
-    await pool.query('DELETE FROM meal_ideas WHERE id = $1', [parseInt(req.params.id, 10)]);
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('DELETE /api/meal-ideas:', err.message);
-    res.status(500).json({ error: 'db_error' });
-  }
-});
-
-// ── Next Week Notes API ───────────────────────────────────────────────────────
-
-app.get('/api/next-week-notes', async (_req, res) => {
-  try {
-    const { rows } = await pool.query(
-      `SELECT * FROM next_week_notes WHERE is_active = true ORDER BY created_at DESC`
-    );
     res.json({ notes: rows });
   } catch (err) {
-    console.error('GET /api/next-week-notes:', err.message);
+    console.error('GET /api/planning-notes:', err.message);
     res.status(500).json({ error: 'db_error' });
   }
 });
 
-app.post('/api/next-week-notes', async (req, res) => {
+app.post('/api/planning-notes', async (req, res) => {
   try {
-    const { content, note_type, week_date } = req.body;
-    if (!content?.trim()) return res.status(400).json({ error: 'content required' });
+    const content = String(req.body.content || '').trim();
+    if (!content) return res.status(400).json({ error: 'content required' });
     const { rows } = await pool.query(
-      `INSERT INTO next_week_notes (content, note_type, week_date)
-       VALUES ($1,$2,$3) RETURNING *`,
-      [content.trim(), note_type || 'general', week_date || null]
+      `INSERT INTO planning_notes (content) VALUES ($1) RETURNING *`,
+      [content],
     );
     res.status(201).json({ note: rows[0] });
   } catch (err) {
-    console.error('POST /api/next-week-notes:', err.message);
+    console.error('POST /api/planning-notes:', err.message);
     res.status(500).json({ error: 'db_error' });
   }
 });
 
-app.patch('/api/next-week-notes/:id', async (req, res) => {
-  try {
-    await pool.query('UPDATE next_week_notes SET is_active = false WHERE id = $1', [parseInt(req.params.id, 10)]);
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: 'db_error' });
-  }
-});
-
-app.put('/api/next-week-notes/:id', async (req, res) => {
+app.patch('/api/planning-notes/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const { content, note_type, week_date } = req.body;
-    if (!content?.trim()) return res.status(400).json({ error: 'content required' });
-    const { rows } = await pool.query(
-      `UPDATE next_week_notes SET content = $1, note_type = $2, week_date = $3 WHERE id = $4 RETURNING *`,
-      [content.trim(), note_type || 'general', week_date || null, id]
-    );
-    res.json({ note: rows[0] });
+    if (req.body.content != null) {
+      const content = String(req.body.content).trim();
+      if (!content) return res.status(400).json({ error: 'content required' });
+      const { rows } = await pool.query(
+        'UPDATE planning_notes SET content = $1 WHERE id = $2 RETURNING *', [content, id],
+      );
+      return res.json({ note: rows[0] });
+    }
+    if (req.body.resolved) {
+      const { rows } = await pool.query(
+        'UPDATE planning_notes SET resolved_at = NOW() WHERE id = $1 RETURNING *', [id],
+      );
+      return res.json({ note: rows[0] });
+    }
+    res.status(400).json({ error: 'no valid fields' });
   } catch (err) {
+    console.error('PATCH /api/planning-notes:', err.message);
     res.status(500).json({ error: 'db_error' });
   }
 });
 
-app.delete('/api/next-week-notes/:id', async (req, res) => {
+app.delete('/api/planning-notes/:id', async (req, res) => {
   try {
-    await pool.query('DELETE FROM next_week_notes WHERE id = $1', [parseInt(req.params.id, 10)]);
+    await pool.query('DELETE FROM planning_notes WHERE id = $1', [parseInt(req.params.id, 10)]);
     res.json({ ok: true });
   } catch (err) {
+    console.error('DELETE /api/planning-notes:', err.message);
     res.status(500).json({ error: 'db_error' });
   }
 });
@@ -803,17 +759,11 @@ app.get('/api/generate-prompt', async (_req, res) => {
     const weekDate = pgNextMonday();
     const recentMeals = pgGetRecentMeals(6);
 
-    // Get ideas marked for prompt
-    const ideasRes = await pool.query(
-      `SELECT title, cuisine_type, notes FROM meal_ideas WHERE include_in_prompt = true ORDER BY created_at`
-    );
-    const includedIdeas = ideasRes.rows;
-
-    // Get active next-week notes
+    // Get open planning notes
     const notesRes = await pool.query(
-      `SELECT content, note_type FROM next_week_notes WHERE is_active = true ORDER BY created_at`
+      `SELECT id, content FROM planning_notes WHERE resolved_at IS NULL ORDER BY created_at`
     );
-    const activeNotes = notesRes.rows;
+    const openNotes = notesRes.rows;
 
     // Get pantry recipes
     const pantryRes = await pool.query(
@@ -822,28 +772,10 @@ app.get('/api/generate-prompt', async (_req, res) => {
     const pantryItems = pantryRes.rows;
 
     // Build optional context blocks
-    let ideasBlock = '';
-    if (includedIdeas.length) {
-      const lines = includedIdeas.map(i => {
-        let line = `- ${i.title}`;
-        if (i.cuisine_type) line += ` (${i.cuisine_type})`;
-        if (i.notes) line += `\n  Notes: ${i.notes}`;
-        return line;
-      }).join('\n');
-      ideasBlock = `\n**Meal ideas to consider this week (please include 1–3 of these where they fit):**\n${lines}\n`;
-    }
-
     let notesBlock = '';
-    if (activeNotes.length) {
-      const grouped = {};
-      for (const n of activeNotes) (grouped[n.note_type] = grouped[n.note_type] || []).push(n.content);
-      const lines = [];
-      if (grouped.meal_request?.length)          lines.push(`Requested meals: ${grouped.meal_request.join('; ')}`);
-      if (grouped.must_use_ingredient?.length)   lines.push(`Must-use ingredients: ${grouped.must_use_ingredient.join('; ')}`);
-      if (grouped.dietary_note?.length)          lines.push(`Dietary notes: ${grouped.dietary_note.join('; ')}`);
-      if (grouped.constraint?.length)            lines.push(`Constraints: ${grouped.constraint.join('; ')}`);
-      if (grouped.general?.length)              lines.push(`Other notes: ${grouped.general.join('; ')}`);
-      notesBlock = `\n**This week's specific notes (please honor these):**\n${lines.map(l => `- ${l}`).join('\n')}\n`;
+    if (openNotes.length) {
+      const lines = openNotes.map(n => `- ${n.content}`).join('\n');
+      notesBlock = `\n**Notes for next week (please honor these):**\n${lines}\n`;
     }
 
     let pantryBlock = '';
@@ -881,7 +813,7 @@ app.get('/api/generate-prompt', async (_req, res) => {
 - Week of ${weekDate}
 - Recent meals to avoid repeating (last 6 weeks): ${recentMeals.join(', ')}
 - We are in Brooklyn buying at small markets (higher prices than chain stores)
-${ideasBlock}${notesBlock}${pantryBlock}
+${notesBlock}${pantryBlock}
 **Pantry staples — do NOT add these to the shopping list:**
 - Olive oil, vegetable oil, canola oil, butter
 - Soy sauce, fish sauce, rice vinegar, sesame oil
@@ -1088,7 +1020,7 @@ After all files above, output this exact block so the dashboard can auto-import 
 
 Rules for FILE 7: weekDate = Monday in YYYY-MM-DD; meals exactly match FILE 3; menuMd/shoppingListMd = complete raw text with newlines escaped as \\n; mealsIngredients = full JSON object from FILE 6 embedded as JSON; mealHistoryEntry = full FILE 4 text with newlines escaped. The block must be valid JSON — do NOT truncate any field.`;
 
-    res.json({ prompt, weekDate, recentMeals, includedIdeas: includedIdeas.map(i => i.title), activeNotes });
+    res.json({ prompt, weekDate, recentMeals, openNotes });
   } catch (err) {
     console.error('GET /api/generate-prompt:', err.message);
     res.status(500).json({ error: 'db_error' });
@@ -1130,106 +1062,127 @@ app.get('/api/search-past-meals', (_req, res) => {
   res.json({ results });
 });
 
+// ── importWeekToDb — save a full AI-generated week to the database ────────────
+// Shared by POST /api/import-week (below) and the MCP `import_new_week` tool.
+// Throws { status, error, detail } on validation failure.
+async function importWeekToDb(payload) {
+  const {
+    weekDate, weekLabel, shoppingDate,
+    meals, mealHistoryEntry,
+    menuMd, shoppingListMd, mealsIngredients,
+    resolvedNoteIds,
+  } = payload;
+
+  // Validate required fields
+  if (!weekDate || !/^\d{4}-\d{2}-\d{2}$/.test(weekDate)) {
+    throw { status: 400, error: 'invalid_week_date', detail: 'weekDate must be YYYY-MM-DD' };
+  }
+  if (!menuMd || typeof menuMd !== 'string' || menuMd.trim().length < 10) {
+    throw { status: 400, error: 'menu_md_required' };
+  }
+  if (!shoppingListMd || typeof shoppingListMd !== 'string' || shoppingListMd.trim().length < 10) {
+    throw { status: 400, error: 'shopping_list_md_required' };
+  }
+  if (!Array.isArray(meals) || !meals.length) {
+    throw { status: 400, error: 'meals_array_required' };
+  }
+
+  const effectiveShoppingDate = (shoppingDate && /^\d{4}-\d{2}-\d{2}$/.test(shoppingDate))
+    ? shoppingDate : weekDate;
+  const effectiveLabel = (weekLabel && typeof weekLabel === 'string')
+    ? weekLabel.trim() : `Week of ${weekDate}`;
+
+  // 1. Upsert weekly_menus
+  await pool.query(
+    `INSERT INTO weekly_menus (week_date, label, content_md, updated_at)
+     VALUES ($1, $2, $3, NOW())
+     ON CONFLICT (week_date)
+     DO UPDATE SET label = EXCLUDED.label, content_md = EXCLUDED.content_md, updated_at = NOW()`,
+    [weekDate, effectiveLabel, menuMd.trim()],
+  );
+
+  // 2. Upsert shopping_lists
+  await pool.query(
+    `INSERT INTO shopping_lists (week_date, content_md, updated_at)
+     VALUES ($1, $2, NOW())
+     ON CONFLICT (week_date)
+     DO UPDATE SET content_md = EXCLUDED.content_md, updated_at = NOW()`,
+    [weekDate, shoppingListMd.trim()],
+  );
+
+  // 3. Update manifest (preserve all existing top-level keys, overwrite currentWeek block)
+  const { rows: manifestRows } = await pool.query('SELECT data FROM manifest WHERE id = 1');
+  const existingManifest = manifestRows[0]?.data || {};
+  const updatedManifest = {
+    ...existingManifest,
+    currentWeek:  weekDate,
+    weekLabel:    effectiveLabel,
+    shoppingDate: effectiveShoppingDate,
+    files: {
+      menu:         `menus/${weekDate}-menu.md`,
+      shoppingList: `shopping-lists/${weekDate}-shopping-list.md`,
+    },
+    meals,
+  };
+  await pool.query(
+    `INSERT INTO manifest (id, data, updated_at)
+     VALUES (1, $1, NOW())
+     ON CONFLICT (id)
+     DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()`,
+    [JSON.stringify(updatedManifest)],
+  );
+
+  // 4. Prepend mealHistoryEntry to meal-history document
+  if (mealHistoryEntry && typeof mealHistoryEntry === 'string' && mealHistoryEntry.trim()) {
+    const { rows: histRows } = await pool.query(
+      "SELECT content FROM documents WHERE key = 'meal-history'",
+    );
+    const existing = histRows[0]?.content || '';
+    const updated  = mealHistoryEntry.trim() + '\n\n' + existing;
+    await pool.query(
+      `INSERT INTO documents (key, content, updated_at)
+       VALUES ('meal-history', $1, NOW())
+       ON CONFLICT (key)
+       DO UPDATE SET content = EXCLUDED.content, updated_at = NOW()`,
+      [updated],
+    );
+  }
+
+  // 5. Replace meals-ingredients document
+  if (mealsIngredients && typeof mealsIngredients === 'object') {
+    await pool.query(
+      `INSERT INTO documents (key, content, updated_at)
+       VALUES ('meals-ingredients', $1, NOW())
+       ON CONFLICT (key)
+       DO UPDATE SET content = EXCLUDED.content, updated_at = NOW()`,
+      [JSON.stringify(mealsIngredients)],
+    );
+  }
+
+  // 6. Resolve planning notes — either the specific ones named, or (default,
+  // matching the old meal_ideas behavior) every note still open.
+  if (Array.isArray(resolvedNoteIds) && resolvedNoteIds.length) {
+    await pool.query(
+      'UPDATE planning_notes SET resolved_at = NOW(), resolved_week_date = $1 WHERE id = ANY($2::int[]) AND resolved_at IS NULL',
+      [weekDate, resolvedNoteIds],
+    );
+  } else {
+    await pool.query(
+      'UPDATE planning_notes SET resolved_at = NOW(), resolved_week_date = $1 WHERE resolved_at IS NULL',
+      [weekDate],
+    );
+  }
+
+  return { ok: true, weekDate, weekLabel: effectiveLabel };
+}
+
 // ── POST /api/import-week — save a full AI-generated week to the database ─────
 app.post('/api/import-week', async (req, res) => {
   try {
-    const {
-      weekDate, weekLabel, shoppingDate,
-      meals, mealHistoryEntry, followingWeekIdeas,
-      menuMd, shoppingListMd, mealsIngredients,
-    } = req.body;
-
-    // Validate required fields
-    if (!weekDate || !/^\d{4}-\d{2}-\d{2}$/.test(weekDate)) {
-      return res.status(400).json({ error: 'invalid_week_date', detail: 'weekDate must be YYYY-MM-DD' });
-    }
-    if (!menuMd || typeof menuMd !== 'string' || menuMd.trim().length < 10) {
-      return res.status(400).json({ error: 'menu_md_required' });
-    }
-    if (!shoppingListMd || typeof shoppingListMd !== 'string' || shoppingListMd.trim().length < 10) {
-      return res.status(400).json({ error: 'shopping_list_md_required' });
-    }
-    if (!Array.isArray(meals) || !meals.length) {
-      return res.status(400).json({ error: 'meals_array_required' });
-    }
-
-    const effectiveShoppingDate = (shoppingDate && /^\d{4}-\d{2}-\d{2}$/.test(shoppingDate))
-      ? shoppingDate : weekDate;
-    const effectiveLabel = (weekLabel && typeof weekLabel === 'string')
-      ? weekLabel.trim() : `Week of ${weekDate}`;
-
-    // 1. Upsert weekly_menus
-    await pool.query(
-      `INSERT INTO weekly_menus (week_date, label, content_md, updated_at)
-       VALUES ($1, $2, $3, NOW())
-       ON CONFLICT (week_date)
-       DO UPDATE SET label = EXCLUDED.label, content_md = EXCLUDED.content_md, updated_at = NOW()`,
-      [weekDate, effectiveLabel, menuMd.trim()],
-    );
-
-    // 2. Upsert shopping_lists
-    await pool.query(
-      `INSERT INTO shopping_lists (week_date, content_md, updated_at)
-       VALUES ($1, $2, NOW())
-       ON CONFLICT (week_date)
-       DO UPDATE SET content_md = EXCLUDED.content_md, updated_at = NOW()`,
-      [weekDate, shoppingListMd.trim()],
-    );
-
-    // 3. Update manifest (preserve all existing top-level keys, overwrite currentWeek block)
-    const { rows: manifestRows } = await pool.query('SELECT data FROM manifest WHERE id = 1');
-    const existingManifest = manifestRows[0]?.data || {};
-    const updatedManifest = {
-      ...existingManifest,
-      currentWeek:  weekDate,
-      weekLabel:    effectiveLabel,
-      shoppingDate: effectiveShoppingDate,
-      files: {
-        menu:         `menus/${weekDate}-menu.md`,
-        shoppingList: `shopping-lists/${weekDate}-shopping-list.md`,
-      },
-      meals,
-    };
-    await pool.query(
-      `INSERT INTO manifest (id, data, updated_at)
-       VALUES (1, $1, NOW())
-       ON CONFLICT (id)
-       DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()`,
-      [JSON.stringify(updatedManifest)],
-    );
-
-    // 4. Prepend mealHistoryEntry to meal-history document
-    if (mealHistoryEntry && typeof mealHistoryEntry === 'string' && mealHistoryEntry.trim()) {
-      const { rows: histRows } = await pool.query(
-        "SELECT content FROM documents WHERE key = 'meal-history'",
-      );
-      const existing = histRows[0]?.content || '';
-      const updated  = mealHistoryEntry.trim() + '\n\n' + existing;
-      await pool.query(
-        `INSERT INTO documents (key, content, updated_at)
-         VALUES ('meal-history', $1, NOW())
-         ON CONFLICT (key)
-         DO UPDATE SET content = EXCLUDED.content, updated_at = NOW()`,
-        [updated],
-      );
-    }
-
-    // 5. Replace meals-ingredients document
-    if (mealsIngredients && typeof mealsIngredients === 'object') {
-      await pool.query(
-        `INSERT INTO documents (key, content, updated_at)
-         VALUES ('meals-ingredients', $1, NOW())
-         ON CONFLICT (key)
-         DO UPDATE SET content = EXCLUDED.content, updated_at = NOW()`,
-        [JSON.stringify(mealsIngredients)],
-      );
-    }
-
-    // 6. Clear include_in_prompt flag on all meal ideas (they've been used)
-    await pool.query('UPDATE meal_ideas SET include_in_prompt = false WHERE include_in_prompt = true');
-
-    res.json({ ok: true, weekDate, weekLabel: effectiveLabel });
+    const result = await importWeekToDb(req.body);
+    res.json(result);
   } catch (err) {
+    if (err && err.status) return res.status(err.status).json({ error: err.error, detail: err.detail });
     console.error('POST /api/import-week:', err.message);
     res.status(500).json({ error: 'db_error', detail: err.message });
   }
@@ -2400,6 +2353,231 @@ app.patch('/api/rename-list-item', async (req, res) => {
     console.error('PATCH /api/rename-list-item:', err.message);
     res.status(500).json({ error: 'db_error', detail: err.message });
   }
+});
+
+// ── MCP server ─────────────────────────────────────────────────────────────────
+// Lets Clint and his wife talk to their own Claude (Desktop/claude.ai — not
+// Claude Code) and read/manage the shopping list or generate a new week.
+// Auth is a shared bearer token for now: MCP_ACCESS_TOKENS holds one or more
+// "label:token" entries (comma-separated). Moving to real per-user tokens
+// later is just adding another entry here — no code change needed.
+
+function parseMcpTokens() {
+  return String(process.env.MCP_ACCESS_TOKENS || '')
+    .split(',')
+    .map(entry => entry.trim())
+    .filter(Boolean)
+    .map(entry => {
+      const i = entry.indexOf(':');
+      return i === -1
+        ? { label: 'default', token: entry }
+        : { label: entry.slice(0, i), token: entry.slice(i + 1) };
+    })
+    .filter(t => t.token);
+}
+
+function tokenMatches(expected, presented) {
+  const a = Buffer.from(String(expected));
+  const b = Buffer.from(String(presented));
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
+
+function requireMcpToken(req, res, next) {
+  const tokens = parseMcpTokens();
+  if (!tokens.length) {
+    console.error('MCP_ACCESS_TOKENS is not set — /mcp is disabled');
+    return res.status(503).json({ error: 'mcp_not_configured' });
+  }
+  const header = req.headers.authorization || '';
+  const presented = header.startsWith('Bearer ') ? header.slice(7) : header;
+  const match = presented && tokens.find(t => tokenMatches(t.token, presented));
+  if (!match) return res.status(401).json({ error: 'unauthorized' });
+  req.mcpUser = match.label;
+  next();
+}
+
+async function getCurrentWeekKey() {
+  const { rows } = await pool.query('SELECT data FROM manifest WHERE id = 1');
+  return rows[0]?.data?.currentWeek || 'current';
+}
+
+async function getWeekContentMd(table, weekKey) {
+  const { rows } = await pool.query(
+    `SELECT content_md FROM ${table} WHERE week_date = $1`, [weekKey],
+  );
+  return rows[0]?.content_md ?? null;
+}
+
+function toolError(message) {
+  return { content: [{ type: 'text', text: message }], isError: true };
+}
+function toolJson(data) {
+  return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+}
+
+function buildMcpServer() {
+  const server = new McpServer({ name: 'brooklyn-kitchen', version }, { capabilities: { tools: {} } });
+
+  server.registerTool('get_this_week', {
+    description: "Read-only. Returns this week's meal lineup, the full menu and shopping-list text, and any ad-hoc items already added to the cart (with checked/skipped status). Always call this before adding items, so you know what's already on the list.",
+    inputSchema: {},
+  }, async () => {
+    const weekKey = await getCurrentWeekKey();
+    const { rows: manifestRows } = await pool.query('SELECT data FROM manifest WHERE id = 1');
+    const manifest = manifestRows[0]?.data || {};
+    const [menuMd, shoppingListMd, cart] = await Promise.all([
+      getWeekContentMd('weekly_menus', weekKey),
+      getWeekContentMd('shopping_lists', weekKey),
+      readCartState(weekKey),
+    ]);
+    return toolJson({
+      weekDate: weekKey,
+      weekLabel: manifest.weekLabel || null,
+      meals: manifest.meals || [],
+      menuMd,
+      shoppingListMd,
+      adHocItems: (cart?.x || []).map(it => ({
+        name: it.n, qty: it.qty ?? 1, price: it.p ?? null,
+        status: it.st === 'c' ? 'checked' : it.st === 's' ? 'skipped' : 'unmarked',
+      })),
+    });
+  });
+
+  server.registerTool('add_shopping_item', {
+    description: "Add an ad-hoc item to this week's shopping cart (e.g. \"add milk and a bag of limes\"). Checks the name against what's already on the list or already added before inserting, and reports a likely duplicate instead of silently adding one. Pass force:true only if the user confirms they want it added anyway.",
+    inputSchema: {
+      name: z.string().min(1).describe('Item name, e.g. "Paper towels"'),
+      qty: z.number().positive().optional().describe('Quantity, defaults to 1'),
+      price: z.number().nonnegative().optional().describe('Estimated unit price in dollars, if known'),
+      force: z.boolean().optional().describe('Add even if it looks like a duplicate'),
+    },
+  }, async ({ name, qty, price, force }) => {
+    const weekKey = await getCurrentWeekKey();
+    const listMd = await getWeekContentMd('shopping_lists', weekKey);
+    if (!force) {
+      const dup = await findLikelyDuplicate(weekKey, name, listMd);
+      if (dup) {
+        return toolJson({
+          added: false,
+          duplicate: true,
+          where: dup.where,
+          message: dup.where === 'extras'
+            ? `"${name}" was already added to this week's cart.`
+            : `"${name}" already appears on this week's planned shopping list.`,
+        });
+      }
+    }
+    const state = (await readCartState(weekKey)) || emptyCartState();
+    state.x = state.x || [];
+    state.x.push({ n: name, p: price ?? null, st: '', qty: qty || 1 });
+    await writeCartState(weekKey, state);
+    return toolJson({ added: true, name, qty: qty || 1, price: price ?? null });
+  });
+
+  server.registerTool('update_shopping_item', {
+    description: 'Check off, skip, unmark, or adjust the qty/price of an ad-hoc item previously added via add_shopping_item (or the app\'s own "+ Add item" button). Matched by name. Note: this only works for ad-hoc items, not the originally-planned menu ingredients — those get checked off in the app while shopping.',
+    inputSchema: {
+      name: z.string().min(1).describe('Item name to update'),
+      action: z.enum(['check', 'skip', 'unmark']).optional().describe('Mark the item checked, skipped, or clear its status'),
+      qty: z.number().positive().optional(),
+      price: z.number().nonnegative().optional(),
+    },
+  }, async ({ name, action, qty, price }) => {
+    const weekKey = await getCurrentWeekKey();
+    const state = await readCartState(weekKey);
+    const idx = state ? findExtraIndex(state, name) : -1;
+    if (idx === -1) {
+      return toolJson({
+        updated: false,
+        reason: 'not_an_ad_hoc_item',
+        message: `Couldn't find "${name}" among this week's ad-hoc items — it may be an original planned ingredient (check it off in the app) or not on the list yet (use add_shopping_item).`,
+      });
+    }
+    if (action === 'check') state.x[idx].st = 'c';
+    else if (action === 'skip') state.x[idx].st = 's';
+    else if (action === 'unmark') state.x[idx].st = '';
+    if (qty != null) state.x[idx].qty = qty;
+    if (price != null) state.x[idx].p = price;
+    await writeCartState(weekKey, state);
+    return toolJson({ updated: true, item: state.x[idx] });
+  });
+
+  server.registerTool('get_meal_history', {
+    description: "Read-only. Returns recent weeks' meals (avoid repeating these) plus the house rules and health goals from INSTRUCTIONS.md. Call this before generating a new week so the plan respects house rules and doesn't repeat recent meals.",
+    inputSchema: {},
+  }, async () => {
+    const recentMeals = pgGetRecentMeals(6);
+    let houseRules = null;
+    try { houseRules = readFileSync(path.join(__dirname, 'INSTRUCTIONS.md'), 'utf8'); } catch {}
+    return toolJson({ recentMeals, houseRulesMd: houseRules });
+  });
+
+  server.registerTool('get_planning_notes', {
+    description: "Read-only. Returns freeform notes left for the next week's plan (e.g. \"use up the salmon in the freezer\", \"traveling Thu-Fri\"). Call this before generating a new week.",
+    inputSchema: {},
+  }, async () => {
+    const { rows } = await pool.query(
+      'SELECT id, content, created_at FROM planning_notes WHERE resolved_at IS NULL ORDER BY created_at',
+    );
+    return toolJson({ notes: rows });
+  });
+
+  server.registerTool('add_planning_note', {
+    description: 'Add a freeform note for the next week\'s meal plan (e.g. "want tacos again soon", "budget is tight this week"). Shows up in get_planning_notes and the app\'s Notes tab.',
+    inputSchema: { content: z.string().min(1) },
+  }, async ({ content }) => {
+    const { rows } = await pool.query(
+      'INSERT INTO planning_notes (content) VALUES ($1) RETURNING *', [content],
+    );
+    return toolJson({ added: true, note: rows[0] });
+  });
+
+  server.registerTool('import_new_week', {
+    description: "Write a fully-authored new week live: updates the current week, rolls the old one into \"last week\", writes the new menu and shopping-list markdown, and resolves open planning notes. Call get_meal_history and get_planning_notes first so the plan reflects house rules, recent-meal history, and open notes.",
+    inputSchema: {
+      weekDate: z.string().describe('Monday of the new week, YYYY-MM-DD'),
+      weekLabel: z.string().optional().describe('e.g. "Mon Aug 10 - Fri Aug 14, 2026"'),
+      shoppingDate: z.string().optional().describe('Shopping trip date, YYYY-MM-DD'),
+      meals: z.array(z.any()).describe('5 meal objects: { name, day, emoji, time, tag, tagType }'),
+      menuMd: z.string().describe('Full menu markdown (Quick Glance + Deeper View)'),
+      shoppingListMd: z.string().describe('Full categorized shopping-list markdown'),
+      mealsIngredients: z.any().optional().describe('{ week, meals: [{ name, day, emoji, buy_these, pantry }] } — full replacement, not an append'),
+      mealHistoryEntry: z.string().optional().describe('Markdown block to prepend to meal-history.md'),
+      resolvedNoteIds: z.array(z.number()).optional().describe('Planning note ids this week actually incorporated. Omit to resolve all currently-open notes (matches the old default behavior).'),
+    },
+  }, async (payload) => {
+    try {
+      const result = await importWeekToDb(payload);
+      return toolJson(result);
+    } catch (err) {
+      if (err && err.status) return toolError(`${err.error}${err.detail ? ': ' + err.detail : ''}`);
+      return toolError(err.message || 'import failed');
+    }
+  });
+
+  return server;
+}
+
+app.post('/mcp', requireMcpToken, async (req, res) => {
+  const mcpServer = buildMcpServer();
+  try {
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    await mcpServer.connect(transport);
+    await transport.handleRequest(req, res, req.body);
+    res.on('close', () => { transport.close(); mcpServer.close(); });
+  } catch (err) {
+    console.error('POST /mcp:', err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ jsonrpc: '2.0', error: { code: -32603, message: 'Internal server error' }, id: null });
+    }
+  }
+});
+app.get('/mcp', requireMcpToken, (_req, res) => {
+  res.status(405).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed.' }, id: null });
+});
+app.delete('/mcp', requireMcpToken, (_req, res) => {
+  res.status(405).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed.' }, id: null });
 });
 
 app.listen(PORT, () =>

@@ -1,6 +1,6 @@
 {
   "name": "brooklyn-kitchen",
-  "version": "1.0.71",
+  "version": "1.0.72",
   "scripts": {
     "start": "node server.mjs",
     "dev": "node --env-file=../.env.local server.mjs",
@@ -9,8 +9,10 @@
     "migrate:ideas": "node --env-file=../.env.local scripts/create-meal-ideas-tables.mjs"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "express": "^4.22.1",
     "pg": "^8.20.0",
-    "serve": "^14.2.4"
+    "serve": "^14.2.4",
+    "zod": "^4.4.3"
   }
 }
