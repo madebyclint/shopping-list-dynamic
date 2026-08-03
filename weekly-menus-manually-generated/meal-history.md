@@ -6,6 +6,21 @@ Running log of weekly menus. Reference when generating new plans to avoid repeat
 
 ---
 
+## Week of Mon Aug 3 - Fri Aug 7, 2026
+
+### Dinners
+- 🍝 Spaghetti with Jarred Sauce *(MONDAY)* — Ground beef in jarred marinara over spaghetti, side salad, parmesan — ~25 min
+- 🍗 Air Fryer Garlic-Butter Wings & Steamed Artichokes *(TUESDAY)* — Air-fried wings in garlic butter, whole steamed artichokes, cantaloupe — ~30–35 min
+- 🍖 Maggi Braised Beef Ribs *(WEDNESDAY)* — All-beef short ribs braised in Maggi seasoning, kimchi, oranges — 8 min cook
+- 🥓 Beef Bacon & Peas *(THURSDAY — TEEN PREP)* — Pan-fried beef bacon, peas, boxed mac and cheese, apples — ~20 min
+- 🌭 Seattle Dogs with Grilled Onions & Kimchi *(FRIDAY)* — Beef uncured hot dogs, grilled onions, kimchi, cream cheese, watermelon — ~20 min
+
+### Notes
+- ~7-week gap since the last imported week (Jun 15–19) — cart stayed in use via ad-hoc "Add item" entries through Jul 14, but no new structured menu/list until now
+- Maggi Braised Beef Ribs repeats the house-favorite rotation (last seen Jun 8–12 as "Maggi Beef Ribs + Kimchi") — all-beef per house rule, not a substitution concern
+
+---
+
 ## Week of Mon Jun 15 - Fri Jun 19, 2026
 
 ### Dinners

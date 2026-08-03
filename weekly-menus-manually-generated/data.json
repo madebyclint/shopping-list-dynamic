@@ -1,102 +1,102 @@
 {
   "_comment": "Update this file each week when generating a new meal plan. weekLabel uses the Monday date. shoppingDate is the day of the trip.",
   "_commentLastWeek": "lastWeek holds the previous week's data. When rolling over, move currentWeek → lastWeek, then fill in the new week as currentWeek.",
-  "currentWeek": "2026-06-15",
-  "weekLabel": "Mon Jun 15 - Fri Jun 19, 2026",
-  "shoppingDate": "2026-06-14",
+  "currentWeek": "2026-08-03",
+  "weekLabel": "Mon Aug 3 - Fri Aug 7, 2026",
+  "shoppingDate": "2026-08-02",
   "files": {
-    "menu": "menus/2026-06-15-menu.md",
-    "shoppingList": "shopping-lists/2026-06-15-shopping-list.md"
+    "menu": "menus/2026-08-03-menu.md",
+    "shoppingList": "shopping-lists/2026-08-03-shopping-list.md"
   },
   "meals": [
     {
-      "name": "Beef Burgers",
-      "day": "Monday, June 15",
-      "emoji": "🍔",
+      "name": "Spaghetti with Jarred Sauce",
+      "day": "Monday, August 3",
+      "emoji": "🍝",
       "time": "25 min",
       "tag": "",
       "tagType": ""
     },
     {
-      "name": "Quesadillas",
-      "day": "Tuesday, June 16",
-      "emoji": "🫓",
+      "name": "Air Fryer Garlic-Butter Wings & Steamed Artichokes",
+      "day": "Tuesday, August 4",
+      "emoji": "🍗",
+      "time": "30–35 min",
+      "tag": "",
+      "tagType": ""
+    },
+    {
+      "name": "Maggi Braised Beef Ribs",
+      "day": "Wednesday, August 5",
+      "emoji": "🍖",
+      "time": "8 min cook",
+      "tag": "",
+      "tagType": ""
+    },
+    {
+      "name": "Beef Bacon & Peas",
+      "day": "Thursday, August 6",
+      "emoji": "🥓",
       "time": "20 min",
-      "tag": "FAST",
-      "tagType": "fast"
-    },
-    {
-      "name": "Eggs, Tofu & Soba",
-      "day": "Wednesday, June 17",
-      "emoji": "🍜",
-      "time": "30 min",
-      "tag": "",
-      "tagType": ""
-    },
-    {
-      "name": "Sardines & Rice",
-      "day": "Thursday, June 18",
-      "emoji": "🐟",
-      "time": "25 min",
       "tag": "TEEN PREP",
       "tagType": "teen"
     },
     {
-      "name": "Flying to Seattle",
-      "day": "Friday, June 19",
-      "emoji": "✈️",
-      "time": "",
-      "tag": "TRAVEL",
-      "tagType": "out"
+      "name": "Seattle Dogs with Grilled Onions & Kimchi",
+      "day": "Friday, August 7",
+      "emoji": "🌭",
+      "time": "20 min",
+      "tag": "",
+      "tagType": ""
     }
   ],
   "lastWeek": {
-    "weekLabel": "Mon Jun 8 - Fri Jun 12, 2026",
-    "shoppingDate": "2026-06-07",
+    "weekLabel": "Mon Jun 15 - Fri Jun 19, 2026",
+    "shoppingDate": "2026-06-14",
     "files": {
-      "menu": "menus/2026-06-08-menu.md",
-      "shoppingList": "shopping-lists/2026-06-08-shopping-list.md"
+      "menu": "menus/2026-06-15-menu.md",
+      "shoppingList": "shopping-lists/2026-06-15-shopping-list.md"
     },
     "meals": [
       {
-        "name": "Yucatecan Banana Leaf Tamales + Esquites",
-        "day": "Monday, June 8",
-        "emoji": "🫔",
-        "time": "2–2.5 hrs",
+        "name": "Beef Burgers",
+        "day": "Monday, June 15",
+        "emoji": "🍔",
+        "time": "25 min",
         "tag": "",
         "tagType": ""
       },
       {
-        "name": "Chilaquiles Divorciados",
-        "day": "Tuesday, June 9",
-        "emoji": "🍳",
+        "name": "Quesadillas",
+        "day": "Tuesday, June 16",
+        "emoji": "🫓",
         "time": "20 min",
         "tag": "FAST",
         "tagType": "fast"
       },
       {
-        "name": "Battered Fried Chicken + Watermelon",
-        "day": "Wednesday, June 10",
-        "emoji": "🍗",
-        "time": "40–50 min",
+        "name": "Eggs, Tofu & Soba",
+        "day": "Wednesday, June 17",
+        "emoji": "🍜",
+        "time": "30 min",
         "tag": "",
         "tagType": ""
       },
       {
-        "name": "Maggi Beef Ribs + Kimchi",
-        "day": "Thursday, June 11",
-        "emoji": "🍖",
-        "time": "8 min cook",
+        "name": "Sardines & Rice",
+        "day": "Thursday, June 18",
+        "emoji": "🐟",
+        "time": "25 min",
         "tag": "TEEN PREP",
         "tagType": "teen"
       },
       {
-        "name": "Birria Tacos + Sandia Agua Fresca",
-        "day": "Friday, June 12",
-        "emoji": "🌮",
-        "time": "1 hr 15 min",
-        "tag": "",
-        "tagType": ""
+        "name": "Flying to Seattle",
+        "day": "Friday, June 19",
+        "emoji": "✈️",
+        "time": "",
+        "tag": "TRAVEL",
+        "tagType": "out"
       }
     ]
   }

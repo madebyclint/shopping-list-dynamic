@@ -1,67 +1,76 @@
 {
   "_comment": "Per-meal ingredient coverage for the X-Ray panel. Update each week alongside the menu. buy_these = items that MUST appear on the shopping list. pantry = assumed at home, not checked.",
-  "week": "2026-06-15",
+  "week": "2026-08-03",
   "meals": [
     {
-      "name": "Beef Burgers",
+      "name": "Spaghetti with Jarred Sauce",
       "day": "Monday",
-      "emoji": "🍔",
-      "buy_these": [],
+      "emoji": "🍝",
+      "buy_these": [
+        "Ground beef (1 lb)",
+        "Jarred spaghetti sauce",
+        "Spaghetti noodles",
+        "Bagged salad kit/greens",
+        "Parmesan cheese, grated"
+      ],
       "pantry": [
-        "Beef patties (freezer)",
-        "Brioche burger buns",
-        "Cheddar or American cheese",
-        "Lettuce, tomato, onion",
-        "Ketchup, mustard, mayo",
-        "Oranges"
+        "Salt, pepper",
+        "Olive oil"
       ]
     },
     {
-      "name": "Quesadillas",
+      "name": "Air Fryer Garlic-Butter Wings & Steamed Artichokes",
       "day": "Tuesday",
-      "emoji": "🫓",
+      "emoji": "🍗",
       "buy_these": [
-        "Mangoes (2–3)"
+        "Chicken wings (2 lb)",
+        "Whole artichokes, large (2)",
+        "Butter",
+        "Fresh fruit: cantaloupe"
       ],
       "pantry": [
-        "Flour tortillas",
-        "Shredded cheese",
-        "Filling of choice (leftover protein or veg)",
-        "Butter or oil",
-        "Sour cream or salsa (if on hand)"
+        "Fresh garlic",
+        "Salt, pepper"
       ]
     },
     {
-      "name": "Eggs, Tofu & Soba",
+      "name": "Maggi Braised Beef Ribs",
       "day": "Wednesday",
-      "emoji": "🍜",
+      "emoji": "🍖",
       "buy_these": [
-        "Green onions (1 bunch)",
-        "Ginger (small knob)",
-        "Melon (1 medium)"
+        "Beef short ribs (2 lb)",
+        "Maggi seasoning sauce",
+        "Kimchi, store-bought",
+        "Oranges (2)"
       ],
-      "pantry": [
-        "Soba noodles",
-        "Firm tofu (1 block)",
-        "Eggs (1–2 per person)",
-        "Soy sauce",
-        "Mirin",
-        "Sesame oil",
-        "Dashi powder or broth"
-      ]
+      "pantry": []
     },
     {
-      "name": "Sardines & Rice",
+      "name": "Beef Bacon & Peas",
       "day": "Thursday",
-      "emoji": "🐟",
-      "buy_these": [],
+      "emoji": "🥓",
+      "buy_these": [
+        "Beef bacon (8 oz)",
+        "Frozen peas",
+        "Boxed mac and cheese",
+        "Fresh fruit: apples"
+      ],
+      "pantry": []
+    },
+    {
+      "name": "Seattle Dogs with Grilled Onions & Kimchi",
+      "day": "Friday",
+      "emoji": "🌭",
+      "buy_these": [
+        "Beef uncured hot dogs (4)",
+        "Hot dog buns",
+        "Yellow onion",
+        "Kimchi, store-bought",
+        "Cream cheese",
+        "Watermelon"
+      ],
       "pantry": [
-        "Canned sardines (2–3 tins)",
-        "Jasmine rice",
-        "Green onions (from Wednesday's bunch)",
-        "Soy sauce",
-        "Hot sauce",
-        "Melon (from Wednesday's purchase)"
+        "Butter or oil (from Tuesday's purchase, for grilling onions)"
       ]
     }
   ]
