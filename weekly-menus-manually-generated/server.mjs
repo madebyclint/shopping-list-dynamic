@@ -51,6 +51,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
+// Railway (and most PaaS platforms) sit the app behind a reverse proxy that
+// adds X-Forwarded-For. Without this, Express's default trust-proxy=false
+// causes express-rate-limit (used internally by the MCP SDK's OAuth
+// endpoints) to throw ERR_ERL_UNEXPECTED_X_FORWARDED_FOR on every request.
+app.set('trust proxy', 1);
+
 const { version } = JSON.parse(
   readFileSync(path.join(__dirname, 'package.json'), 'utf8'),
 );
