@@ -32,6 +32,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { mcpAuthRouter, getOAuthProtectedResourceMetadataUrl } from '@modelcontextprotocol/sdk/server/auth/router.js';
 import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import { InvalidGrantError, InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
 
 // ── Load .env.local as fallback when env vars are missing (local dev) ─────────
@@ -2697,13 +2698,30 @@ function buildMcpServer() {
   return server;
 }
 
+// Stateful sessions: sessionId -> { transport, server }. In-memory, per
+// process — fine for a two-person household app; a redeploy just means
+// existing chats reconnect (a new initialize request) next time they call a tool.
+const mcpSessions = new Map();
+
 app.post('/mcp', requireMcpToken, async (req, res) => {
-  const mcpServer = buildMcpServer();
   try {
-    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-    await mcpServer.connect(transport);
+    const sessionId = req.headers['mcp-session-id'];
+    let transport;
+    if (sessionId && mcpSessions.has(sessionId)) {
+      transport = mcpSessions.get(sessionId).transport;
+    } else if (!sessionId && isInitializeRequest(req.body)) {
+      const mcpServer = buildMcpServer();
+      transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        onsessioninitialized: (sid) => mcpSessions.set(sid, { transport, server: mcpServer }),
+        onsessionclosed: (sid) => mcpSessions.delete(sid),
+      });
+      transport.onclose = () => { if (transport.sessionId) mcpSessions.delete(transport.sessionId); };
+      await mcpServer.connect(transport);
+    } else {
+      return res.status(400).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Bad Request: No valid session ID provided' }, id: null });
+    }
     await transport.handleRequest(req, res, req.body);
-    res.on('close', () => { transport.close(); mcpServer.close(); });
   } catch (err) {
     console.error('POST /mcp:', err.message);
     if (!res.headersSent) {
@@ -2711,12 +2729,17 @@ app.post('/mcp', requireMcpToken, async (req, res) => {
     }
   }
 });
-app.get('/mcp', requireMcpToken, (_req, res) => {
-  res.status(405).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed.' }, id: null });
-});
-app.delete('/mcp', requireMcpToken, (_req, res) => {
-  res.status(405).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed.' }, id: null });
-});
+
+async function handleMcpSessionRequest(req, res) {
+  const sessionId = req.headers['mcp-session-id'];
+  if (!sessionId || !mcpSessions.has(sessionId)) {
+    return res.status(400).send('Invalid or missing session ID');
+  }
+  const { transport } = mcpSessions.get(sessionId);
+  await transport.handleRequest(req, res);
+}
+app.get('/mcp', requireMcpToken, handleMcpSessionRequest);
+app.delete('/mcp', requireMcpToken, handleMcpSessionRequest);
 
 app.listen(PORT, () =>
   console.log(`🥬 Brooklyn Kitchen running on http://localhost:${PORT}`),
