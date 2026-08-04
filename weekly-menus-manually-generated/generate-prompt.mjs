@@ -67,10 +67,16 @@ const prompt = `I need a meal plan for the next week. Here is the criteria:
 3. Keep them budget friendly — actively look for cost-saving opportunities: use cheaper protein cuts (thighs over breasts, ground meat over whole, eggs as protein), build meals around produce that's in season, double up an ingredient across multiple meals to reduce waste, and suggest any relevant swaps in the shopping list notes
 4. Diversify the meals (cuisine) — don't be shy about non-mainstream, think outside the box, and **avoid repeating the same cuisine twice in one week**
 5. Rainbow plate mentality — always a serving of veggie and protein. Veggie proteins are ok too. **Every meal must include a fresh fruit as a side** — list it in both the meal summary and ingredients. Pick fruits that pair with the cuisine where possible.
-6. If we do pork, we need to do a pork portion and a non-pork portion for a couple family members.
+6. **No pork** — substitute beef, turkey, chicken, or veggie in every recipe, silently. Note when the traditional version uses pork. **No lard** — use vegetable shortening or butter.
 7. We are a family of 4 with two teens
 8. **Tuesday must be a super fast meal (≤20 min)** — we get home at 8pm. Think mac and cheese, hot dogs, quesadillas, charcuterie board, ramen, grilled cheese, etc. No-cook is fine but not required — speed is the priority.
 9. **Thursday must be a kid-friendly prep meal** — the teens make it themselves. Keep it simple with clear steps (tacos, pasta, stir fry, sheet pan, etc.)
+
+**Plate structure:**
+- **4 of the 5 dinners** — protein-and-veg forward, with **no grains or legumes baked into the main dish**. Include **one optional carb side for the kids** (rice, pasta, bread) that is served separately and easy to skip.
+- **1 of the 5 dinners** — a normal full meal, grains or legumes included in the dish, no restriction. Say which day this is.
+- **Fish in 2 of the 5 dinners** where possible — fresh or canned.
+- **Dairy is unrestricted.**
 
 **Health goals to keep in mind (soft guidelines, not hard rules):**
 - Reduce bloating: pull back on high-FODMAP ingredients (onions, garlic, beans, cruciferous veggies) where possible — don't eliminate, just don't lead with them. Prefer meals that are easy to digest on weeknights.
@@ -83,7 +89,7 @@ const prompt = `I need a meal plan for the next week. Here is the criteria:
 - We are in Brooklyn buying at small markets (higher prices than chain stores)
 
 **Pantry staples — do NOT add these to the shopping list:**
-- Olive oil, vegetable oil, canola oil, butter
+- Olive oil, vegetable oil, canola oil, butter, vegetable shortening
 - Soy sauce, fish sauce, rice vinegar, sesame oil
 - Chicken broth, vegetable broth
 - Salt, black pepper, red pepper flakes
@@ -96,13 +102,15 @@ const prompt = `I need a meal plan for the next week. Here is the criteria:
 
 **Weekly recurring items — always include in the shopping list:**
 - Chips (2 bags — always specify type, e.g. tortilla, salt & vinegar; note the meal if applicable)
-- Cereal (2 boxes)
 - Lactaid whole milk (1 half-gallon)
 - Almond milk (1 gallon)
+- Cereal (2 boxes)
 - Eggs (1 dozen)
 - Assorted fresh fruit (~$10–$15)
-- Ice cream (1 container)
 - Trail mix (1 bag)
+
+**Household & treats — include unless told otherwise; drop these first if the week needs to come in cheaper:**
+- Ice cream (1 container)
 - Mango juice (1 bottle/carton)
 - Condensed milk (1 can)
 - Toilet paper (1 pack)
@@ -110,7 +118,7 @@ const prompt = `I need a meal plan for the next week. Here is the criteria:
 
 ---
 
-Please present 5 dinners + 1 breakfast for approval first (name + key components + estimated time), label which is **Tuesday (fast/easy)** and which is **Thursday (kids prep)**, then after I confirm generate the full output in these sections:
+Please present 5 dinners + 1 breakfast for approval first (name + key components + estimated time), label which is **Tuesday (fast/easy)**, which is **Thursday (kids prep)**, and which is the **full meal** day, then after I confirm generate the full output in these sections:
 
 **FILE 1 — \`menus/YYYY-MM-DD-menu.md\`**
 

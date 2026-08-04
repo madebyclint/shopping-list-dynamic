@@ -1,6 +1,6 @@
 {
   "name": "brooklyn-kitchen",
-  "version": "1.0.80",
+  "version": "1.0.81",
   "engines": {
     "node": ">=20"
   },
@@ -8,6 +8,7 @@
     "start": "node server.mjs",
     "dev": "node --env-file=../.env.local server.mjs",
     "prompt": "node generate-prompt.mjs",
+    "smoke:mcp": "node --env-file=../.env.local scripts/smoke-mcp.mjs",
     "migrate": "node scripts/migrate-to-db.mjs",
     "migrate:ideas": "node --env-file=../.env.local scripts/create-meal-ideas-tables.mjs"
   },
