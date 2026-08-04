@@ -89,6 +89,11 @@ Actions** so CI can run:
 | `SMOKE_CLIENT_ID` | secret | Output of `npm run smoke:token` |
 | `SMOKE_BASE_URL` | variable | Optional — defaults to the production URL |
 
+These live on the **`production` environment**, which is why the workflow job declares
+`environment: production`. A job cannot read an environment's secrets without naming it — they
+silently resolve to empty strings and the run fails at step 3 as if the token were wrong. If
+you move them to repository-level secrets, drop that line from the workflow.
+
 `SMOKE_TOKEN` matters because the deployed token is **not** necessarily your local one. If
 step 3 fails with "the access token was rejected", that mismatch is why. Either form works —
 bare, or the `label:token` form you copy out of Railway; the label is stripped either way.

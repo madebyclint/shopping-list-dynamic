@@ -23,6 +23,12 @@ concurrency:
 jobs:
   smoke:
     runs-on: ubuntu-latest
+    # Required to read SMOKE_TOKEN / SMOKE_CLIENT_ID: they are Environment
+    # secrets on "production", and a job can only see those if it declares the
+    # environment. Without this the secrets resolve to empty strings and the run
+    # fails at step 3 with "the access token was rejected" — which looks exactly
+    # like a wrong token.
+    environment: production
     defaults:
       run:
         working-directory: weekly-menus-manually-generated
