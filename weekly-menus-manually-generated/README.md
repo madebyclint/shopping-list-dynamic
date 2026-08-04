@@ -90,7 +90,8 @@ Actions** so CI can run:
 | `SMOKE_BASE_URL` | variable | Optional — defaults to the production URL |
 
 `SMOKE_TOKEN` matters because the deployed token is **not** necessarily your local one. If
-step 3 fails with "the access token was rejected", that mismatch is why.
+step 3 fails with "the access token was rejected", that mismatch is why. Either form works —
+bare, or the `label:token` form you copy out of Railway; the label is stripped either way.
 
 Step 7 checks the registered *client*, not a refresh token, on purpose: refresh tokens rotate
 on use, so a stored one would pass once and then fail every run after — a check that breaks

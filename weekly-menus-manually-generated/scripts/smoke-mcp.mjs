@@ -18,8 +18,17 @@ import { createHash, randomBytes } from 'crypto';
 const BASE = (process.argv[2] || process.env.SMOKE_BASE_URL
   || 'https://weekly-menus-manually-generated-production.up.railway.app').replace(/\/$/, '');
 
-const TOKEN = process.env.SMOKE_TOKEN
-  || (process.env.MCP_ACCESS_TOKENS || '').split(',')[0]?.trim().replace(/^[^:]*:/, '');
+// Accept either bare form or the `label:token` form that MCP_ACCESS_TOKENS
+// uses, from either variable. Pasting the label in by accident is the obvious
+// mistake to make when copying the value out of Railway, and it would otherwise
+// surface as an unexplained "token rejected" at step 3.
+function stripLabel(value) {
+  const match = /^([A-Za-z0-9_.-]+):(.+)$/.exec((value || '').trim());
+  return match ? match[2] : (value || '').trim();
+}
+
+const TOKEN = stripLabel(process.env.SMOKE_TOKEN
+  || (process.env.MCP_ACCESS_TOKENS || '').split(',')[0]);
 
 const REDIRECT_URI = 'http://localhost:9999/smoke-callback';
 const PROTOCOL_VERSION = '2025-11-25';
