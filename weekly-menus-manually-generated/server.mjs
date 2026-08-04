@@ -26,7 +26,16 @@ import pg      from 'pg';
 import { fileURLToPath } from 'url';
 import path    from 'path';
 import { readFileSync, existsSync, readdirSync } from 'fs';
-import { timingSafeEqual, randomUUID, randomBytes } from 'crypto';
+import { timingSafeEqual, randomUUID, randomBytes, webcrypto } from 'crypto';
+
+// The MCP SDK's streamable-HTTP transport calls the bare global `crypto`
+// (webStandardStreamableHttp.js: `crypto.randomUUID()`) when it opens a
+// response stream. That global only exists on Node >= 19, so on an older
+// runtime every `initialize` fails with "ReferenceError: crypto is not
+// defined", surfacing as a 400 and a connector that won't attach — while
+// /register and /token keep working, since they don't touch it. package.json
+// pins the runtime; this is belt-and-braces in case the host ignores that.
+if (!globalThis.crypto) globalThis.crypto = webcrypto;
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { mcpAuthRouter, getOAuthProtectedResourceMetadataUrl } from '@modelcontextprotocol/sdk/server/auth/router.js';
@@ -231,7 +240,9 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 
 // ── Meta (version + deploy time) ─────────────────────────────────────────────
 app.get('/api/meta', (_req, res) => {
-  res.json({ version, deployedAt: DEPLOY_TIME, env: ENV });
+  // `node` is here deliberately: an old runtime silently breaks the MCP
+  // transport (see the webcrypto shim up top), so make it checkable.
+  res.json({ version, deployedAt: DEPLOY_TIME, env: ENV, node: process.version });
 });
 
 // ── DB-backed content routes ──────────────────────────────────────────────────
@@ -2795,12 +2806,13 @@ function buildMcpServer() {
 const mcpSessions = new Map();
 
 app.post('/mcp', requireMcpToken, async (req, res) => {
-  // Temporary diagnostic — logs every request in and its actual response out,
-  // regardless of which code path (mine or the SDK transport's own internal
-  // validation) produces it. Remove once the real cause is identified.
-  const reqSummary = `session=${req.headers['mcp-session-id'] || '(none)'} protoVer=${req.headers['mcp-protocol-version'] || '(none)'} body=${JSON.stringify(req.body)}`;
-  console.error('POST /mcp IN:', reqSummary);
-  res.on('finish', () => console.error('POST /mcp OUT:', res.statusCode, '| for', reqSummary));
+  // Log failures only, and without the request body — bodies carry tool
+  // arguments, and the shape of a request was never the problem here.
+  res.on('finish', () => {
+    if (res.statusCode >= 400) {
+      console.error(`POST /mcp ${res.statusCode} method=${req.body?.method || '(unknown)'} session=${req.headers['mcp-session-id'] || '(none)'}`);
+    }
+  });
   try {
     const sessionId = req.headers['mcp-session-id'];
     let transport;
