@@ -156,6 +156,33 @@ async function initDb() {
       resolved_at        TIMESTAMPTZ,
       resolved_week_date TEXT
     );
+    -- OAuth state for the MCP connector. This MUST be durable: Claude stores
+    -- the client_id and refresh token it got at connect time, so if these are
+    -- lost on redeploy the connector breaks with "server configuration issue".
+    CREATE TABLE IF NOT EXISTS oauth_clients (
+      client_id   TEXT        PRIMARY KEY,
+      data        JSONB       NOT NULL,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS oauth_codes (
+      code           TEXT        PRIMARY KEY,
+      client_id      TEXT        NOT NULL,
+      redirect_uri   TEXT,
+      code_challenge TEXT,
+      label          TEXT,
+      scopes         JSONB       NOT NULL DEFAULT '[]'::jsonb,
+      expires_at     TIMESTAMPTZ NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS oauth_tokens (
+      token      TEXT        PRIMARY KEY,
+      kind       TEXT        NOT NULL,          -- 'access' | 'refresh'
+      client_id  TEXT        NOT NULL,
+      label      TEXT,
+      scopes     JSONB       NOT NULL DEFAULT '[]'::jsonb,
+      expires_at TIMESTAMPTZ,                   -- NULL = no expiry (refresh tokens)
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS oauth_tokens_client_idx ON oauth_tokens (client_id);
   `);
   // Safe migrations for existing installs
   await pool.query(`
@@ -2395,30 +2422,49 @@ function tokenMatches(expected, presented) {
 
 // ── OAuth (for Claude's custom-connector UI, which only offers OAuth — not a
 // plain header field) ──────────────────────────────────────────────────────
-// A minimal, in-memory OAuth 2.1 authorization server: dynamic client
-// registration + an authorize step that's just a login form asking for the
-// same MCP_ACCESS_TOKENS value, then standard code→token exchange (PKCE).
-// State resets on server restart — a redeploy logs everyone out of the
-// connector and they just reconnect (re-enter the token once).
+// A minimal OAuth 2.1 authorization server: dynamic client registration + an
+// authorize step that's just a login form asking for the same MCP_ACCESS_TOKENS
+// value, then standard code→token exchange (PKCE).
+//
+// All of this state lives in Postgres, NOT in memory. Claude persists the
+// client_id and refresh token it receives at connect time and reuses them
+// forever; if the server forgets them on redeploy it answers invalid_client /
+// invalid_grant and Claude shows "This connector has a server configuration
+// issue." Durability here is what keeps the connector attached across deploys.
 const PUBLIC_URL = process.env.PUBLIC_URL
   || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : `http://localhost:${PORT}`);
 
-const oauthClients = new Map();       // client_id -> OAuthClientInformationFull
-const oauthCodes = new Map();         // code -> { clientId, redirectUri, codeChallenge, label, scopes, expiresAt }
-const oauthAccessTokens = new Map();  // access_token -> { clientId, label, scopes, expiresAt (ms) }
-const oauthRefreshTokens = new Map(); // refresh_token -> { clientId, label, scopes }
-
 const OAUTH_CODE_TTL_MS = 5 * 60_000;
 const OAUTH_ACCESS_TOKEN_TTL_S = 60 * 60; // 1 hour
+// A rotated refresh token stays usable this long, so a retried/duplicated
+// token request can't permanently unhook the connector.
+const OAUTH_REFRESH_GRACE_MS = 2 * 60_000;
 
-function issueTokens(clientId, label, scopes) {
+const asScopes = (v) => (Array.isArray(v) ? v : []);
+
+async function issueTokens(clientId, label, scopes) {
   const access_token = randomBytes(32).toString('hex');
   const refresh_token = randomBytes(32).toString('hex');
-  const expiresAt = Date.now() + OAUTH_ACCESS_TOKEN_TTL_S * 1000;
-  oauthAccessTokens.set(access_token, { clientId, label, scopes, expiresAt });
-  oauthRefreshTokens.set(refresh_token, { clientId, label, scopes });
-  return { access_token, token_type: 'bearer', expires_in: OAUTH_ACCESS_TOKEN_TTL_S, refresh_token, scope: (scopes || []).join(' ') || undefined };
+  const expiresAt = new Date(Date.now() + OAUTH_ACCESS_TOKEN_TTL_S * 1000);
+  const list = asScopes(scopes);
+  await pool.query(
+    `INSERT INTO oauth_tokens (token, kind, client_id, label, scopes, expires_at)
+     VALUES ($1, 'access', $3, $4, $5::jsonb, $2), ($6, 'refresh', $3, $4, $5::jsonb, NULL)`,
+    [access_token, expiresAt, clientId, label ?? null, JSON.stringify(list), refresh_token],
+  );
+  return { access_token, token_type: 'bearer', expires_in: OAUTH_ACCESS_TOKEN_TTL_S, refresh_token, scope: list.join(' ') || undefined };
 }
+
+// Housekeeping: drop codes and access tokens that are past their expiry.
+async function pruneOAuthState() {
+  try {
+    await pool.query(`DELETE FROM oauth_codes  WHERE expires_at < NOW()`);
+    await pool.query(`DELETE FROM oauth_tokens WHERE expires_at IS NOT NULL AND expires_at < NOW()`);
+  } catch (err) {
+    console.error('OAuth prune error:', err.message);
+  }
+}
+setInterval(pruneOAuthState, 15 * 60_000).unref();
 
 function renderLoginForm({ params, client, error }) {
   const hidden = [
@@ -2453,8 +2499,18 @@ ${hidden}
 class KitchenOAuthProvider {
   get clientsStore() {
     return {
-      getClient: (clientId) => oauthClients.get(clientId),
-      registerClient: (client) => { oauthClients.set(client.client_id, client); return client; },
+      getClient: async (clientId) => {
+        const { rows } = await pool.query('SELECT data FROM oauth_clients WHERE client_id = $1', [clientId]);
+        return rows[0]?.data;
+      },
+      registerClient: async (client) => {
+        await pool.query(
+          `INSERT INTO oauth_clients (client_id, data) VALUES ($1, $2::jsonb)
+           ON CONFLICT (client_id) DO UPDATE SET data = EXCLUDED.data`,
+          [client.client_id, JSON.stringify(client)],
+        );
+        return client;
+      },
     };
   }
 
@@ -2471,14 +2527,19 @@ class KitchenOAuthProvider {
         return res.status(401).send(renderLoginForm({ params, client, error: 'Incorrect token — try again.' }));
       }
       const code = randomBytes(24).toString('hex');
-      oauthCodes.set(code, {
-        clientId: client.client_id,
-        redirectUri: params.redirectUri,
-        codeChallenge: params.codeChallenge,
-        label: match.label,
-        scopes: params.scopes || [],
-        expiresAt: Date.now() + OAUTH_CODE_TTL_MS,
-      });
+      await pool.query(
+        `INSERT INTO oauth_codes (code, client_id, redirect_uri, code_challenge, label, scopes, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)`,
+        [
+          code,
+          client.client_id,
+          params.redirectUri ?? null,
+          params.codeChallenge ?? null,
+          match.label ?? null,
+          JSON.stringify(asScopes(params.scopes)),
+          new Date(Date.now() + OAUTH_CODE_TTL_MS),
+        ],
+      );
       const redirectUrl = new URL(params.redirectUri);
       redirectUrl.searchParams.set('code', code);
       if (params.state) redirectUrl.searchParams.set('state', params.state);
@@ -2487,33 +2548,63 @@ class KitchenOAuthProvider {
     res.status(200).type('html').send(renderLoginForm({ params, client }));
   }
 
+  async #loadCode(client, code) {
+    const { rows } = await pool.query('SELECT * FROM oauth_codes WHERE code = $1', [code]);
+    const rec = rows[0];
+    if (!rec || rec.client_id !== client.client_id) throw new InvalidGrantError('Invalid authorization code');
+    if (rec.expires_at.getTime() < Date.now()) {
+      await pool.query('DELETE FROM oauth_codes WHERE code = $1', [code]);
+      throw new InvalidGrantError('Authorization code expired');
+    }
+    return rec;
+  }
+
   async challengeForAuthorizationCode(client, authorizationCode) {
-    const rec = oauthCodes.get(authorizationCode);
-    if (!rec || rec.clientId !== client.client_id) throw new InvalidGrantError('Invalid authorization code');
-    if (rec.expiresAt < Date.now()) { oauthCodes.delete(authorizationCode); throw new InvalidGrantError('Authorization code expired'); }
-    return rec.codeChallenge;
+    const rec = await this.#loadCode(client, authorizationCode);
+    return rec.code_challenge;
   }
 
   async exchangeAuthorizationCode(client, authorizationCode) {
-    const rec = oauthCodes.get(authorizationCode);
-    if (!rec || rec.clientId !== client.client_id) throw new InvalidGrantError('Invalid authorization code');
-    oauthCodes.delete(authorizationCode); // one-time use
-    if (rec.expiresAt < Date.now()) throw new InvalidGrantError('Authorization code expired');
-    return issueTokens(client.client_id, rec.label, rec.scopes);
+    const rec = await this.#loadCode(client, authorizationCode);
+    await pool.query('DELETE FROM oauth_codes WHERE code = $1', [authorizationCode]); // one-time use
+    return issueTokens(client.client_id, rec.label, asScopes(rec.scopes));
   }
 
   async exchangeRefreshToken(client, refreshToken, scopes) {
-    const rec = oauthRefreshTokens.get(refreshToken);
-    if (!rec || rec.clientId !== client.client_id) throw new InvalidGrantError('Invalid refresh token');
-    oauthRefreshTokens.delete(refreshToken); // rotate
-    return issueTokens(client.client_id, rec.label, scopes || rec.scopes);
+    const { rows } = await pool.query(
+      `SELECT * FROM oauth_tokens
+       WHERE token = $1 AND kind = 'refresh'
+         AND (expires_at IS NULL OR expires_at > NOW())`,
+      [refreshToken],
+    );
+    const rec = rows[0];
+    if (!rec || rec.client_id !== client.client_id) throw new InvalidGrantError('Invalid refresh token');
+    // Rotate, but leave the old token briefly usable so a retried request
+    // doesn't strand the connector with no way back in.
+    await pool.query(
+      `UPDATE oauth_tokens SET expires_at = $2 WHERE token = $1 AND expires_at IS NULL`,
+      [refreshToken, new Date(Date.now() + OAUTH_REFRESH_GRACE_MS)],
+    );
+    return issueTokens(client.client_id, rec.label, scopes ?? asScopes(rec.scopes));
   }
 
   async verifyAccessToken(token) {
-    const rec = oauthAccessTokens.get(token);
+    const { rows } = await pool.query(
+      `SELECT * FROM oauth_tokens WHERE token = $1 AND kind = 'access'`, [token],
+    );
+    const rec = rows[0];
     if (rec) {
-      if (rec.expiresAt < Date.now()) { oauthAccessTokens.delete(token); throw new InvalidTokenError('Token expired'); }
-      return { token, clientId: rec.clientId, scopes: rec.scopes || [], expiresAt: Math.floor(rec.expiresAt / 1000) };
+      const expMs = rec.expires_at ? rec.expires_at.getTime() : Infinity;
+      if (expMs < Date.now()) {
+        await pool.query('DELETE FROM oauth_tokens WHERE token = $1', [token]);
+        throw new InvalidTokenError('Token expired');
+      }
+      return {
+        token,
+        clientId: rec.client_id,
+        scopes: asScopes(rec.scopes),
+        expiresAt: rec.expires_at ? Math.floor(expMs / 1000) : undefined,
+      };
     }
     // Fall back to the static shared token(s) — lets scripts/testing use the
     // same Authorization header without going through the OAuth dance.
