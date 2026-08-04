@@ -50,9 +50,12 @@ Postgres, not in process memory.
 
 ## Verifying a Deploy
 
-**Run this after every deploy.** The failure mode that bit us was environmental — the code was
-correct and the production runtime wasn't — so a test that only runs locally cannot catch it.
-Point the check at the deployed URL.
+Runs automatically — **[.github/workflows/smoke-mcp.yml](../.github/workflows/smoke-mcp.yml)**
+on every push to `main` that touches this folder, daily at 11:00 UTC, and on demand via
+*Actions → MCP smoke test → Run workflow*. On a push it waits for Railway to report the new
+version before testing, so it checks the new container rather than the one being replaced.
+
+Manually:
 
 ```bash
 npm run smoke:mcp
@@ -66,7 +69,33 @@ It walks the whole chain and exits non-zero on the first failure:
 4. `POST /mcp` `initialize` — **asserts 200 and a session id** (the step that silently 400'd)
 5. `tools/list` — all 7 tools present
 6. `tools/call get_this_week` — real data comes back
-7. Re-auth with a long-lived refresh token — proves OAuth state survived the redeploy
+7. `GET /authorize` with a pre-existing `client_id` — proves OAuth state survived the redeploy
+
+**Point it at the deployed URL, not localhost.** Both outages were environmental — correct
+code on a bad runtime, and state lost on restart — and neither is visible to a local test.
+
+### One-time setup
+
+```bash
+npm run smoke:token     # registers a probe client, prints SMOKE_CLIENT_ID
+```
+
+Put `SMOKE_CLIENT_ID` in `.env.local`, and set these in **Settings → Secrets and variables →
+Actions** so CI can run:
+
+| Name | Kind | Value |
+|------|------|-------|
+| `SMOKE_TOKEN` | secret | The deployed `MCP_ACCESS_TOKENS` value (just the part after `label:`) |
+| `SMOKE_CLIENT_ID` | secret | Output of `npm run smoke:token` |
+| `SMOKE_BASE_URL` | variable | Optional — defaults to the production URL |
+
+`SMOKE_TOKEN` matters because the deployed token is **not** necessarily your local one. If
+step 3 fails with "the access token was rejected", that mismatch is why.
+
+Step 7 checks the registered *client*, not a refresh token, on purpose: refresh tokens rotate
+on use, so a stored one would pass once and then fail every run after — a check that breaks
+itself is worse than no check. It does mean step 7 covers `oauth_clients` but not
+`oauth_tokens`; there is no way to verify a refresh token without spending it.
 
 A quick manual version of the two checks that matter most:
 
@@ -143,6 +172,8 @@ node --import ./scripts/no-global-crypto.mjs server.mjs
 | `npm start` | Production server |
 | `npm run dev` | Local server with `../.env.local` |
 | `npm run smoke:mcp` | Post-deploy verification (above) |
+| `npm run smoke:mcp:ci` | Same, without `--env-file` — for CI, where env comes from secrets |
+| `npm run smoke:token` | Register the smoke-probe client, print `SMOKE_CLIENT_ID` |
 | `npm run migrate` | Push on-disk files to the database — the legacy path, still the fallback |
 | `npm run prompt` | Generate the meal-plan prompt for pasting into a chat |
 

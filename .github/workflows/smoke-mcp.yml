@@ -1,0 +1,50 @@
+name: MCP smoke test
+
+# Verifies the DEPLOYED connector, not the code. Both outages we hit were
+# environmental — correct code on a bad runtime, and state lost on restart —
+# so a test that only ran locally could not have caught either one.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'weekly-menus-manually-generated/**'
+      - '.github/workflows/smoke-mcp.yml'
+  workflow_dispatch:
+  schedule:
+    # Daily at 11:00 UTC. Catches drift that no deploy triggered: an expired
+    # credential, a restarted container, a Railway-side runtime bump.
+    - cron: '0 11 * * *'
+
+concurrency:
+  group: smoke-mcp
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: weekly-menus-manually-generated
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Wait for Railway to finish building, so we test the new container and
+      # not the one it is replacing. Skipped for scheduled runs, where whatever
+      # is currently live is exactly what we want to check.
+      - name: Wait for deploy
+        if: github.event_name == 'push'
+        run: node scripts/wait-for-deploy.mjs
+        env:
+          SMOKE_BASE_URL: ${{ vars.SMOKE_BASE_URL }}
+
+      - name: Smoke test
+        run: npm run smoke:mcp:ci
+        env:
+          SMOKE_BASE_URL: ${{ vars.SMOKE_BASE_URL }}
+          SMOKE_TOKEN: ${{ secrets.SMOKE_TOKEN }}
+          SMOKE_CLIENT_ID: ${{ secrets.SMOKE_CLIENT_ID }}

@@ -9,9 +9,9 @@
 //   npm run smoke:mcp -- http://localhost:8080  # somewhere else
 //
 // Token: SMOKE_TOKEN, or the first entry of MCP_ACCESS_TOKENS (label:token).
-// Optional: SMOKE_REFRESH_TOKEN, a long-lived refresh token used by step 7 to
-// prove OAuth state survived the redeploy. Step 7 is reported as SKIP (not
-// PASS) when it is absent.
+// Optional: SMOKE_CLIENT_ID, a client registered by `npm run smoke:token`, used
+// by step 7 to prove OAuth state survived the redeploy. Step 7 reports SKIP —
+// never PASS — when it is absent.
 
 import { createHash, randomBytes } from 'crypto';
 
@@ -212,28 +212,38 @@ try { weekLabel = JSON.parse(callRpc.result.content[0].text).weekLabel || weekLa
 pass('tools/call get_this_week', weekLabel);
 
 // ── 7. Did OAuth state survive the last redeploy? ───────────────────────────
-// The original bug was in-memory OAuth state: a redeploy wiped the client and
-// refresh token, so Claude's stored credentials became invalid. A refresh token
-// minted before the current deploy is the only real proof it's fixed.
-if (!process.env.SMOKE_REFRESH_TOKEN) {
-  skip('cross-deploy refresh', 'set SMOKE_REFRESH_TOKEN to a long-lived refresh token');
+// The original bug was in-memory OAuth state: a redeploy wiped the registered
+// client, so the client_id Claude had stored came back invalid_client and the
+// connector broke. Asserting that a client registered before this deploy still
+// resolves is the direct test for that.
+//
+// This deliberately checks the CLIENT, not a refresh token. Refresh tokens
+// rotate on use (the old one gets a 2-minute grace expiry), so a stored one
+// would pass once and then fail on every later run — a check that breaks itself
+// is worse than no check. Create the id with: npm run smoke:token
+if (!process.env.SMOKE_CLIENT_ID) {
+  skip('cross-deploy client persistence', 'run `npm run smoke:token` and set SMOKE_CLIENT_ID');
 } else {
-  const [clientId, refreshToken] = process.env.SMOKE_REFRESH_TOKEN.split(':');
-  if (!clientId || !refreshToken) {
-    fail('cross-deploy refresh', 'SMOKE_REFRESH_TOKEN must be "client_id:refresh_token"');
-  }
-  const res = await fetch(`${BASE}/token`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ grant_type: 'refresh_token', client_id: clientId, refresh_token: refreshToken }),
+  const probe = new URLSearchParams({
+    client_id: process.env.SMOKE_CLIENT_ID,
+    redirect_uri: REDIRECT_URI,
+    response_type: 'code',
+    code_challenge: createHash('sha256').update('smoke-probe').digest('base64url'),
+    code_challenge_method: 'S256',
+    state: 'smoke',
   });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok || !body.access_token) {
-    fail('cross-deploy refresh',
-      `HTTP ${res.status} ${JSON.stringify(body)}\n`
-      + 'OAuth state did not survive the deploy — Claude will show "server configuration issue".');
+  // GET only renders the sign-in form — no code is issued and nothing is spent.
+  const res = await fetch(`${BASE}/authorize?${probe}`, { redirect: 'manual' });
+  if (res.status === 400) {
+    fail('cross-deploy client persistence',
+      `invalid_client for ${process.env.SMOKE_CLIENT_ID}\n`
+      + 'The registered client did not survive the deploy, so OAuth state is not persisting.\n'
+      + 'Claude will show "This connector has a server configuration issue."');
   }
-  pass('cross-deploy refresh', 'pre-deploy credentials still valid');
+  if (res.status !== 200) {
+    fail('cross-deploy client persistence', `expected 200 sign-in form, got ${res.status}`);
+  }
+  pass('cross-deploy client persistence', 'pre-deploy client_id still resolves');
 }
 
 const skipped = results.filter(r => r.skipped).length;
