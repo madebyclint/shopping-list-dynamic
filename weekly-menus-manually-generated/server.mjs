@@ -197,6 +197,9 @@ async function initDb() {
   await pool.query(`
     ALTER TABLE special_events ADD COLUMN IF NOT EXISTS packing_list_md TEXT;
     ALTER TABLE pantry_recipes  ADD COLUMN IF NOT EXISTS source_url TEXT;
+    -- Powers the Connections panel: without it there is no way to tell an
+    -- actively-used connection from one that authenticated weeks ago.
+    ALTER TABLE oauth_tokens ADD COLUMN IF NOT EXISTS last_used_at TIMESTAMPTZ;
   `);
 }
 
@@ -2471,6 +2474,34 @@ async function pruneOAuthState() {
   try {
     await pool.query(`DELETE FROM oauth_codes  WHERE expires_at < NOW()`);
     await pool.query(`DELETE FROM oauth_tokens WHERE expires_at IS NOT NULL AND expires_at < NOW()`);
+    // The smoke test registers a throwaway client on every run (it tests
+    // /register), and CI runs on every push plus daily — so without this,
+    // oauth_clients grows forever. The long-lived probe client used by the
+    // persistence check has a different name and is deliberately not matched.
+    await pool.query(
+      `DELETE FROM oauth_tokens WHERE client_id IN (
+         SELECT client_id FROM oauth_clients
+         WHERE data->>'client_name' = 'brooklyn-kitchen-smoke-test'
+           AND created_at < NOW() - INTERVAL '1 day')`,
+    );
+    await pool.query(
+      `DELETE FROM oauth_clients
+       WHERE data->>'client_name' = 'brooklyn-kitchen-smoke-test'
+         AND created_at < NOW() - INTERVAL '1 day'`,
+    );
+    // Registrations that never completed a token exchange are dead weight —
+    // an abandoned or failed Connect attempt. Keep a day's worth for debugging.
+    //
+    // The smoke-probe client is exempt: it intentionally holds no tokens (its
+    // whole job is to be a row that should still exist after a deploy), so this
+    // rule would otherwise delete it after a day and break the check it exists
+    // for — silently, and only once a day had passed.
+    await pool.query(
+      `DELETE FROM oauth_clients c
+       WHERE c.created_at < NOW() - INTERVAL '1 day'
+         AND c.data->>'client_name' <> 'brooklyn-kitchen-smoke-probe'
+         AND NOT EXISTS (SELECT 1 FROM oauth_tokens t WHERE t.client_id = c.client_id)`,
+    );
   } catch (err) {
     console.error('OAuth prune error:', err.message);
   }
@@ -2610,6 +2641,14 @@ class KitchenOAuthProvider {
         await pool.query('DELETE FROM oauth_tokens WHERE token = $1', [token]);
         throw new InvalidTokenError('Token expired');
       }
+      // Stamp activity for the Connections panel, at most once a minute so a
+      // busy conversation doesn't turn every tool call into an extra write.
+      pool.query(
+        `UPDATE oauth_tokens SET last_used_at = NOW()
+         WHERE token = $1 AND (last_used_at IS NULL OR last_used_at < NOW() - INTERVAL '1 minute')`,
+        [token],
+      ).catch(err => console.error('last_used_at update failed:', err.message));
+
       return {
         token,
         clientId: rec.client_id,
@@ -2637,6 +2676,204 @@ app.use(mcpAuthRouter({
   resourceServerUrl: mcpResourceUrl,
   resourceName: 'Brooklyn Kitchen',
 }));
+
+// ── Who is connected ────────────────────────────────────────────────────────
+// Token-gated on purpose. The dashboard itself is served publicly by
+// express.static, so an ungated version of this would publish the household's
+// names and activity pattern to anyone with the URL.
+//
+// Grouped by the MCP_ACCESS_TOKENS label, which is the only thing identifying a
+// person — one label can have several clients (web, desktop, a reconnect).
+async function readConnections() {
+  {
+    const { rows: people } = await pool.query(`
+      SELECT
+        t.label,
+        MIN(t.created_at)                                   AS connected_since,
+        MAX(COALESCE(t.last_used_at, t.created_at))          AS last_seen,
+        COUNT(*) FILTER (
+          WHERE t.kind = 'access' AND t.expires_at > NOW()
+        )                                                    AS live_access_tokens,
+        COUNT(DISTINCT t.client_id)                          AS clients,
+        COALESCE(
+          ARRAY_AGG(DISTINCT c.data->>'client_name')
+            FILTER (WHERE c.data->>'client_name' IS NOT NULL),
+          '{}'
+        )                                                    AS client_names
+      FROM oauth_tokens t
+      LEFT JOIN oauth_clients c ON c.client_id = t.client_id
+      GROUP BY t.label
+      ORDER BY last_seen DESC
+    `);
+
+    const { rows: [{ n: incomplete }] } = await pool.query(`
+      SELECT COUNT(*)::int AS n FROM oauth_clients c
+      WHERE NOT EXISTS (SELECT 1 FROM oauth_tokens t WHERE t.client_id = c.client_id)
+        AND c.data->>'client_name' <> 'brooklyn-kitchen-smoke-probe'
+    `);
+
+    return {
+      now: new Date().toISOString(),
+      // In-process, so this is sessions on THIS container only — it resets on
+      // deploy even though the connections themselves survive.
+      liveSessions: mcpSessions.size,
+      incompleteRegistrations: incomplete,
+      people: people.map(p => ({
+        label: p.label || 'unlabeled',
+        connectedSince: p.connected_since,
+        lastSeen: p.last_seen,
+        liveAccessTokens: Number(p.live_access_tokens),
+        clients: Number(p.clients),
+        clientNames: p.client_names,
+      })),
+    };
+  }
+}
+
+app.get('/api/connections', requireMcpToken, async (_req, res) => {
+  try {
+    res.json(await readConnections());
+  } catch (err) {
+    console.error('GET /api/connections:', err.message);
+    res.status(500).json({ error: 'failed to read connections' });
+  }
+});
+
+// ── /masterchef — hidden connections page ───────────────────────────────────
+// Unlisted rather than authenticated: the only thing standing between this page
+// and the public is a URL nobody has been told. `?chef=` is obscurity, NOT
+// security — the full URL lands in browser history and in Railway's request
+// logs. It shows no tokens and no secrets, which is what makes that trade
+// acceptable; keep it that way if you extend it.
+//
+// A wrong or missing chef gets a 404, so probing can't confirm the page exists.
+const MASTERCHEF_CHEFS = (process.env.MASTERCHEF_CHEFS || 'clintbush')
+  .split(',').map(s => s.trim()).filter(Boolean);
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g,
+  c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function relTime(from, now) {
+  const secs = Math.round((new Date(now) - new Date(from)) / 1000);
+  if (secs < 60) return 'just now';
+  const mins = Math.round(secs / 60);
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs} hr${hrs === 1 ? '' : 's'} ago`;
+  const days = Math.round(hrs / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}
+
+function renderMasterchef(data) {
+  const fmt = (d) => new Date(d).toLocaleString('en-US', {
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+  });
+  // Active = used within the hour. Anything older is a valid connection that
+  // simply isn't in use, which is not the same thing as broken.
+  const isActive = (p) => (new Date(data.now) - new Date(p.lastSeen)) < 60 * 60 * 1000;
+
+  const rows = data.people.length ? data.people.map(p => `
+      <tr>
+        <td>
+          <span class="dot ${isActive(p) ? 'on' : 'off'}"></span>
+          <strong>${esc(p.label)}</strong>
+          ${p.clientNames.length ? `<div class="sub">${esc(p.clientNames.join(', '))}</div>` : ''}
+          <div class="sub narrow-only">${p.clients} client${p.clients === 1 ? '' : 's'} · ${p.liveAccessTokens} live token${p.liveAccessTokens === 1 ? '' : 's'}</div>
+        </td>
+        <td>${esc(relTime(p.lastSeen, data.now))}<div class="sub">${esc(fmt(p.lastSeen))}</div></td>
+        <td>${esc(fmt(p.connectedSince))}</td>
+        <td class="num">${p.clients}</td>
+        <td class="num">${p.liveAccessTokens}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" class="empty">Nobody has connected yet.</td></tr>';
+
+  return `<!doctype html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>👨‍🍳 Masterchef — Connections</title>
+<style>
+  :root { color-scheme: light dark; --bg:#fff; --fg:#111; --muted:#666; --border:#e5e7eb; --card:#fafafa; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#141414; --fg:#f3f3f3; --muted:#9a9a9a; --border:#2c2c2c; --card:#1c1c1c; }
+  }
+  body { font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--fg);
+         margin:0; padding:28px 18px 60px; }
+  .wrap { max-width:760px; margin:0 auto; }
+  h1 { font-size:1.35rem; margin:0 0 2px; }
+  p.lede { color:var(--muted); font-size:0.85rem; margin:0 0 22px; }
+  .stats { display:flex; gap:10px; flex-wrap:wrap; margin:0 0 20px; }
+  .stat { background:var(--card); border:1px solid var(--border); border-radius:10px;
+          padding:10px 14px; font-size:0.8rem; color:var(--muted); }
+  .stat b { display:block; font-size:1.25rem; color:var(--fg); }
+  .scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table { border-collapse:collapse; width:100%; font-size:0.87rem; min-width:560px; }
+  th { text-align:left; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.04em;
+       color:var(--muted); border-bottom:1px solid var(--border); padding:0 10px 8px; font-weight:600; }
+  td { padding:12px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+  td.num, th.num { text-align:right; }
+  .sub { color:var(--muted); font-size:0.74rem; margin-top:2px; }
+  .empty { text-align:center; color:var(--muted); padding:28px 10px; }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:7px;
+         vertical-align:middle; }
+  .dot.on { background:#16a34a; } .dot.off { background:#b9b9b9; }
+  .narrow-only { display:none; }
+  /* On a phone the two count columns fall off the edge, so fold them into the
+     row and let the table fit instead of scrolling sideways. */
+  @media (max-width:560px) {
+    table { min-width:0; }
+    th.num, td.num { display:none; }
+    .narrow-only { display:block; }
+  }
+  footer { margin-top:26px; font-size:0.76rem; color:var(--muted); line-height:1.6; }
+  a { color:inherit; }
+</style></head><body><div class="wrap">
+  <h1>👨‍🍳 Connections</h1>
+  <p class="lede">Who has connected Claude to Brooklyn Kitchen. Grouped by access-token label.</p>
+
+  <div class="stats">
+    <div class="stat"><b>${data.people.length}</b>${data.people.length === 1 ? 'person' : 'people'}</div>
+    <div class="stat"><b>${data.people.filter(isActive).length}</b>active this hour</div>
+    <div class="stat"><b>${data.liveSessions}</b>live session${data.liveSessions === 1 ? '' : 's'}</div>
+  </div>
+
+  <div class="scroll"><table>
+    <thead><tr>
+      <th>Who</th><th>Last active</th><th>Connected since</th>
+      <th class="num">Clients</th><th class="num">Live tokens</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>
+
+  <footer>
+    <strong>Who</strong> is the label from <code>MCP_ACCESS_TOKENS</code> — the only identity the
+    server records. It is not used for authorization or attribution, so it cannot tell you who
+    made a given change.<br>
+    <strong>Clients</strong> counts separate Claude registrations for that person (web, desktop,
+    a reconnect) — more than one is normal.<br>
+    <strong>Live sessions</strong> are in-memory on this container, so they reset on deploy even
+    though the connections themselves survive.
+    ${data.incompleteRegistrations
+      ? `<br><strong>${data.incompleteRegistrations}</strong> registration${data.incompleteRegistrations === 1 ? '' : 's'} never finished signing in — an abandoned or failed Connect. Cleaned up automatically after a day.`
+      : ''}
+    <br><br>Generated ${esc(new Date(data.now).toLocaleString('en-US'))} · v${esc(version)}
+  </footer>
+</div></body></html>`;
+}
+
+app.get(['/masterchef', '/masterchef/'], async (req, res) => {
+  if (!MASTERCHEF_CHEFS.includes(String(req.query.chef || ''))) {
+    return res.status(404).type('txt').send('Not found');
+  }
+  try {
+    res.set('X-Robots-Tag', 'noindex, nofollow');
+    res.set('Cache-Control', 'no-store');
+    res.type('html').send(renderMasterchef(await readConnections()));
+  } catch (err) {
+    console.error('GET /masterchef:', err.message);
+    res.status(500).type('txt').send('Could not read connections');
+  }
+});
 
 async function getCurrentWeekKey() {
   const { rows } = await pool.query('SELECT data FROM manifest WHERE id = 1');

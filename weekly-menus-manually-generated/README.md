@@ -109,6 +109,37 @@ that's the bug.
 
 ---
 
+## Seeing Who's Connected
+
+```
+https://weekly-menus-manually-generated-production.up.railway.app/masterchef?chef=clintbush
+```
+
+Server-rendered, no login. Shows each person (grouped by `MCP_ACCESS_TOKENS` label), when they
+were last active, when they first connected, how many Claude clients they have, and how many
+live sessions this container is holding.
+
+**This is unlisted, not protected.** The only thing keeping it private is a URL nobody has
+been told — and the full URL lands in browser history and in Railway's request logs. It
+deliberately exposes no tokens and no secrets, which is what makes that acceptable. Keep it
+that way if you extend it; don't add anything here you wouldn't hand to a stranger.
+
+A wrong or missing `chef` returns 404, so probing can't confirm the page exists. Add more
+names with `MASTERCHEF_CHEFS=clintbush,someoneelse` on the Railway service. For real
+protection, the same data is available token-gated at `GET /api/connections`.
+
+Two things the page cannot tell you, both by design:
+
+- **Who made a given change.** The label identifies who authenticated, but it is never used
+  for attribution, so edits are anonymous.
+- **Whether someone is "online" right now.** Live sessions are in-memory, so a deploy zeroes
+  them while the connections themselves keep working. "Last active" is the useful signal.
+
+Activity comes from `oauth_tokens.last_used_at`, stamped at most once a minute per token so a
+busy conversation doesn't turn every tool call into an extra write.
+
+---
+
 ## Troubleshooting
 
 **"This connector has a server configuration issue."** Claude's generic message for an
