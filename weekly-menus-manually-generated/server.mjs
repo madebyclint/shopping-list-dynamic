@@ -2707,9 +2707,10 @@ app.post('/mcp', requireMcpToken, async (req, res) => {
   try {
     const sessionId = req.headers['mcp-session-id'];
     let transport;
-    if (sessionId && mcpSessions.has(sessionId)) {
-      transport = mcpSessions.get(sessionId).transport;
-    } else if (!sessionId && isInitializeRequest(req.body)) {
+    // Check for initialize FIRST, regardless of whether a session-id header
+    // is attached — some clients send one proactively even on the very first
+    // call. The server always assigns its own session ID either way.
+    if (isInitializeRequest(req.body)) {
       const mcpServer = buildMcpServer();
       transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
@@ -2718,6 +2719,8 @@ app.post('/mcp', requireMcpToken, async (req, res) => {
       });
       transport.onclose = () => { if (transport.sessionId) mcpSessions.delete(transport.sessionId); };
       await mcpServer.connect(transport);
+    } else if (sessionId && mcpSessions.has(sessionId)) {
+      transport = mcpSessions.get(sessionId).transport;
     } else {
       return res.status(400).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Bad Request: No valid session ID provided' }, id: null });
     }
