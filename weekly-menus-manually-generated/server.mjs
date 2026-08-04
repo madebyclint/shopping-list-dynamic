@@ -2722,6 +2722,10 @@ app.post('/mcp', requireMcpToken, async (req, res) => {
     } else if (sessionId && mcpSessions.has(sessionId)) {
       transport = mcpSessions.get(sessionId).transport;
     } else {
+      // Temporary diagnostic — remove once we've seen what a real rejected
+      // request actually looks like. Logs no secrets, just method/shape.
+      console.error('POST /mcp 400 — sessionId header:', sessionId, '| known sessions:', [...mcpSessions.keys()],
+        '| body:', JSON.stringify(req.body));
       return res.status(400).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Bad Request: No valid session ID provided' }, id: null });
     }
     await transport.handleRequest(req, res, req.body);
