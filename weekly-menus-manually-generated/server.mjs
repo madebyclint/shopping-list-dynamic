@@ -2406,6 +2406,45 @@ app.patch('/api/rename-list-item', async (req, res) => {
   }
 });
 
+// ── PATCH /api/xray-move — move an item between buy_these/pantry for a meal ──
+// body: { mealIdx, item, direction: 'toPantry' | 'toList' }
+app.patch('/api/xray-move', async (req, res) => {
+  const { mealIdx, item, direction } = req.body || {};
+  if (!Number.isInteger(mealIdx) || !item || !['toPantry', 'toList'].includes(direction)) {
+    return res.status(400).json({ error: 'mealIdx, item, direction are required' });
+  }
+
+  try {
+    const mi = await pool.query(
+      "SELECT content FROM documents WHERE key = 'meals-ingredients'",
+    );
+    if (!mi.rows.length) return res.status(404).json({ error: 'not_found' });
+
+    const data = JSON.parse(mi.rows[0].content);
+    const meal = (data.meals || [])[mealIdx];
+    if (!meal) return res.status(404).json({ error: 'meal_not_found' });
+
+    if (direction === 'toPantry') {
+      meal.buy_these = (meal.buy_these || []).filter(i => i !== item);
+      if (!meal.pantry) meal.pantry = [];
+      if (!meal.pantry.includes(item)) meal.pantry.push(item);
+    } else {
+      meal.pantry = (meal.pantry || []).filter(i => i !== item);
+      if (!meal.buy_these) meal.buy_these = [];
+      if (!meal.buy_these.includes(item)) meal.buy_these.unshift(item);
+    }
+
+    await pool.query(
+      "UPDATE documents SET content = $1 WHERE key = 'meals-ingredients'",
+      [JSON.stringify(data)],
+    );
+    res.json({ ok: true, meal });
+  } catch (err) {
+    console.error('PATCH /api/xray-move:', err.message);
+    res.status(500).json({ error: 'db_error', detail: err.message });
+  }
+});
+
 // ── MCP server ─────────────────────────────────────────────────────────────────
 // Lets Clint and his wife talk to their own Claude (Desktop/claude.ai — not
 // Claude Code) and read/manage the shopping list or generate a new week.

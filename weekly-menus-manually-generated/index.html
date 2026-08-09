@@ -111,6 +111,7 @@
     <div class="cl-progress-wrap"><div class="cl-progress-bar" id="cl-progress" style="width:0%"></div></div>
   </div>
   <div class="cl-body" id="cl-body"></div>
+  <div class="cl-footer" id="cl-footer"></div>
 </div>
 
 <!-- ── Main ──────────────────────────────────────────────────────────────── -->
@@ -2435,11 +2436,12 @@ function clUpdateTotals() {
   let cartAmt = 0, skipAmt = 0, listAmt = 0, cartN = 0;
   _clItems.forEach((item, idx) => {
     const p = item.price || 0;
-    listAmt += p;
-    if (_clState.c.includes(idx)) { cartAmt += p; cartN++; }
+    if (_clState.c.includes(idx)) { cartAmt += p; cartN++; listAmt += p; }
     else if (_clState.s.includes(idx)) { skipAmt += p; }
+    else { listAmt += p; }
   });
   _clState.x.forEach(item => {
+    // All custom extras count toward Est. Total (there's no skip for extras, only remove)
     const qty = item.qty || 1;
     const p = (item.unitP != null ? item.unitP * qty : item.p) || 0;
     listAmt += p;
@@ -3062,12 +3064,25 @@ function xrayFindClItem(name) {
   });
 }
 
+async function xraySaveMove(mealIdx, item, direction) {
+  try {
+    await fetch('/api/xray-move', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mealIdx, item, direction }),
+    });
+  } catch (err) {
+    console.error('xray-move save failed:', err);
+  }
+}
+
 async function xrayMoveToPantry(mealIdx, item) {
   const meal = (_xrayData?.meals || [])[mealIdx];
   if (!meal) return;
   meal.buy_these = (meal.buy_these || []).filter(i => i !== item);
   if (!meal.pantry) meal.pantry = [];
   if (!meal.pantry.includes(item)) meal.pantry.push(item);
+  xraySaveMove(mealIdx, item, 'toPantry');
   // Mirror to checklist: mark the matching item as checked
   if (!_clWeekKey) _clWeekKey = _manifest?.currentWeek ?? 'current';
   await clEnsureParsed();
@@ -3087,6 +3102,7 @@ async function xrayMoveToList(mealIdx, item) {
   meal.pantry = (meal.pantry || []).filter(i => i !== item);
   if (!meal.buy_these) meal.buy_these = [];
   if (!meal.buy_these.includes(item)) meal.buy_these.unshift(item);
+  xraySaveMove(mealIdx, item, 'toList');
   // Mirror to checklist: uncheck the matching item
   if (!_clWeekKey) _clWeekKey = _manifest?.currentWeek ?? 'current';
   await clEnsureParsed();
@@ -4140,7 +4156,10 @@ fetch('/api/meta')
       hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
     });
     const env = meta.env !== 'production' ? ` · ${meta.env}` : '';
-    $('app-footer').textContent = `v${meta.version}${env} · deployed ${ts}`;
+    const versionLine = `v${meta.version}${env} · deployed ${ts}`;
+    $('app-footer').textContent = versionLine;
+    const clFooter = $('cl-footer');
+    if (clFooter) clFooter.textContent = versionLine;
   })
   .catch(() => { /* footer stays as static label */ });
 
