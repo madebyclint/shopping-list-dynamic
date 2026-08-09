@@ -2106,17 +2106,28 @@ function clParseMd(md) {
   const _rawMealMap = {}; // raw (unsimplified) meal text keyed by normalised item name
   // Build price+meal map from the detailed section (before ## Shopping List by Trip)
   const detailed = md.split(/^## Shopping List by Trip/m)[0];
-  const re = /^[-*]\s+(.+?)\s*—\s*([^—]+?)\s*—.*\*\*~?\$?([\d.]+)\*\*/gm;
-  let m;
-  while ((m = re.exec(detailed)) !== null) {
-    const k = clNorm(m[1]), p = parseFloat(m[3]);
-    const meal = m[2].trim();
+  detailed.split('\n').forEach(line => {
+    const t = line.trim();
+    if (!t.startsWith('- ') && !t.startsWith('* ')) return;
+    // Matches both the current documented format
+    // ("Item — Meal — qty unit — $unit — $total") and the older bold-total format
+    // ("Item — Meal — ~$unit ea — **~$total**") — take the LAST $amount on the
+    // line as the price either way, since that's always the line total.
+    const lm = t.match(/^[-*]\s+(.+?)\s*—\s*([^—]+?)\s*—/);
+    if (!lm) return;
+    const k = clNorm(lm[1]);
+    const meal = lm[2].trim();
+    const priceMatches = [...t.matchAll(/\$([\d.]+)/g)];
+    const p = priceMatches.length ? parseFloat(priceMatches[priceMatches.length - 1][1]) : NaN;
     if (k) {
-      if (!isNaN(p)) _priceMap[k] = p;
+      // Same normalized item name can appear on more than one line when a shared
+      // ingredient is broken out per-meal instead of combined into one line — sum
+      // those instances instead of letting the later line silently overwrite the earlier one.
+      if (!isNaN(p)) _priceMap[k] = (_priceMap[k] || 0) + p;
       _mealMap[k] = clNormMeal(meal);
-      _rawMealMap[k] = meal; // keep raw for multi-meal display
+      _rawMealMap[k] = _rawMealMap[k] ? `${_rawMealMap[k]} + ${meal}` : meal; // keep raw for multi-meal display
     }
-  }
+  });
   // Parse store-grouped items from ## Shopping List by Trip
   const tripMatch = md.match(/## Shopping List by Trip([\s\S]*)/);
   if (!tripMatch) {
@@ -2141,7 +2152,17 @@ function clParseMd(md) {
       // Extract meal from the line: text between first and second " — " that starts with a letter
       const mealFromLine = raw.match(/—\s*([A-Za-z][^—]{0,80}?)\s*—/)?.[1]?.trim() || '';
       const rawMealStr = mealFromLine || _rawMealMap[clNorm(displayName)] || '';
-      _clItems.push({ name: raw, displayName, qtyStr: '', qtyN: 1, unit: '', unitCost: null, price: null,
+      // Extract qty from first parenthetical (e.g. "Ground beef (1 lb)" -> qtyN=1, unit="lb")
+      const qtyMatch = raw.match(/\(([^)]+)\)/);
+      const qtyStr = qtyMatch ? qtyMatch[1] : '';
+      const qtyNumM = qtyStr.match(/(\d+\.?\d*)/);
+      const qtyN = qtyNumM ? parseFloat(qtyNumM[1]) : 1;
+      const unit = qtyStr.replace(/^[\d.\s–—~-]+/, '').match(/^([\w]+)/)?.[1] || '';
+      // Extract price: take the last $amount on the line (handles trailing bold totals like "~$3.00 ea — **~$6.00**")
+      const priceMatches = [...raw.matchAll(/\$([\d.]+)/g)];
+      const price = priceMatches.length ? parseFloat(priceMatches[priceMatches.length - 1][1]) : clLookupPrice(displayName);
+      const unitCost = (price != null && qtyN > 0) ? price / qtyN : null;
+      _clItems.push({ name: raw, displayName, qtyStr, qtyN, unit, unitCost, price,
         meal: clNormMeal(rawMealStr), meals: clParseMeals(rawMealStr), store: 'Groceries', subgroup });
     });
     return;
@@ -3018,6 +3039,20 @@ $('xrayBtn').addEventListener('click', openXray);
 $('xrayCloseBtn').addEventListener('click', closeXray);
 $('last-menu-back-btn').addEventListener('click', () => switchTab('last'));
 
+function xrayAttr(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+$('xray-body').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-xray-action]');
+  if (!btn) return;
+  const item = btn.dataset.item;
+  const action = btn.dataset.xrayAction;
+  if (action === 'add') xrayPushToChecklist(btn, item);
+  else if (action === 'pantry') xrayMoveToPantry(parseInt(btn.dataset.mealIdx, 10), item);
+  else if (action === 'list') xrayMoveToList(parseInt(btn.dataset.mealIdx, 10), item);
+});
+
 function openXray() {
   $('xray-drawer').classList.add('open');
   $('list-md-content').classList.add('xray-dimmed');
@@ -3151,15 +3186,15 @@ function renderXray(data, listText) {
       <div class="xray-meal-title">${meal.emoji || ''} ${meal.name} <span style="opacity:0.6;font-weight:400">&#x2014; ${meal.day}</span></div>`;
     if (found.length) {
       html += `<div class="xray-section-label">&#x2705; On the list (${found.length})</div>`;
-      found.forEach(i => html += `<div class="xray-item"><span class="xray-icon">&#x2705;</span><span class="xray-item-name">${i}</span><button class="xray-move-btn" onclick='xrayMoveToPantry(${mealIdx}, ${JSON.stringify(i)})' title="Move to pantry skip list">&darr; pantry</button></div>`);
+      found.forEach(i => html += `<div class="xray-item"><span class="xray-icon">&#x2705;</span><span class="xray-item-name">${i}</span><button class="xray-move-btn" data-xray-action="pantry" data-meal-idx="${mealIdx}" data-item="${xrayAttr(i)}" title="Move to pantry skip list">&darr; pantry</button></div>`);
     }
     if (missing.length) {
       html += `<div class="xray-section-label" style="color:var(--warn)">&#x26A0;&#xFE0F; Verify / missing (${missing.length})</div>`;
-      missing.forEach(i => html += `<div class="xray-item" style="color:var(--warn)"><span class="xray-icon">&#x26A0;&#xFE0F;</span><span class="xray-item-name">${i}</span><button class="xray-add-btn" onclick='xrayPushToChecklist(this, ${JSON.stringify(i)})' title="Add to checklist">+ list</button><button class="xray-move-btn" onclick='xrayMoveToPantry(${mealIdx}, ${JSON.stringify(i)})' title="Move to pantry skip list">&darr; pantry</button></div>`);
+      missing.forEach(i => html += `<div class="xray-item" style="color:var(--warn)"><span class="xray-icon">&#x26A0;&#xFE0F;</span><span class="xray-item-name">${i}</span><button class="xray-add-btn" data-xray-action="add" data-item="${xrayAttr(i)}" title="Add to checklist">+ list</button><button class="xray-move-btn" data-xray-action="pantry" data-meal-idx="${mealIdx}" data-item="${xrayAttr(i)}" title="Move to pantry skip list">&darr; pantry</button></div>`);
     }
     if (pantry.length) {
       html += `<div class="xray-section-label">Pantry &#x2014; not checked (${pantry.length})</div>`;
-      pantry.forEach(i => html += `<div class="xray-item" style="color:var(--muted)"><span class="xray-icon">&#x1F3E0;</span><span class="xray-item-name">${i}</span><button class="xray-move-btn" style="border-color:var(--muted);color:var(--muted)" onclick='xrayMoveToList(${mealIdx}, ${JSON.stringify(i)})' title="Move back to buy list">&uarr; to list</button></div>`);
+      pantry.forEach(i => html += `<div class="xray-item" style="color:var(--muted)"><span class="xray-icon">&#x1F3E0;</span><span class="xray-item-name">${i}</span><button class="xray-move-btn" style="border-color:var(--muted);color:var(--muted)" data-xray-action="list" data-meal-idx="${mealIdx}" data-item="${xrayAttr(i)}" title="Move back to buy list">&uarr; to list</button></div>`);
     }
     html += '</div>';
   });
@@ -4009,7 +4044,7 @@ function openPantryDetail(id) {
       const label = ing.amount ? `${ing.amount} ${ing.name}` : ing.name;
       ingHtml += `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
         <span style="flex:1;font-size:0.9rem">${label}</span>
-        <button class="xray-add-btn" onclick="pantryIngAddToList(this,${JSON.stringify(label)})">+ list</button>
+        <button class="xray-add-btn" data-pantry-add="${xrayAttr(label)}">+ list</button>
       </div>`;
     });
     ingDiv.innerHTML = ingHtml;
@@ -4035,6 +4070,12 @@ function openPantryDetail(id) {
 function pantryIngAddToList(btn, label) {
   xrayPushToChecklist(btn, label);
 }
+
+$('pantry-detail-body').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-pantry-add]');
+  if (!btn) return;
+  pantryIngAddToList(btn, btn.dataset.pantryAdd);
+});
 
 async function markPantryMade(id) {
   try {
