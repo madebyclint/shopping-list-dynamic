@@ -413,6 +413,129 @@ async function findLikelyDuplicate(weekKey, name, listMd) {
   return null;
 }
 
+// ── Planned-item lookup for the edit_shopping_list_item / set_item_store MCP tools ──
+// clNormServer/parseShoppingListMdItems mirror clNorm()/clParseMd() in index.html
+// closely enough to reproduce the same item order and store/subgroup extraction —
+// edit_shopping_list_item relies on that order lining up with the indices the
+// client itself uses in cart_state.c/s/prices/qtys.
+function clNormServer(text) {
+  return String(text || '')
+    .replace(/\*?\(.*?\)\*?/g, '')
+    .replace(/\s*—.*$/, '')
+    .replace(/[^a-z0-9\s]/gi, ' ')
+    .toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
+function parseShoppingListMdItems(md) {
+  const items = [];
+  const tripMatch = md.match(/## Shopping List by Trip([\s\S]*)/);
+  if (!tripMatch) {
+    let subgroup = '';
+    let inSummarySection = false;
+    md.split('\n').forEach(line => {
+      const t = line.trim();
+      if (!t || t === '---') return;
+      if (t.startsWith('## ')) { inSummarySection = true; return; }
+      if (inSummarySection) return;
+      if (t.startsWith('>')) return;
+      const catMatch = t.match(/^(?:\S+\s+)?\*\*([^*]+)\*\*\s*$/);
+      if (catMatch) { subgroup = catMatch[1].trim(); return; }
+      if (!t.startsWith('- ') && !t.startsWith('* ')) return;
+      const raw = t.replace(/^[-*]\s+/, '');
+      if (!raw) return;
+      const displayName = raw.replace(/\s*—.*$/, '').replace(/\s*\*\(.*?\)\*/g, '').trim();
+      items.push({ displayName, store: 'Groceries', subgroup });
+    });
+    return items;
+  }
+  const seenNames = new Set();
+  tripMatch[1].split(/\n### /).filter(Boolean).forEach(block => {
+    const lines = block.split('\n');
+    const store = lines[0].trim();
+    let subgroup = '';
+    lines.slice(1).forEach(line => {
+      const t = line.trim();
+      const sgMatch = t.match(/^\*\*(?:—\s*)?([^*]+?)(?:\s*—)?\*\*$/);
+      if (sgMatch && !t.startsWith('- ') && !t.startsWith('* ')) { subgroup = sgMatch[1].trim(); return; }
+      if (!t.startsWith('- ') && !t.startsWith('* ')) return;
+      const name = t.replace(/^[-*]\s+/, '').trim();
+      if (name.startsWith('*(')) return;
+      const clean = name.replace(/\s*\*?\(.*?\)\*?/g, '').replace(/\s*—.*$/, '').trim();
+      const normClean = clNormServer(clean);
+      const displayName = name.replace(/\s*\(.*?\)/g, '').replace(/\s*—.*$/, '').trim();
+      if (seenNames.has(normClean)) return;
+      seenNames.add(normClean);
+      items.push({ displayName, store, subgroup });
+    });
+  });
+  return items;
+}
+
+function findShoppingListItemIndex(items, name) {
+  const target = clNormServer(name);
+  if (!target) return -1;
+  let bestIdx = -1, bestScore = 0;
+  items.forEach((it, i) => {
+    const hay = clNormServer(it.displayName);
+    let score = 0;
+    if (hay === target) score = 1000;
+    else if (hay.includes(target) || target.includes(hay)) score = Math.min(hay.length, target.length);
+    if (score > bestScore) { bestScore = score; bestIdx = i; }
+  });
+  return bestIdx;
+}
+
+// Move a shopping-list item's bullet line from its current "### Store" section
+// to a different one, creating the section if it doesn't exist yet. Operates on
+// raw lines (rather than the block-based parse above) so it can splice a single
+// line without needing to reconstruct subgroup formatting. Used by set_item_store.
+function moveItemToStore(md, itemName, targetStore) {
+  const lines = md.split('\n');
+  const tripIdx = lines.findIndex(l => l.trim() === '## Shopping List by Trip');
+  if (tripIdx === -1) return { found: false };
+
+  const norm = clNormServer;
+  const targetNorm = norm(targetStore);
+  const itemNorm = norm(itemName);
+
+  let itemLineIdx = -1, itemLine = null, itemDisplayName = null, oldStore = null;
+  let currentStore = null, bestScore = 0;
+  for (let i = tripIdx + 1; i < lines.length; i++) {
+    const t = lines[i].trim();
+    const storeHeaderMatch = t.match(/^### (.+)/);
+    if (storeHeaderMatch) { currentStore = storeHeaderMatch[1].trim(); continue; }
+    if (!t.startsWith('- ') && !t.startsWith('* ')) continue;
+    const raw = t.replace(/^[-*]\s+/, '').trim();
+    const clean = raw.replace(/\s*\*?\(.*?\)\*?/g, '').replace(/\s*—.*$/, '').trim();
+    const cleanNorm = norm(clean);
+    let score = 0;
+    if (cleanNorm === itemNorm) score = 1000;
+    else if (cleanNorm.includes(itemNorm) || itemNorm.includes(cleanNorm)) score = Math.min(cleanNorm.length, itemNorm.length);
+    if (score > bestScore) {
+      bestScore = score; itemLineIdx = i; itemLine = lines[i]; itemDisplayName = clean; oldStore = currentStore;
+    }
+  }
+  if (itemLineIdx === -1) return { found: false };
+  if (oldStore && norm(oldStore) === targetNorm) {
+    return { found: true, changed: false, store: oldStore, displayName: itemDisplayName };
+  }
+
+  lines.splice(itemLineIdx, 1);
+
+  let targetHeaderIdx = -1;
+  for (let i = tripIdx + 1; i < lines.length; i++) {
+    const m = lines[i].trim().match(/^### (.+)/);
+    if (m && norm(m[1].trim()) === targetNorm) { targetHeaderIdx = i; break; }
+  }
+  if (targetHeaderIdx !== -1) {
+    lines.splice(targetHeaderIdx + 1, 0, itemLine);
+  } else {
+    lines.push(`### ${targetStore}`, itemLine);
+  }
+
+  return { found: true, changed: true, store: targetStore, displayName: itemDisplayName, md: lines.join('\n') };
+}
+
 app.get('/api/cart', async (req, res) => {
   try {
     const weekKey = String(req.query.week || 'current').slice(0, 50);
@@ -3018,6 +3141,77 @@ function buildMcpServer() {
     if (price != null) state.x[idx].p = price;
     await writeCartState(weekKey, state);
     return toolJson({ updated: true, item: state.x[idx] });
+  });
+
+  server.registerTool('edit_shopping_list_item', {
+    description: 'Check off, skip, unmark, or adjust the qty/price of an item on this week\'s ORIGINAL planned shopping list (matched by name, e.g. "check off the milk"). For items you added yourself mid-week via add_shopping_item, use update_shopping_item instead. Call get_this_week first to see exact item names.',
+    inputSchema: {
+      name: z.string().min(1).describe('Item name (or close match) as it appears on the shopping list'),
+      action: z.enum(['check', 'skip', 'unmark']).optional().describe('Mark the item checked, skipped, or clear its status'),
+      qty: z.number().positive().optional().describe('Override quantity for this week only'),
+      price: z.number().nonnegative().optional().describe('Override unit price for this week only'),
+    },
+  }, async ({ name, action, qty, price }) => {
+    const weekKey = await getCurrentWeekKey();
+    const listMd = await getWeekContentMd('shopping_lists', weekKey);
+    if (!listMd) return toolError('No shopping list found for the current week.');
+    const items = parseShoppingListMdItems(listMd);
+    const idx = findShoppingListItemIndex(items, name);
+    if (idx === -1) {
+      return toolJson({
+        updated: false,
+        reason: 'not_found',
+        message: `Couldn't find "${name}" on this week's planned shopping list. Call get_this_week to see exact item names, or use add_shopping_item if it's not planned yet.`,
+      });
+    }
+    const item = items[idx];
+    const state = (await readCartState(weekKey)) || emptyCartState();
+    state.c = state.c || []; state.s = state.s || [];
+    state.qtys = state.qtys || {}; state.prices = state.prices || {};
+
+    if (action) {
+      state.c = state.c.filter(i => i !== idx);
+      state.s = state.s.filter(i => i !== idx);
+      if (action === 'check') state.c.push(idx);
+      else if (action === 'skip') state.s.push(idx);
+    }
+    if (qty != null) state.qtys[String(idx)] = qty;
+    if (price != null) state.prices[String(idx)] = price;
+
+    await writeCartState(weekKey, state);
+    return toolJson({
+      updated: true,
+      name: item.displayName,
+      store: item.store,
+      status: action === 'unmark' ? 'unmarked' : action === 'check' ? 'checked' : action === 'skip' ? 'skipped' : undefined,
+      qty: qty ?? undefined,
+      price: price ?? undefined,
+    });
+  });
+
+  server.registerTool('set_item_store', {
+    description: 'Move an ingredient to a different store/trip section on this week\'s shopping list (e.g. "move avocados to Trader Joe\'s"). Creates the store section if it doesn\'t exist yet. Call get_this_week first to see current store names and exact item names.',
+    inputSchema: {
+      name: z.string().min(1).describe('Item name (or close match) as it appears on the shopping list'),
+      store: z.string().min(1).describe('Store/trip name to move the item to, e.g. "Trader Joe\'s"'),
+    },
+  }, async ({ name, store }) => {
+    const weekKey = await getCurrentWeekKey();
+    const listMd = await getWeekContentMd('shopping_lists', weekKey);
+    if (!listMd) return toolError('No shopping list found for the current week.');
+    const result = moveItemToStore(listMd, name, store);
+    if (!result.found) {
+      return toolJson({
+        updated: false,
+        reason: 'not_found',
+        message: `Couldn't find "${name}" on this week's shopping list, or it isn't organized by store/trip yet. Call get_this_week to check.`,
+      });
+    }
+    if (!result.changed) {
+      return toolJson({ updated: false, reason: 'already_there', message: `"${result.displayName}" is already filed under "${result.store}".` });
+    }
+    await pool.query('UPDATE shopping_lists SET content_md = $1 WHERE week_date = $2', [result.md, weekKey]);
+    return toolJson({ updated: true, name: result.displayName, store: result.store });
   });
 
   server.registerTool('get_meal_history', {

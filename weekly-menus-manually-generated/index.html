@@ -3093,10 +3093,29 @@ function xrayFindClItem(name) {
   const skip = new Set(['with','from','each','some','the','and','for','cup','cups','tbsp','tsp','pkg','can','pack','slice','sliced','bunch','bag','jar','lbs','oz']);
   const tokens = norm(name).split(' ').filter(t => t.length >= 4 && !skip.has(t));
   if (!tokens.length || !_clItems.length) return -1;
-  return _clItems.findIndex(item => {
+  // Score every item by how many significant tokens it shares, rather than
+  // stopping at the first item containing any single token — a lone generic
+  // word (e.g. "chicken") matching the wrong item was mis-checking/unchecking
+  // items and losing their real store/category.
+  let bestIdx = -1, bestScore = 0;
+  _clItems.forEach((item, i) => {
     const hay = norm(item.name);
-    return tokens.some(t => hay.includes(t));
+    const score = tokens.filter(t => hay.includes(t)).length;
+    if (score > bestScore) { bestScore = score; bestIdx = i; }
   });
+  return bestScore >= Math.ceil(tokens.length / 2) ? bestIdx : -1;
+}
+
+// Find a previously-added custom/ad-hoc checklist item by exact name.
+function xrayFindCustomIndex(name) {
+  const norm = s => String(s || '').toLowerCase().trim();
+  return (_clState.x || []).findIndex(it => norm(it.n) === norm(name));
+}
+
+// Re-render the checklist body in place if the drawer markup is present, so an
+// X-Ray move is reflected immediately even if the checklist is already open.
+function clRenderIfPresent() {
+  if ($('cl-body')) clRender();
 }
 
 async function xraySaveMove(mealIdx, item, direction) {
@@ -3127,7 +3146,16 @@ async function xrayMoveToPantry(mealIdx, item) {
     if (!_clState.c.includes(idx)) _clState.c.push(idx);
     _clState.s = (_clState.s || []).filter(i => i !== idx);
     clSync();
+  } else {
+    // Not on the real list — if it was previously added as a custom item
+    // (e.g. via an earlier "move to list"), mark that one done instead.
+    const cIdx = xrayFindCustomIndex(item);
+    if (cIdx !== -1 && _clState.x[cIdx].st !== 'c') {
+      _clState.x[cIdx].st = 'c';
+      clSync();
+    }
   }
+  clRenderIfPresent();
   renderXray(_xrayData, _listText);
 }
 
@@ -3143,17 +3171,24 @@ async function xrayMoveToList(mealIdx, item) {
   await clEnsureParsed();
   const idx = xrayFindClItem(item);
   if (idx !== -1) {
+    // Matched a real list item — it already carries its correct store/category,
+    // nothing more to do beyond un-hiding it.
     _clState.c = (_clState.c || []).filter(i => i !== idx);
     _clState.s = (_clState.s || []).filter(i => i !== idx);
     clSync();
   } else {
-    // Item not on the main shopping list — add as a custom item so it shows on the checklist
-    if (!_clState.x) _clState.x = [];
-    if (!_clState.x.some(it => it.n === item)) {
+    const cIdx = xrayFindCustomIndex(item);
+    if (cIdx !== -1) {
+      // Already tracked as a custom item (e.g. from an earlier pantry move) — just clear its status.
+      if (_clState.x[cIdx].st) { _clState.x[cIdx].st = ''; clSync(); }
+    } else {
+      // Genuinely not on the main shopping list — add as a custom item so it shows on the checklist
+      if (!_clState.x) _clState.x = [];
       _clState.x.push({ n: item, p: null, st: '' });
       clSync();
     }
   }
+  clRenderIfPresent();
   renderXray(_xrayData, _listText);
 }
 
