@@ -2100,6 +2100,7 @@ function clLookupPrice(name) {
 }
 function clFmtP(n) { return n != null ? '$' + parseFloat(n).toFixed(2) : ''; }
 
+let _clHasStoreSections = false; // true when the list is organized by "### Store" trip sections
 function clParseMd(md) {
   _priceMap = {}; _clItems = [];
   const _mealMap = {};
@@ -2130,6 +2131,7 @@ function clParseMd(md) {
   });
   // Parse store-grouped items from ## Shopping List by Trip
   const tripMatch = md.match(/## Shopping List by Trip([\s\S]*)/);
+  _clHasStoreSections = !!tripMatch;
   if (!tripMatch) {
     // Fallback: event-style shopping list with emoji+bold category headers and bullet items
     // Ignore any ## section headers (like "## Shopping by Store" which has summaries, not individual items)
@@ -2306,6 +2308,7 @@ function clItemRow({ name, displayName, qtyN, unit, price, meals, idx, subgroup 
         <span class="cl-item-price" data-price-idx="${idx}" title="Click to edit price">${price != null ? clFmtP(price) : ''}</span>
         <button class="cl-note-btn${note ? ' has-note' : ''}" data-note-idx="${idx}" title="${note ? 'Edit note' : 'Add note'}">📝</button>
         <button class="cl-edit-btn" data-edit-idx="${idx}" title="Rename item (updates shopping list, X-Ray &amp; menu)">✏️</button>
+        ${_clHasStoreSections ? `<button class="cl-note-btn" data-store-idx="${idx}" title="Move to a different store">🏬</button>` : ''}
         <button class="cl-skip-btn" data-skip="${idx}" title="Skip">⏭</button>
       </div>
       ${noteHtml}
@@ -2776,6 +2779,72 @@ async function clRenameItem(idx, oldName, newName) {
     }
   } catch { /* best effort — local state already updated */ }
 }
+function clToggleStoreEditor(itemEl, idx) {
+  // Remove any other open store editors first
+  document.querySelectorAll('.cl-note-edit-wrap[data-store-editor]').forEach(w => w.remove());
+  const existing = itemEl.querySelector('.cl-note-edit-wrap[data-store-editor]');
+  if (existing) return; // was already open (closed above), so just toggle off
+  const item = _clItems[idx];
+  if (!item) return;
+  const stores = [...new Set(_clItems.map(i => i.store).filter(Boolean))];
+  let dl = $('cl-store-datalist');
+  if (!dl) {
+    dl = document.createElement('datalist');
+    dl.id = 'cl-store-datalist';
+    document.body.appendChild(dl);
+  }
+  dl.innerHTML = stores.map(s => `<option value="${String(s).replace(/"/g, '&quot;')}"></option>`).join('');
+  const wrap = document.createElement('div');
+  wrap.className = 'cl-note-edit-wrap';
+  wrap.dataset.storeEditor = '1';
+  wrap.innerHTML = `<input class="cl-note-edit-input" type="text" list="cl-store-datalist" placeholder="Store name…" maxlength="150"/><button class="cl-note-save-btn">Move</button>`;
+  const insertAfter = itemEl.querySelector('.cl-item-meals') || itemEl.querySelector('.cl-item-note') || itemEl.querySelector('.cl-item-main-row');
+  if (insertAfter && insertAfter.nextSibling) itemEl.insertBefore(wrap, insertAfter.nextSibling);
+  else itemEl.appendChild(wrap);
+  const input = wrap.querySelector('.cl-note-edit-input');
+  input.value = item.store || '';
+  input.focus();
+  input.select();
+  const saveAndClose = () => {
+    const val = input.value.trim();
+    wrap.remove();
+    if (val && val !== item.store) clMoveItemStore(idx, val);
+  };
+  wrap.querySelector('.cl-note-save-btn').addEventListener('click', saveAndClose);
+  input.addEventListener('keydown', ke => {
+    if (ke.key === 'Enter') { ke.preventDefault(); saveAndClose(); }
+    if (ke.key === 'Escape') { wrap.remove(); }
+  });
+}
+async function clMoveItemStore(idx, newStore) {
+  const item = _clItems[idx];
+  if (!item) return;
+  const weekDate = _clWeekKey || _manifest?.currentWeek;
+  if (!weekDate) return;
+  try {
+    const r = await fetch('/api/set-item-store', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weekDate, name: item.displayName || item.name, store: newStore }),
+    });
+    if (!r.ok) return;
+    const data = await r.json();
+    if (!data.updated) return;
+    // The item may have moved between store sections — re-fetch and re-parse
+    // rather than trying to patch the rendered groups in place.
+    const listUrl = _manifest?.files?.shoppingList;
+    if (listUrl) {
+      const bust = listUrl.includes('?') ? '&' : '?';
+      const t = await fetchText(listUrl + bust + 'v=' + Date.now());
+      _listText = t;
+      _weeklyListText = t;
+    }
+    clParseMd(_listText);
+    clApplyQtyOverrides();
+    clApplyPriceOverrides();
+    clRender();
+  } catch { /* best effort */ }
+}
 function clCopyURL() {
   const btn = $('cl-copy-btn');
   const url = window.location.origin + window.location.pathname;
@@ -2988,6 +3057,12 @@ async function openChecklist({ weekKey, listText } = {}) {
         if (ke.key === 'Enter') { ke.preventDefault(); inp.blur(); }
         if (ke.key === 'Escape') { nameEl.textContent = oldName; if (togBtn) togBtn.disabled = false; }
       });
+      return;
+    }
+    // Store button — standard item only
+    const storeBtn = e.target.closest('.cl-note-btn[data-store-idx]');
+    if (storeBtn) {
+      clToggleStoreEditor(storeBtn.closest('.cl-item'), parseInt(storeBtn.dataset.storeIdx));
       return;
     }
     // Custom item qty steppers

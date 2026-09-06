@@ -2529,6 +2529,36 @@ app.patch('/api/rename-list-item', async (req, res) => {
   }
 });
 
+// ── PATCH /api/set-item-store — move an item to a different store/trip section ──
+// body: { weekDate, name, store }. Shared with the set_item_store MCP tool via moveItemToStore().
+app.patch('/api/set-item-store', async (req, res) => {
+  const { weekDate, name, store } = req.body || {};
+  if (!weekDate || !name || !store) {
+    return res.status(400).json({ error: 'weekDate, name, store are required' });
+  }
+  try {
+    const { rows } = await pool.query(
+      'SELECT content_md FROM shopping_lists WHERE week_date = $1', [weekDate],
+    );
+    if (!rows.length) return res.status(404).json({ error: 'not_found' });
+
+    const result = moveItemToStore(rows[0].content_md, name, store);
+    if (!result.found) return res.status(404).json({ error: 'item_not_found' });
+    if (!result.changed) {
+      return res.json({ updated: false, name: result.displayName, store: result.store });
+    }
+
+    await pool.query(
+      'UPDATE shopping_lists SET content_md = $1 WHERE week_date = $2',
+      [result.md, weekDate],
+    );
+    res.json({ updated: true, name: result.displayName, store: result.store });
+  } catch (err) {
+    console.error('PATCH /api/set-item-store:', err.message);
+    res.status(500).json({ error: 'db_error', detail: err.message });
+  }
+});
+
 // ── PATCH /api/xray-move — move an item between buy_these/pantry for a meal ──
 // body: { mealIdx, item, direction: 'toPantry' | 'toList' }
 app.patch('/api/xray-move', async (req, res) => {
